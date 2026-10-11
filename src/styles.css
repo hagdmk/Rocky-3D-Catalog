@@ -1,4 +1,7 @@
+/* Layout: full-bleed 3D viewport with floating panels (systems left, details right).
+   A single dark look on purpose: the scene is lit for a dark studio backdrop. */
 :root {
+  color-scheme: dark;
   --bg: #0d1218;
   --panel: rgba(18, 25, 33, 0.92);
   --panel-solid: #121921;
@@ -13,8 +16,10 @@
   --danger: #ff6b6b;
   --radius: 10px;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
   --side-w: 300px;
   --info-w: 420px;
   --top-h: 56px;
@@ -23,6 +28,8 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); overflow: hidden; }
 button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 button { cursor: pointer; }
 [hidden] { display: none !important; }
 
@@ -33,14 +40,15 @@ button { cursor: pointer; }
 
 /* ---------- top bar ---------- */
 #topbar {
-  position: fixed; top: 0; left: 0; right: 0; height: var(--top-h); z-index: 20;
-  display: flex; align-items: center; gap: 12px; padding: 0 14px;
+  position: fixed; top: 0; left: 0; right: 0; height: calc(var(--top-h) + var(--safe-top)); z-index: 20;
+  display: flex; align-items: center; gap: 12px; padding: var(--safe-top) 16px 0;
   background: linear-gradient(180deg, rgba(13, 18, 24, 0.96), rgba(13, 18, 24, 0.75));
   border-bottom: 1px solid var(--line);
 }
 .brand { display: flex; flex-direction: column; line-height: 1.15; white-space: nowrap; }
 .brand-main { font-size: 15px; letter-spacing: 0.2px; }
 .brand-main b { color: var(--accent); font-weight: 700; }
+.brand-model { font-family: var(--mono); font-weight: 500; letter-spacing: 0.14em; font-size: 13px; }
 .brand-sub { font-size: 11px; color: var(--muted); }
 .icon-btn, .text-btn {
   background: transparent; border: 1px solid var(--line-2); border-radius: 8px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
@@ -71,7 +79,7 @@ button { cursor: pointer; }
 
 /* ---------- sidebar ---------- */
 #sidebar {
-  position: fixed; top: calc(var(--top-h) + 10px); left: 10px; bottom: 10px; width: var(--side-w); z-index: 15;
+  position: fixed; top: calc(var(--top-h) + var(--safe-top) + 10px); left: 10px; bottom: calc(10px + var(--safe-bottom)); width: var(--side-w); z-index: 15;
   display: flex; flex-direction: column; overflow: hidden;
 }
 .tabs { margin: 10px; }
@@ -94,7 +102,7 @@ button { cursor: pointer; }
 .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); }
 .sys-row .name { flex: 1; min-width: 0; }
 .sys-row .name small { display: block; font-size: 10.5px; color: var(--faint); letter-spacing: 0.3px; }
-.count { font-size: 11px; color: var(--muted); background: rgba(255, 255, 255, 0.06); padding: 1px 6px; border-radius: 10px; }
+.count { font-variant-numeric: tabular-nums; font-size: 11px; color: var(--muted); background: rgba(255, 255, 255, 0.06); padding: 1px 6px; border-radius: 10px; }
 .caret { color: var(--faint); transition: transform 0.15s; font-size: 11px; }
 .sys.open .caret { transform: rotate(90deg); }
 .sys.hidden-sys .name, .sys.hidden-sys .dot { opacity: 0.4; }
@@ -120,12 +128,12 @@ button { cursor: pointer; }
 
 /* ---------- info panel ---------- */
 #info {
-  position: fixed; top: calc(var(--top-h) + 10px); right: 10px; bottom: 10px; width: var(--info-w); z-index: 15;
+  position: fixed; top: calc(var(--top-h) + var(--safe-top) + 10px); right: 10px; bottom: calc(10px + var(--safe-bottom)); width: var(--info-w); z-index: 15;
   display: flex; flex-direction: column; overflow: hidden;
 }
 .info-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); position: relative; }
 .kicker { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
-.info-head h2 { margin: 6px 36px 2px 0; font-size: 18px; line-height: 1.3; }
+.info-head h2 { margin: 6px 36px 2px 0; font-size: 18px; line-height: 1.3; text-wrap: balance; }
 .info-head .en { color: var(--muted); font-size: 12.5px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chip { font-size: 11.5px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--line-2); color: var(--muted); background: rgba(255, 255, 255, 0.03); }
@@ -167,7 +175,7 @@ button.chip:hover { border-color: var(--accent); color: var(--text); }
 .tools input[type=search] { flex: 1; min-width: 120px; height: 28px; border-radius: 7px; border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.04); padding: 0 8px; outline: none; font-size: 12.5px; }
 .tools input[type=search]:focus { border-color: var(--accent); }
 
-table.parts { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.parts { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
 table.parts th { text-align: left; font-weight: 500; color: var(--faint); font-size: 11px; padding: 6px 6px; border-bottom: 1px solid var(--line-2); position: sticky; top: -12px; background: var(--panel-solid); z-index: 1; }
 table.parts td { padding: 6px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
 table.parts tr.row { cursor: pointer; }
@@ -189,7 +197,7 @@ table.parts tr.detail td { background: rgba(255, 179, 64, 0.05); padding: 8px 10
 
 /* ---------- toolbar ---------- */
 #toolbar {
-  position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 14;
+  position: fixed; bottom: calc(12px + var(--safe-bottom)); left: 50%; transform: translateX(-50%); z-index: 14;
   display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 12px; flex-wrap: nowrap; max-width: calc(100vw - 20px);
 }
 #toolbar .seg button { padding: 5px 9px; }
@@ -197,7 +205,7 @@ table.parts tr.detail td { background: rgba(255, 179, 64, 0.05); padding: 8px 10
 .tb-toggle input { accent-color: var(--accent); }
 .tb-range input { width: 90px; }
 
-.hint-pill { position: fixed; top: calc(var(--top-h) + 14px); left: 50%; transform: translateX(-50%); z-index: 12; font-size: 12px; color: var(--muted); background: rgba(13, 18, 24, 0.7); border: 1px solid var(--line); padding: 5px 12px; border-radius: 20px; pointer-events: none; transition: opacity 0.5s; white-space: nowrap; }
+.hint-pill { position: fixed; top: calc(var(--top-h) + var(--safe-top) + 14px); left: 50%; transform: translateX(-50%); z-index: 12; font-size: 12px; color: var(--muted); background: rgba(13, 18, 24, 0.7); border: 1px solid var(--line); padding: 5px 12px; border-radius: 20px; pointer-events: none; transition: opacity 0.5s; white-space: nowrap; }
 
 #tooltip { position: fixed; z-index: 30; pointer-events: none; background: rgba(10, 14, 19, 0.95); border: 1px solid var(--line-2); border-radius: 8px; padding: 7px 10px; max-width: 320px; box-shadow: var(--shadow); font-size: 12.5px; }
 #tooltip .tt-t { font-weight: 600; }
@@ -235,9 +243,9 @@ table.parts tr.detail td { background: rgba(255, 179, 64, 0.05); padding: 8px 10
   #btn-about { display: none; }
   #sidebar { transform: translateX(calc(-100% - 20px)); transition: transform 0.2s; z-index: 25; width: min(320px, 86vw); }
   body.side-open #sidebar { transform: none; }
-  #info { left: 8px; right: 8px; top: auto; bottom: 8px; width: auto; height: min(58vh, 560px); }
+  #info { left: 16px; right: 16px; top: auto; bottom: calc(8px + var(--safe-bottom)); width: auto; height: min(58%, 560px); }
   body.info-open #toolbar { display: none; }
-  #toolbar { bottom: 8px; gap: 6px; padding: 5px; }
+  #toolbar { bottom: calc(8px + var(--safe-bottom)); gap: 6px; padding: 5px; }
   #toolbar .tb-range { display: none; }
   .hint-pill { display: none; }
 }

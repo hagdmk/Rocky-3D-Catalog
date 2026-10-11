@@ -3,7 +3,8 @@
 import { tagLabels } from '../catalog.js';
 import { SYSTEM_COLORS } from '../scene/materials.js';
 
-const PDF = 'model_s_partsGuide-NA-2012-2016.pdf';
+// The catalog PDF; a page can override it with <meta name="catalog-pdf" content="…">.
+const PDF = document.querySelector('meta[name=catalog-pdf]')?.content || 'model_s_partsGuide-NA-2012-2016.pdf';
 const VARIANT_KO = {
   drive: { rwd: 'RWD', dm: '듀얼 모터', pdm: 'P 듀얼 모터' },
   susp: { air: '에어 서스펜션', coil: '코일 서스펜션' },
@@ -161,7 +162,7 @@ export class App {
     if (frame) this.viewer.frame([id, ...emphasis]);
     this.renderInfo();
     this.syncTreeSelection();
-    if (hash) this.setHash(`c=${id}${g !== comp.groups[0] ? `&g=${g}` : ''}`);
+    if (hash) this.setHash(`c.${id}${g !== comp.groups[0] ? `~${g}` : ''}`);
   }
 
   selectGroup(gid, { frame = false, part = null, hash = true } = {}) {
@@ -176,7 +177,7 @@ export class App {
     if (frame && comps.length) this.viewer.frame(comps.map((c) => c.id));
     this.renderInfo();
     this.syncTreeSelection();
-    if (hash) this.setHash(`g=${gid}`);
+    if (hash) this.setHash(`g.${gid}`);
   }
 
   clearSelection() {
@@ -214,18 +215,26 @@ export class App {
     return this.cat.componentsForPart(part, (c) => this.visible(c));
   }
 
+  // Deep links use plain tokens: #c.<location>[~<group>] or #g.<group>.
   setHash(h) {
     this.suppressHash = true;
-    const url = `${location.pathname}${location.search}${h ? `#${h}` : ''}`;
-    history.replaceState(null, '', url);
+    try {
+      history.replaceState(null, '', `${location.pathname}${location.search}${h ? `#${h}` : ''}`);
+    } catch {
+      // sandboxed frames may refuse history changes; the selection still works
+    }
     this.suppressHash = false;
   }
 
   applyHash(initial = false) {
     if (this.suppressHash) return;
-    const params = new URLSearchParams(location.hash.slice(1));
-    if (params.get('c')) this.selectComponent(params.get('c'), { gid: params.get('g'), frame: initial, hash: false });
-    else if (params.get('g')) this.selectGroup(params.get('g'), { frame: initial, hash: false });
+    const h = decodeURIComponent(location.hash.slice(1));
+    if (h.startsWith('c.')) {
+      const [id, gid] = h.slice(2).split('~');
+      this.selectComponent(id, { gid, frame: initial, hash: false });
+    } else if (h.startsWith('g.')) {
+      this.selectGroup(h.slice(2), { frame: initial, hash: false });
+    }
   }
 
   // ------------------------------------------------------------------ info panel
@@ -334,7 +343,7 @@ export class App {
         this.viewer.setEmphasis([]);
         this.renderInfo();
         this.syncTreeSelection();
-        this.setHash(`c=${comp.id}${gid !== comp.groups[0] ? `&g=${gid}` : ''}`);
+        this.setHash(`c.${comp.id}${gid !== comp.groups[0] ? `~${gid}` : ''}`);
       });
       tabs.append(b);
     }
@@ -448,7 +457,20 @@ export class App {
     </dl></td></tr>`);
     $('[data-act=copy]', tr).addEventListener('click', async (e) => {
       e.stopPropagation();
-      try { await navigator.clipboard.writeText(p.pn); e.target.textContent = '복사됨'; } catch { e.target.textContent = '복사 실패'; }
+      const btn = e.currentTarget;
+      try {
+        await navigator.clipboard.writeText(p.pn);
+        btn.textContent = '복사됨';
+      } catch {
+        // clipboard refused: select the part number so it can be copied by hand
+        const pnEl = tr.querySelector('.pd b');
+        const range = document.createRange();
+        range.selectNodeContents(pnEl);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = '품번 선택됨 — 복사하세요';
+      }
     });
     $('[data-act=frame]', tr).addEventListener('click', (e) => { e.stopPropagation(); this.viewer.frame(inst.map((c) => c.id)); });
     return tr;

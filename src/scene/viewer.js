@@ -472,6 +472,7 @@ export class Viewer {
   }
 
   flyTo(target, position, animate = true, ms = 650) {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) animate = false;
     if (!animate) {
       this.controls.target.copy(target);
       this.camera.position.copy(position);
