@@ -45,6 +45,8 @@ export class App {
     this.bindKeys();
     this.buildAbout();
     window.addEventListener('hashchange', () => this.applyHash());
+    window.addEventListener('resize', () => this.updateInsets());
+    this.updateInsets();
     this.applyHash(true);
   }
 
@@ -227,12 +229,30 @@ export class App {
   }
 
   // ------------------------------------------------------------------ info panel
+  /** Keep the car centred in the part of the viewport not covered by panels. */
+  updateInsets() {
+    const mobile = window.matchMedia('(max-width: 860px)').matches;
+    const info = $('#info');
+    const side = $('#sidebar');
+    if (mobile) {
+      this.viewer.setInsets({ top: 50, bottom: info.hidden ? 50 : info.offsetHeight + 8 });
+    } else {
+      this.viewer.setInsets({
+        left: side.offsetWidth + 10,
+        right: info.hidden ? 0 : info.offsetWidth + 10,
+        top: 56,
+        bottom: 60,
+      });
+    }
+  }
+
   renderInfo() {
     const info = $('#info');
     const st = this.state;
     if (!st.mode) {
       info.hidden = true;
       document.body.classList.remove('info-open');
+      this.updateInsets();
       return;
     }
     info.hidden = false;
@@ -244,6 +264,7 @@ export class App {
     const body = el('<div class="info-body"></div>');
     body.append(...this.renderGroupBody(st.gid, st.mode === 'comp' ? st.comp : null));
     info.append(body);
+    this.updateInsets();
     if (st.part) {
       const row = $(`tr.row[data-i="${st.part.index}"]`, info);
       if (row) requestAnimationFrame(() => row.scrollIntoView({ block: 'center' }));

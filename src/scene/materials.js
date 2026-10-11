@@ -50,6 +50,7 @@ export const MATS = {
   lensRed: { color: '#b3121f', metalness: 0.1, roughness: 0.15, opacity: 0.85, tint: 1.1 },
   lensAmber: { color: '#ff9a1f', metalness: 0.1, roughness: 0.15, opacity: 0.85, tint: 1.1 },
   lensClear: { color: '#dfe8f0', metalness: 0.2, roughness: 0.05, opacity: 0.6, tint: 1.3 },
+  headlamp: { color: '#8e9cab', metalness: 0.6, roughness: 0.12, opacity: 0.92, tint: 1.25 },
   screen: { color: '#0b0e13', metalness: 0.2, roughness: 0.15, emissive: '#18324a', tint: 0.7 },
   foam: { color: '#3a3a3a', metalness: 0.0, roughness: 1.0, tint: 0.8 },
   paper: { color: '#f2f0e8', metalness: 0.0, roughness: 0.9, tint: 1.2 },

@@ -38,6 +38,7 @@ export class Viewer {
     this.hiddenSystems = new Set();
     this.variant = { drive: 'dm', susp: 'air' };
     this.needsRender = true;
+    this.inset = { tx: 0, ty: 0, x: 0, y: 0 };
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -389,6 +390,7 @@ export class Viewer {
   pick(e) {
     if (!e || !this.pickables) return null;
     const rect = this.renderer.domElement.getBoundingClientRect();
+    // The view offset is part of the projection matrix, so canvas NDC is enough.
     this.pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(this.pointer, this.camera);
     const hits = this.raycaster.intersectObjects(this.pickables, false);
@@ -406,6 +408,24 @@ export class Viewer {
     return hits[0].object.userData.compId;
   }
 
+  /**
+   * Shift the projection centre so the car is centred in the area not covered
+   * by side panels (left/right insets in CSS pixels).
+   */
+  setInsets({ left = 0, right = 0, top = 0, bottom = 0 } = {}) {
+    this.inset.tx = (left - right) / 2;
+    this.inset.ty = (top - bottom) / 2;
+    this.needsRender = true;
+  }
+
+  applyInset() {
+    const w = Math.max(1, this.container.clientWidth);
+    const h = Math.max(1, this.container.clientHeight);
+    const { x, y } = this.inset;
+    if (Math.abs(x) < 0.5 && Math.abs(y) < 0.5) this.camera.clearViewOffset();
+    else this.camera.setViewOffset(w, h, -x, -y, w, h);
+  }
+
   resize() {
     const w = Math.max(1, this.container.clientWidth);
     const h = Math.max(1, this.container.clientHeight);
@@ -415,6 +435,7 @@ export class Viewer {
     this.composer.setSize(w, h);
     this.composer.setPixelRatio(this.renderer.getPixelRatio());
     this.camera.aspect = w / h;
+    this.applyInset();
     this.camera.updateProjectionMatrix();
     this.needsRender = true;
   }
@@ -439,7 +460,7 @@ export class Viewer {
     const center = box.getCenter(new THREE.Vector3());
     const radius = Math.max(box.getSize(new THREE.Vector3()).length() / 2, 0.25);
     const fov = (this.camera.fov * Math.PI) / 180;
-    const dist = Math.min(Math.max(radius / Math.sin(fov / 2) * 1.5, 1.8), 14);
+    const dist = Math.min(Math.max(radius / Math.sin(fov / 2) * 1.5, 2.2), 14);
     const dir = this.camera.position.clone().sub(this.controls.target).normalize();
     this.flyTo(center, center.clone().addScaledVector(dir, dist), animate);
   }
@@ -476,6 +497,17 @@ export class Viewer {
       this.controls.target.lerpVectors(tw.fromT, tw.toT, e);
       this.camera.position.lerpVectors(tw.fromP, tw.toP, e);
       if (k >= 1) this.tween = null;
+      this.needsRender = true;
+    }
+    const ins = this.inset;
+    if (ins.x !== ins.tx || ins.y !== ins.ty) {
+      const k = Math.min(1, (dt || 16) / 120);
+      ins.x += (ins.tx - ins.x) * k;
+      ins.y += (ins.ty - ins.y) * k;
+      if (Math.abs(ins.tx - ins.x) < 0.5) ins.x = ins.tx;
+      if (Math.abs(ins.ty - ins.y) < 0.5) ins.y = ins.ty;
+      this.applyInset();
+      this.camera.updateProjectionMatrix();
       this.needsRender = true;
     }
     if (this.controls.update()) this.needsRender = true;

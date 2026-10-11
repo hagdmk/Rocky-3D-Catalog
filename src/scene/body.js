@@ -118,28 +118,41 @@ function sortedUnique(values, eps = 1e-6) {
   return out;
 }
 
+// `step` may be a number or a function of the position (finer near the ends).
 function samples(lo, hi, step, breaks) {
   const vals = [];
-  const n = Math.max(1, Math.ceil((hi - lo) / step));
-  for (let i = 0; i <= n; i++) vals.push(lo + ((hi - lo) * i) / n);
+  if (typeof step === 'function') {
+    for (let x = lo; x < hi; x += Math.max(1e-3, step(x))) vals.push(x);
+    vals.push(hi);
+  } else {
+    const n = Math.max(1, Math.ceil((hi - lo) / step));
+    for (let i = 0; i <= n; i++) vals.push(lo + ((hi - lo) * i) / n);
+  }
   for (const b of breaks) if (b > lo && b < hi) vals.push(b);
   return sortedUnique(vals);
 }
 
+/** Default longitudinal step: fine on the steep front and rear faces. */
+export const dsAdaptive = (s) => (s < 0.35 || s > 4.55 ? 0.005 : 0.0125);
+
 /**
  * Build a surface patch on (or offset from) the skin.
- * opts: {s0, s1, v0, v1, side: 'L'|'R'|'both', offset, ds, dv, include(s, v, side)}
+ * opts: {s0, s1, v0, v1, side: 'L'|'R'|'both', offset, ds, dv, include, field, edges}
  *  - offset > 0 moves the patch outward along the normal, < 0 inward.
- *  - include filters quads by their centre (for non-rectangular regions).
+ *  - include(s, v) keeps whole grid quads by their centre (rectangular cuts).
+ *  - field(s, v) is a signed function (<= 0 inside); triangles are clipped
+ *    exactly along its zero contour, giving smooth non-rectangular outlines.
  * Returns a BufferGeometry with positions + normals, or null if empty.
  */
 export function skinPatch(opts) {
   const {
-    s0, s1, v0, v1, side = 'both', offset = 0, ds = 0.0125, dv = 0.06,
-    include = null, sBreaks = [], vBreaks = [], edges = false,
+    s0, s1, v0, v1, side = 'both', offset = 0, ds = dsAdaptive, dv = 0.06,
+    include = null, field = null, sBreaks = [], vBreaks = [], edges = false,
   } = opts;
   const ss = samples(s0, s1, ds, sBreaks);
   const vs = samples(v0, v1, dv, vBreaks);
+  const ns = ss.length;
+  const nv = vs.length;
   const sides = side === 'both' ? ['L', 'R'] : [side];
   const pos = [];
   const nor = [];
@@ -147,11 +160,27 @@ export function skinPatch(opts) {
   const edgePos = [];
   const P = new THREE.Vector3();
   const N = new THREE.Vector3();
+
+  // Field and inclusion are symmetric, so evaluate them once for both halves.
+  const fv = field ? new Float64Array(ns * nv) : null;
+  if (fv) for (let i = 0; i < ns; i++) for (let j = 0; j < nv; j++) fv[i * nv + j] = field(ss[i], vs[j]);
+  const keep = [];
+  for (let i = 0; i < ns - 1; i++) {
+    keep.push([]);
+    for (let j = 0; j < nv - 1; j++) {
+      let k = include ? include((ss[i] + ss[i + 1]) / 2, (vs[j] + vs[j + 1]) / 2) : true;
+      if (k && fv) {
+        const f = [fv[i * nv + j], fv[(i + 1) * nv + j], fv[(i + 1) * nv + j + 1], fv[i * nv + j + 1]];
+        if (f.every((x) => x > 0)) k = false;
+        else if (f.some((x) => x > 0)) k = 2; // partially inside: clip
+      }
+      keep[i].push(k);
+    }
+  }
+
   for (const sd of sides) {
     const flip = sd === 'R';
     const base = pos.length / 3;
-    const ns = ss.length;
-    const nv = vs.length;
     for (let i = 0; i < ns; i++) {
       for (let j = 0; j < nv; j++) {
         skinPoint(ss[i], vs[j], P);
@@ -162,32 +191,62 @@ export function skinPatch(opts) {
         nor.push(N.x, N.y, N.z);
       }
     }
-    const keep = [];
-    for (let i = 0; i < ns - 1; i++) {
-      keep.push([]);
-      for (let j = 0; j < nv - 1; j++) {
-        const sc = (ss[i] + ss[i + 1]) / 2;
-        const vc = (vs[j] + vs[j + 1]) / 2;
-        keep[i].push(include ? include(sc, vc, sd) : true);
+    const fAt = (g) => fv[g - base];
+    const cut = new Map();
+    const cutVertex = (a, b) => {
+      const key = a < b ? `${a}_${b}` : `${b}_${a}`;
+      let k = cut.get(key);
+      if (k !== undefined) return k;
+      const fa = fAt(a);
+      const fb = fAt(b);
+      const t = fa / (fa - fb);
+      k = pos.length / 3;
+      for (let c = 0; c < 3; c++) pos.push(pos[a * 3 + c] + (pos[b * 3 + c] - pos[a * 3 + c]) * t);
+      const n = [0, 1, 2].map((c) => nor[a * 3 + c] + (nor[b * 3 + c] - nor[a * 3 + c]) * t);
+      const l = Math.hypot(n[0], n[1], n[2]) || 1;
+      nor.push(n[0] / l, n[1] / l, n[2] / l);
+      cut.set(key, k);
+      return k;
+    };
+    const vtx = (k) => [pos[k * 3], pos[k * 3 + 1], pos[k * 3 + 2]];
+    const clipTri = (tri) => {
+      const poly = [];
+      const contour = [];
+      for (let e = 0; e < 3; e++) {
+        const a = tri[e];
+        const b = tri[(e + 1) % 3];
+        const ia = fAt(a) <= 0;
+        const ib = fAt(b) <= 0;
+        if (ia) poly.push(a);
+        if (ia !== ib) {
+          const c = cutVertex(a, b);
+          poly.push(c);
+          contour.push(c);
+        }
       }
-    }
+      for (let k = 1; k < poly.length - 1; k++) idx.push(poly[0], poly[k], poly[k + 1]);
+      if (edges && contour.length === 2) edgePos.push(...vtx(contour[0]), ...vtx(contour[1]));
+    };
     for (let i = 0; i < ns - 1; i++) {
       for (let j = 0; j < nv - 1; j++) {
-        if (!keep[i][j]) continue;
+        const k = keep[i][j];
+        if (!k) continue;
         const a = base + i * nv + j;
         const b = base + (i + 1) * nv + j;
         const c = base + (i + 1) * nv + j + 1;
         const d = base + i * nv + j + 1;
-        if (flip) idx.push(a, c, b, a, d, c);
-        else idx.push(a, b, c, a, c, d);
+        const tris = flip ? [[a, c, b], [a, d, c]] : [[a, b, c], [a, c, d]];
+        if (k === 2) tris.forEach(clipTri);
+        else for (const t of tris) idx.push(...t);
       }
     }
     if (edges) {
-      const at = (i, j) => [pos[(base + i * nv + j) * 3], pos[(base + i * nv + j) * 3 + 1], pos[(base + i * nv + j) * 3 + 2]];
+      // Outline along rectangular cuts (quads fully inside next to excluded quads).
+      const at = (i, j) => vtx(base + i * nv + j);
       const k = (i, j) => i >= 0 && j >= 0 && i < ns - 1 && j < nv - 1 && keep[i][j];
       for (let i = 0; i < ns - 1; i++) {
         for (let j = 0; j < nv - 1; j++) {
-          if (!keep[i][j]) continue;
+          if (keep[i][j] !== true) continue;
           if (!k(i - 1, j)) edgePos.push(...at(i, j), ...at(i, j + 1));
           if (!k(i + 1, j)) edgePos.push(...at(i + 1, j), ...at(i + 1, j + 1));
           if (!k(i, j - 1)) edgePos.push(...at(i, j), ...at(i + 1, j));
