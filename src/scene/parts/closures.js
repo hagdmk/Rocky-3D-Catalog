@@ -1,0 +1,319 @@
+// Closure hardware, seals, mirrors, badges, licence plates, labels and the
+// panoramic roof.
+
+import * as THREE from 'three';
+import { skinAt, skinPath, findOnFace } from '../body.js';
+import { region, SV } from './exterior.js';
+import { xOf } from '../profile.js';
+import {
+  V, group, rbox, box, cyl, beam, tube, faceTo, mesh, quadPlate,
+} from '../geom.js';
+
+const SIDES = [
+  { sd: 'L', sg: -1, ko: '좌', en: 'LH' },
+  { sd: 'R', sg: 1, ko: '우', en: 'RH' },
+];
+
+function onFace(end, y, z, size, mat, offset = 0.004, axis = 'x') {
+  const { p, n } = findOnFace(end, y, z, offset);
+  const m = rbox(size, [0, 0, 0], mat, { r: Math.min(...size) / 3 });
+  return faceTo(m, p, n, axis);
+}
+
+function loop(svs, sd, offset, r, mat) {
+  return tube(skinPath(svs, sd, offset, 5), r, mat, { closed: false, radial: 6 });
+}
+
+export function buildClosures(reg) {
+  // --- Hinges ----------------------------------------------------------------------
+  for (const { sd, sg, ko, en } of SIDES) {
+    const xf = xOf(SV.frontDoor[0]) + 0.02;
+    const xr = xOf(SV.rearDoor[0]) + 0.02;
+    reg.add({
+      id: `front-door-hinges-${sd}`, ko: `앞 도어 힌지 (${ko})`, en: `Front door hinges ${en}`, tags: `${sd}F`,
+      groups: ['front-door-hinges-and-fittings'],
+      object: group(
+        rbox([0.07, 0.05, 0.06], [xf, 0.58, sg * 0.9], 'steel', { r: 0.008 }),
+        rbox([0.07, 0.05, 0.06], [xf, 0.86, sg * 0.88], 'steel', { r: 0.008 }),
+      ),
+    });
+    reg.add({
+      id: `rear-door-hinges-${sd}`, ko: `뒤 도어 힌지 (${ko})`, en: `Rear door hinges ${en}`, tags: `${sd}B`,
+      groups: ['rear-door-hinges-and-fittings'],
+      object: group(
+        rbox([0.06, 0.05, 0.06], [xr, 0.58, sg * 0.9], 'steel', { r: 0.008 }),
+        rbox([0.06, 0.05, 0.06], [xr, 0.86, sg * 0.89], 'steel', { r: 0.008 }),
+      ),
+    });
+    reg.add({
+      id: `hood-hinge-${sd}`, ko: `후드 힌지·가스 스트럿 (${ko})`, en: `Hood hinge & gas strut ${en}`, tags: sd,
+      groups: ['hood-hinges-and-fittings'],
+      object: group(
+        rbox([0.12, 0.06, 0.03], [1.0, 0.86, sg * 0.58], 'steel', { r: 0.008, rot: [0, 0, 0.3] }),
+        beam([1.05, 0.88, sg * 0.56], [1.45, 0.82, sg * 0.62], 0.01, 'steel'),
+      ),
+    });
+    reg.add({
+      id: `liftgate-hinge-${sd}`, ko: `리프트게이트 힌지·스트럿 (${ko})`, en: `Liftgate hinge & strut ${en}`, tags: sd,
+      groups: ['liftgate-hinges-and-fittings'], match: /HINGE|STRUT|BALL STUD|WEDGE|BUMPER|ANTI PINCH|push clip|SEALER|BLT|NUT/,
+      object: group(
+        rbox([0.08, 0.04, 0.05], skinAt(3.26, 4.55, sd, -0.04).toArray(), 'steel', { r: 0.008 }),
+        tube([skinAt(3.9, 4.05, sd, -0.05), skinAt(4.15, 3.6, sd, -0.08), skinAt(4.35, 3.0, sd, -0.1)], 0.012, 'steel'),
+        tube([skinAt(3.35, 4.06, sd, -0.025), skinAt(4.0, 4.06, sd, -0.025), skinAt(4.6, 4.0, sd, -0.025)], 0.005, 'rubber'),
+      ),
+    });
+  }
+  reg.add({
+    id: 'liftgate-spoiler', ko: '리프트게이트 스포일러(카본, 옵션)', en: 'Liftgate spoiler (carbon fibre, option)', tags: 'B',
+    groups: ['liftgate-hinges-and-fittings'], match: /SPOILER|ADHESIVE TAPE|PRIMER/,
+    object: region([[4.585, 4.66, 4.1, 5]], { offset: 0.008, mat: 'carbon' }),
+  });
+
+  // --- Glass regulators, handles, latches --------------------------------------------
+  for (const { sd, sg, ko, en } of SIDES) {
+    for (const [fr, range, frKo, frEn] of [['F', SV.frontDoor, '앞', 'front'], ['B', SV.rearDoor, '뒤', 'rear']]) {
+      const xm = xOf((range[0] + range[1]) / 2);
+      reg.add({
+        id: `regulator-${sd}${fr}`, ko: `${frKo} 도어 유리 레귤레이터 (${ko})`, en: `${frEn} door glass regulator ${en}`, tags: `${sd}${fr}`,
+        groups: ['front-and-rear-door-glass-regulator'],
+        object: group(
+          beam([xm + 0.12, 0.5, sg * 0.87], [xm + 0.1, 0.97, sg * 0.85], 0.008, 'steel'),
+          beam([xm - 0.12, 0.5, sg * 0.87], [xm - 0.14, 0.97, sg * 0.85], 0.008, 'steel'),
+          cyl(0.04, 0.03, 'z', [xm, 0.55, sg * 0.86], 'darkMetal'),
+        ),
+      });
+      const hs = fr === 'F' ? 2.47 : 3.31;
+      const hp = skinAt(hs, 2.35, sd, 0.004);
+      reg.add({
+        id: `ext-handle-${sd}${fr}`, ko: `${frKo} 외부 도어 핸들(플러시) (${ko})`, en: `${frEn} exterior door handle (flush) ${en}`, tags: `${sd}${fr}`,
+        groups: [fr === 'F' ? 'front-exterior-door-handle' : 'rear-exterior-door-handle'],
+        object: group(
+          rbox([0.2, 0.034, 0.012], hp.toArray(), 'chrome', { r: 0.005 }),
+          rbox([0.17, 0.05, 0.04], skinAt(hs, 2.35, sd, -0.03).toArray(), 'darkMetal', { r: 0.008 }),
+        ),
+      });
+      const ls = range[1] - 0.04;
+      const latchGroups = fr === 'F'
+        ? ['front-door-latch-and-striker', 'front-door-latch-and-interior-release']
+        : ['rear-door-latch-and-striker', 'rear-door-latch-and-interior-release'];
+      reg.add({
+        id: `door-latch-${sd}${fr}`, ko: `${frKo} 도어 래치·실내 릴리스 (${ko})`, en: `${frEn} door latch & interior release ${en}`, tags: `${sd}${fr}`,
+        groups: latchGroups,
+        object: group(
+          rbox([0.05, 0.09, 0.05], skinAt(ls, 1.75, sd, -0.04).toArray(), 'darkMetal', { r: 0.008 }),
+          rbox([0.03, 0.03, 0.03], skinAt(range[1] + 0.03, 1.75, sd, -0.03).toArray(), 'steel', { r: 0.006 }),
+          rbox([0.1, 0.03, 0.025], skinAt(range[1] - 0.25, 2.15, sd, -0.105).toArray(), 'chrome', { r: 0.008 }),
+          tube([skinAt(ls, 1.75, sd, -0.05), skinAt(range[1] - 0.15, 2.0, sd, -0.08), skinAt(range[1] - 0.25, 2.15, sd, -0.1)], 0.003, 'steel'),
+        ),
+      });
+    }
+  }
+  reg.add({
+    id: 'hood-latch', ko: '후드 래치·릴리스 케이블', en: 'Hood latch & release cable',
+    groups: ['dual-hood-latch-and-release', 'single-hood-latch-and-release'],
+    object: group(
+      rbox([0.06, 0.08, 0.16], [2.08, 0.72, 0], 'darkMetal', { r: 0.01 }),
+      rbox([0.04, 0.03, 0.05], [2.1, 0.78, 0], 'steel', { r: 0.006 }),
+      tube([[2.06, 0.7, -0.05], [1.8, 0.6, -0.4], [1.2, 0.55, -0.6], [0.9, 0.5, -0.66], [0.82, 0.46, -0.7]], 0.004, 'steel'),
+      rbox([0.06, 0.03, 0.04], [0.8, 0.46, -0.7], 'blackPlastic', { r: 0.006 }),
+    ),
+  });
+  reg.add({
+    id: 'liftgate-latch', ko: '리프트게이트 래치·스트라이커', en: 'Liftgate latch & striker', tags: 'B',
+    groups: ['liftgate-latch'],
+    object: group(
+      onFace('rear', 0.79, 0, [0.06, 0.06, 0.12], 'darkMetal', -0.035),
+      onFace('rear', 0.76, 0, [0.03, 0.03, 0.06], 'steel', -0.04),
+    ),
+  });
+  reg.add({
+    id: 'liftgate-handle', ko: '리프트게이트 핸들·비상 해제', en: 'Liftgate handle & emergency release', tags: 'B',
+    groups: ['liftgate-handle-and-emergency-release'],
+    object: group(
+      onFace('rear', 0.835, 0, [0.02, 0.03, 0.12], 'chrome', 0.0),
+      onFace('rear', 0.82, 0.05, [0.03, 0.03, 0.05], 'lensRed', -0.06),
+    ),
+  });
+  for (const { sd, sg, ko, en } of SIDES) {
+    reg.add({
+      id: `liftgate-drain-${sd}`, ko: `리프트게이트(램프 하우징) 배수관 (${ko})`, en: `Liftgate (lamp housing) drain tube ${en}`, tags: sd,
+      groups: ['liftgate-drain'],
+      object: tube([skinAt(4.6, 2.9, sd, -0.06), skinAt(4.6, 2.0, sd, -0.08), skinAt(4.58, 0.9, sd, -0.06), skinAt(4.55, 0.0, sd, -0.04)], 0.006, 'rubber'),
+    });
+  }
+
+  // --- Seals -------------------------------------------------------------------------
+  for (const { sd, ko, en } of SIDES) {
+    const f = SV.frontDoor;
+    const r = SV.rearDoor;
+    reg.add({
+      id: `front-door-seal-${sd}`, ko: `앞 도어 실 (${ko})`, en: `Front door seals ${en}`, tags: sd,
+      groups: ['front-door-seals'],
+      object: loop([[f[0] + 0.01, 0.32], [f[1] - 0.01, 0.32], [f[1] - 0.01, 3.9], [f[0] + 0.06, 3.9], [f[0] + 0.01, 3.0], [f[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
+    });
+    reg.add({
+      id: `rear-door-seal-${sd}`, ko: `뒤 도어 실 (${ko})`, en: `Rear door seals ${en}`, tags: sd,
+      groups: ['rear-door-seals'],
+      object: loop([[r[0] + 0.01, 0.32], [r[1] - 0.01, 0.32], [r[1] - 0.01, 3.0], [r[1] - 0.06, 3.9], [r[0] + 0.01, 3.9], [r[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
+    });
+  }
+  reg.add({
+    id: 'hood-seal', ko: '후드 실', en: 'Hood seals', tags: 'F',
+    groups: ['hood-seals'],
+    object: group(
+      tube([[2.15, 0.775, -0.6], [2.15, 0.775, 0.6]], 0.008, 'rubber'),
+      tube([[1.0, 0.89, -0.62], [1.0, 0.89, 0.62]], 0.008, 'rubber'),
+      tube([[2.15, 0.775, -0.6], [1.6, 0.83, -0.66], [1.0, 0.89, -0.62]], 0.008, 'rubber'),
+      tube([[2.15, 0.775, 0.6], [1.6, 0.83, 0.66], [1.0, 0.89, 0.62]], 0.008, 'rubber'),
+    ),
+  });
+  const lgOutline = [[3.26, 5], [3.26, 3.93], [4.61, 3.93], [4.61, 2.76], [4.95, 2.76], [4.95, 5]];
+  reg.add({
+    id: 'liftgate-seal', ko: '리프트게이트(트렁크) 실', en: 'Liftgate (trunk lid) seal', tags: 'B',
+    groups: ['trunk-lid-seal'],
+    object: group(loop(lgOutline, 'L', -0.03, 0.007, 'rubber'), loop(lgOutline, 'R', -0.03, 0.007, 'rubber')),
+  });
+
+  // --- Exterior mirrors -----------------------------------------------------------------
+  for (const { sd, sg, ko, en } of SIDES) {
+    const base = skinAt(1.74, 2.6, sd, 0.0);
+    reg.add({
+      id: `mirror-${sd}`, ko: `외부 미러 (${ko})`, en: `Exterior mirror ${en}`, tags: sd,
+      groups: ['exterior-mirrors'],
+      object: group(
+        rbox([0.12, 0.05, 0.08], [base.x - 0.02, base.y + 0.02, base.z + sg * 0.03], 'paint', { r: 0.02 }),
+        rbox([0.13, 0.12, 0.2], [base.x - 0.06, base.y + 0.07, base.z + sg * 0.13], 'paint', { r: 0.04 }),
+        box([0.004, 0.1, 0.18], [base.x - 0.125, base.y + 0.07, base.z + sg * 0.13], 'chrome'),
+      ),
+    });
+  }
+
+  // --- Badges, appliques, licence plates ---------------------------------------------------
+  reg.add({
+    id: 'badges', ko: '배지(T 엠블럼·MODEL S·트림 배지)', en: 'Badges (T emblem, MODEL S, trim)',
+    groups: ['badges', 'front-grille-and-applique'], match: /BADGE|LUDICROUS/,
+    object: group(
+      onFace('front', 0.645, 0, [0.006, 0.07, 0.07], 'chrome', 0.004),
+      onFace('rear', 0.985, 0, [0.006, 0.07, 0.07], 'chrome', 0.004),
+      onFace('rear', 0.93, 0.36, [0.006, 0.025, 0.16], 'chrome', 0.004),
+      onFace('rear', 0.93, -0.38, [0.006, 0.025, 0.09], 'chrome', 0.004),
+    ),
+  });
+  {
+    const pts = [-0.46, -0.3, -0.15, 0, 0.15, 0.3, 0.46].map((z) => findOnFace('rear', 0.88, z, 0.004).p);
+    reg.add({
+      id: 'liftgate-applique', ko: '리프트게이트 크롬 아플리케', en: 'Liftgate chrome applique', tags: 'B',
+      groups: ['exterior-trim-fittings'], match: /LIFTGATE APPLIQUE|Bracket for Applique|CLIP, (BRKT, )?LIFTGATE|APPLIQUE TAPE|LOCTITE/,
+      object: tube(pts, 0.014, 'chrome', { radial: 6 }),
+    });
+  }
+  const plateGroups = ['license-plate-mounting-north-america', 'license-plate-mounting-europe', 'license-plate-mounting-china', 'license-plate-mounting-japan-and-australia'];
+  reg.add({
+    id: 'license-plate-front', ko: '앞 번호판 브래킷', en: 'Front licence plate bracket', tags: 'F',
+    groups: plateGroups, match: /FR |FRONT|BRKT|CLIP|RVT|E-CLIP/,
+    object: onFace('front', 0.36, 0, [0.008, 0.16, 0.31], 'blackPlastic', 0.01),
+  });
+  reg.add({
+    id: 'license-plate-rear', ko: '뒤 번호판 프레임', en: 'Rear licence plate frame', tags: 'B',
+    groups: plateGroups, match: /REAR|RR|FRAME|SCR|GROM|CAP|FLASHER|BAG/,
+    object: group(
+      onFace('rear', 0.74, 0, [0.008, 0.16, 0.31], 'paintDark', 0.006),
+      onFace('rear', 0.83, 0, [0.006, 0.012, 0.08], 'lensClear', 0.006),
+    ),
+  });
+  reg.add({
+    id: 'chmsl', ko: '보조 제동등(CHMSL)', en: 'High-mount stop lamp (CHMSL)', tags: 'B',
+    groups: ['tail-lights'], match: /CHMSL/,
+    object: region([[3.27, 3.3, 4.7, 5]], { offset: -0.01, mat: 'lensRed', edges: false }),
+  });
+  reg.add({
+    id: 'license-lamp', ko: '번호판 램프', en: 'Licence plate lamp', tags: 'B',
+    groups: ['tail-lights'], match: /LICENSE/,
+    object: onFace('rear', 0.83, 0.1, [0.01, 0.015, 0.05], 'lensClear', 0.002),
+  });
+
+  // --- Labels ----------------------------------------------------------------------------
+  const bx = xOf((SV.bPillar[0] + SV.bPillar[1]) / 2);
+  reg.add({
+    id: 'labels-b-pillar', ko: '라벨 - B필러(타이어·제조 인증)', en: 'Labels - B-pillar (tyre & certification)', tags: 'L',
+    groups: ['labels'], match: /TIRE|MANUFACTURING|CERT|LOADING|Supplemental|Op\.Tires|AIRBAG WARNING|REGISTRATION|3RD ROW SEAT/i,
+    object: group(
+      box([0.06, 0.09, 0.002], [bx, 0.62, -0.905], 'paper'),
+      box([0.06, 0.06, 0.002], [bx, 0.5, -0.905], 'paper'),
+    ),
+  });
+  reg.add({
+    id: 'labels-underhood', ko: '라벨 - 후드 아래(배출가스·냉매·구조대원)', en: 'Labels - under hood (emissions, refrigerant, first responder)', tags: 'F',
+    groups: ['labels'], match: /EMISSION|REFRIGERANT|FIRST RESPONDER|FRONT INFO|VEHICLE|LBL/,
+    object: group(
+      box([0.1, 0.002, 0.07], [1.95, 0.785, 0.35], 'paper'),
+      box([0.08, 0.002, 0.05], [1.95, 0.785, -0.35], 'paper'),
+    ),
+  });
+  reg.add({
+    id: 'labels-window', ko: '라벨 - 창문 스티커(먼로니)', en: 'Labels - window sticker (Monroney)', tags: 'LB',
+    groups: ['labels'], match: /MONRONEY|ADHESIVE TAPE/,
+    object: box([0.2, 0.25, 0.002], skinAt(3.15, 3.42, 'L', -0.012).toArray(), 'paper'),
+  });
+
+  // --- Panoramic roof ----------------------------------------------------------------------
+  const R0 = 2.42;
+  const RB = [2.745, 2.79];
+  const R1 = 3.17;
+  const VS = 4.22;
+  reg.add({
+    id: 'pano-glass-front', ko: '파노라믹 루프 무빙 글라스(앞)', en: 'Panoramic roof moving glass (front)',
+    groups: ['roof-glass'], match: /MOVABLE|MOVING|GLASS FRAME|COVER, GLASS|SHLDR|ANTI-NOISE|Stop Bumper/i,
+    object: region([[R0, RB[0], VS, 5]], { offset: 0.003, mat: 'tintedGlass', dv: 0.05 }),
+  });
+  reg.add({
+    id: 'pano-glass-rear', ko: '파노라믹 루프 고정 글라스(뒤)', en: 'Panoramic roof fixed glass (rear)',
+    groups: ['roof-glass'], match: /REAR GLASS|FIXED GLASS|DATUM|BetaSeal|PRIMER/i,
+    object: region([[RB[1], R1, VS, 5]], { offset: 0.003, mat: 'tintedGlass', dv: 0.05 }),
+  });
+  reg.add({
+    id: 'pano-cassette', ko: '파노라믹 루프 카세트(어셈블리)', en: 'Panoramic roof cassette (assembly)',
+    groups: ['panoramic-roof-assembly'],
+    object: region([[R0 - 0.03, R1 + 0.03, VS - 0.06, 4.32]], { offset: -0.022, mat: 'darkMetal', edges: false }),
+  });
+  const tracks = [];
+  for (const { sd } of SIDES) {
+    tracks.push(tube(skinPath([[R0, VS - 0.02], [R1, VS - 0.02]], sd, -0.012, 8), 0.007, 'aluminum'));
+    tracks.push(rbox([0.07, 0.03, 0.05], skinAt(R0 - 0.03, 4.45, sd, -0.03).toArray(), 'darkMetal', { r: 0.008 }));
+  }
+  reg.add({
+    id: 'pano-drive', ko: '루프 구동 모터·케이블·트랙', en: 'Roof drive motors, cables & tracks',
+    groups: ['drive-motor-and-cable-mechanism'], object: group(tracks),
+  });
+  const drains = [];
+  for (const { sd } of SIDES) {
+    drains.push(tube([skinAt(R0, 4.12, sd, -0.04), skinAt(2.0, 3.97, sd, -0.05), skinAt(1.66, 3.6, sd, -0.07), skinAt(1.6, 2.4, sd, -0.1)], 0.005, 'rubber'));
+    drains.push(tube([skinAt(R1, 4.12, sd, -0.04), skinAt(3.55, 3.97, sd, -0.05), skinAt(3.62, 3.2, sd, -0.07), skinAt(3.62, 2.2, sd, -0.12)], 0.005, 'rubber'));
+  }
+  reg.add({
+    id: 'pano-frame', ko: '루프 프레임·배수관', en: 'Roof frame & drain tubes',
+    groups: ['panoramic-roof-frame-and-drain-tubes'],
+    object: group(drains, region([[RB[0] - 0.01, RB[1] + 0.01, 4.04, 5]], { offset: -0.02, mat: 'aluminum', edges: false })),
+  });
+  reg.add({
+    id: 'pano-finishers', ko: '루프 아플리케(앞·측면 마감재)', en: 'Roof appliques (front & side finishers)',
+    groups: ['panoramic-roof-fittings-and-finishers'],
+    object: group(
+      region([[SV.roof[0], R0, SV.vRoof, 5]], { offset: 0.004, mat: 'blackPlastic' }),
+      region([[R0, R1, SV.vRoof, VS]], { offset: 0.004, mat: 'blackPlastic', side: 'L' }),
+      region([[R0, R1, SV.vRoof, VS]], { offset: 0.004, mat: 'blackPlastic', side: 'R' }),
+    ),
+  });
+  const sealPts = [[R0, 5], [R0, VS], [R1, VS], [R1, 5]];
+  reg.add({
+    id: 'roof-seals', ko: '루프 실·끼임 방지 센서', en: 'Roof seals & anti-pinch sensors',
+    groups: ['roof-seals-and-anti-pinch-sensors'],
+    object: group(loop(sealPts, 'L', 0.0, 0.006, 'rubber'), loop(sealPts, 'R', 0.0, 0.006, 'rubber')),
+  });
+  reg.add({
+    id: 'wind-deflector', ko: '윈드 디플렉터', en: 'Wind deflector',
+    groups: ['shades-and-wind-deflector'],
+    object: region([[R0 + 0.005, R0 + 0.04, 4.3, 5]], { offset: 0.012, mat: 'blackPlastic', edges: false }),
+  });
+  void V; void cyl; void mesh; void quadPlate; void THREE;
+}

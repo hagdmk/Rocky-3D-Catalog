@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Model S 3D 파츠 맵</title>
+<meta name="description" content="2012–2016 Tesla Model S 파츠 카탈로그(북미판)를 차량 위치 기준 3D 맵으로 탐색">
+<link rel="stylesheet" href="src/styles.css">
+<script type="importmap">
+{ "imports": {
+    "three": "./vendor/three/build/three.module.min.js",
+    "three/addons/": "./vendor/three/addons/"
+} }
+</script>
+</head>
+<body>
+<div id="viewport" aria-label="3D 뷰"></div>
+
+<header id="topbar">
+  <button id="btn-menu" class="icon-btn" title="시스템 목록" aria-label="시스템 목록">
+    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <div class="brand">
+    <span class="brand-main">Model S <b>3D 파츠 맵</b></span>
+    <span class="brand-sub">2012–2016 · 북미 파츠 카탈로그</span>
+  </div>
+  <div class="search">
+    <svg class="search-ico" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input id="search" type="search" autocomplete="off" spellcheck="false" placeholder="품번 · 부품명 · 위치 검색 (예: 1014114, HEADLAMP, 도어)">
+    <div id="search-results" class="popover" hidden></div>
+  </div>
+  <button id="btn-about" class="text-btn" title="카탈로그 정보">정보</button>
+</header>
+
+<aside id="sidebar" class="panel">
+  <div class="seg tabs" role="tablist">
+    <button role="tab" data-tab="tree" class="on">시스템</button>
+    <button role="tab" data-tab="config">보기 설정</button>
+  </div>
+  <div id="tab-tree" class="tab-body">
+    <div class="tree-tools">
+      <button id="btn-show-all" class="mini">모두 표시</button>
+      <button id="btn-hide-all" class="mini">모두 숨김</button>
+      <button id="btn-collapse" class="mini">접기</button>
+    </div>
+    <div id="tree"></div>
+  </div>
+  <div id="tab-config" class="tab-body" hidden>
+    <section class="cfg">
+      <h4>표시</h4>
+      <label class="row"><span>X-ray (외판 투명)</span><input type="checkbox" id="cfg-xray" checked></label>
+      <div class="row"><span>색상</span>
+        <div class="seg" id="cfg-color"><button data-v="system" class="on">시스템별</button><button data-v="real">실사 재질</button></div>
+      </div>
+      <label class="row col"><span>분해(전개) 보기 <output id="cfg-explode-val">0%</output></span>
+        <input type="range" id="cfg-explode" min="0" max="100" value="0"></label>
+    </section>
+    <section class="cfg">
+      <h4>차량 구성 <small>카탈로그의 변형(Variant) 그룹</small></h4>
+      <div class="row col"><span>구동 방식</span>
+        <div class="seg" id="cfg-drive"><button data-v="rwd">RWD</button><button data-v="dm" class="on">듀얼 모터</button><button data-v="pdm">P 듀얼 모터</button></div>
+      </div>
+      <div class="row col"><span>서스펜션</span>
+        <div class="seg" id="cfg-susp"><button data-v="air" class="on">에어</button><button data-v="coil">코일</button></div>
+      </div>
+      <div class="row col"><span>브레이크 부스터</span>
+        <div class="seg" id="cfg-booster"><button data-v="vacuum" class="on">진공식</button><button data-v="ibooster">전기식(iBooster)</button></div>
+      </div>
+    </section>
+    <section class="cfg hint">
+      <h4>조작</h4>
+      <ul>
+        <li>드래그: 회전 · 우클릭/두 손가락 드래그: 이동</li>
+        <li>휠/핀치: 확대·축소 (커서 위치 기준)</li>
+        <li>마우스오버: 대상 강조 · 클릭: 상세 정보</li>
+        <li>더블클릭: 해당 부품으로 카메라 이동</li>
+        <li>Esc: 선택 해제</li>
+      </ul>
+    </section>
+  </div>
+</aside>
+
+<aside id="info" class="panel" hidden></aside>
+
+<div id="toolbar" class="panel">
+  <div class="seg" id="views">
+    <button data-view="iso" title="기본 시점">ISO</button>
+    <button data-view="front" title="정면">앞</button>
+    <button data-view="rear" title="후면">뒤</button>
+    <button data-view="left" title="좌측(운전석)">좌</button>
+    <button data-view="right" title="우측">우</button>
+    <button data-view="top" title="위">위</button>
+    <button data-view="bottom" title="아래">아래</button>
+  </div>
+  <div class="seg">
+    <button id="btn-zoom-out" title="축소">−</button>
+    <button id="btn-zoom-in" title="확대">+</button>
+  </div>
+  <label class="tb-toggle" title="외판을 투명하게"><input type="checkbox" id="tb-xray" checked><span>X-ray</span></label>
+  <label class="tb-range" title="분해 보기"><span>분해</span><input type="range" id="tb-explode" min="0" max="100" value="0"></label>
+</div>
+
+<div id="legend-hint" class="hint-pill">부품에 마우스를 올려 보세요 · 클릭하면 카탈로그 정보가 열립니다</div>
+<div id="tooltip" hidden></div>
+<div id="lightbox" hidden><figure><img alt=""><figcaption></figcaption></figure></div>
+<div id="about" class="modal" hidden></div>
+<div id="loading"><div class="spinner"></div><div>3D 맵 생성 중…</div></div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
