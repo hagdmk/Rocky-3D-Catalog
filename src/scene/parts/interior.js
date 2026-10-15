@@ -91,6 +91,8 @@ export function buildInterior(reg) {
     object: group(
       rbox([0.035, 0.13, 0.33], [0.53, 0.87, -0.37], 'screen', { r: 0.008, rot: [0, 0, 0.2] }),
       rbox([0.09, 0.03, 0.36], [0.55, 0.95, -0.37], 'leather', { r: 0.012 }),
+      // mounting brackets from the cluster housing to the cross-car beam, either side of the column
+      ...[-0.48, -0.215].map((z, i) => named(`bracket${i}`, beam([0.552, 0.86, z], [0.716, 0.753, z], 0.008, 'steel'))),
     ),
   });
   reg.add({
@@ -239,14 +241,16 @@ export function buildInterior(reg) {
         bar([0.28, 0.33, z + 0.19], [-0.32, 0.33, z + 0.19], 0.04, 0.03, 'steel'),
         cyl(0.025, 0.12, 'z', [0.05, 0.37, z], 'darkMetal'),
         rbox([0.1, 0.04, 0.08], [-0.15, 0.37, z + sg * 0.1], 'blackPlastic', { r: 0.008 }),
+        // track feet bolted through the carpet to the floor pan (M10 / M8 bolts)
+        named('feet', group([0.25, -0.29].flatMap((x) => [-0.19, 0.19].map((dz) => box([0.05, 0.018, 0.04], [x, 0.303, z + dz], 'steel'))))),
       ),
     });
     reg.add({
       id: `front-seat-switch-${sd}`, ko: `앞좌석 조절 스위치 (${ko})`, en: `Front seat control switches ${en}`, tags: sd,
       groups: ['front-seat-control-switches'],
       object: group(
-        rbox([0.16, 0.05, 0.012], [SEAT.x + 0.05, 0.42, z + sg * 0.262], 'chrome', { r: 0.004 }),
-        disc(0.018, 0.012, 'z', [SEAT.x - 0.1, 0.44, z + sg * 0.262], 'chrome'),
+        rbox([0.16, 0.05, 0.012], [SEAT.x + 0.05, 0.42, z + sg * 0.256], 'chrome', { r: 0.004 }),
+        disc(0.018, 0.012, 'z', [SEAT.x - 0.1, 0.44, z + sg * 0.256], 'chrome'),
       ),
     });
     reg.add({
@@ -323,6 +327,7 @@ export function buildInterior(reg) {
       object: group(
         cyl(0.02, 0.2, 'x', [SEAT.x - 0.25, 0.36, sg * 0.66], 'darkMetal'),
         box([0.05, 0.03, 0.03], [SEAT.x - 0.36, 0.37, sg * 0.66], 'steel'),
+        named('anchor', box([0.04, 0.015, 0.14], [SEAT.x - 0.36, 0.352, sg * 0.71], 'steel')), // bolted to the sill inner face
       ),
     });
   }
@@ -351,19 +356,13 @@ export function buildInterior(reg) {
   reg.add({
     id: 'driver-airbag', ko: '운전석 에어백(스티어링 휠)', en: 'Driver airbag (steering wheel)', tags: 'L',
     groups: ['front-air-bags'], match: /DRIVER AIRBAG|DAB|STEERING CONTROL|CONNECTOR/,
-    object: group(
-      (() => {
-        const m = mesh(new THREE.CylinderGeometry(0.07, 0.074, 0.03, 28), 'leather');
-        const tilt = 0.44;
-        m.rotation.set(0, 0, Math.PI / 2 - tilt);
-        m.position.set(0.385, 0.865, -0.37);
-        return m;
-      })(),
-      // steering control switch harness (front airbags #2 = switches #1): from the module
-      // connector behind the cover out to the left and right spoke switches
-      ...[-1, 1].map((k) => named(`switchLead${k < 0 ? 'L' : 'R'}`, tube([[0.39, 0.862, -0.37 + k * 0.05], [0.38, 0.866, -0.37 + k * 0.075],
-        [0.372, 0.869, -0.37 + k * 0.09]], 0.004, 'blackPlastic'))),
-    ),
+    object: (() => {
+      const m = mesh(new THREE.CylinderGeometry(0.07, 0.074, 0.03, 28), 'leather');
+      const tilt = 0.44;
+      m.rotation.set(0, 0, Math.PI / 2 - tilt);
+      m.position.set(0.385, 0.865, -0.37);
+      return m;
+    })(),
   });
   reg.add({
     id: 'passenger-airbag', ko: '조수석 에어백', en: 'Passenger airbag', tags: 'R',
@@ -401,7 +400,7 @@ export function buildInterior(reg) {
     reg.add({
       id: `door-pressure-sensor-${sd}`, ko: `앞 도어 압력 센서 (${ko})`, en: `Front door pressure sensor ${en}`, tags: sd,
       groups: sensorGroups, match: /DOOR PRESSURE|PRESSURE SENSOR FASTENER/,
-      object: rbox([0.05, 0.04, 0.025], [0.25, 0.55, sg * 0.86], 'darkMetal', { r: 0.006 }),
+      object: rbox([0.05, 0.04, 0.025], skinAt(2.235, 1.15, sd, -0.04).toArray(), 'darkMetal', { r: 0.006 }), // on the door inner panel
     });
   }
   reg.add({

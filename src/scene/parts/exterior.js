@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { skinPatch, skinPoint } from '../body.js';
-import { skinMesh, group, cyl, faceTo } from '../geom.js';
+import { skinMesh, group, named, rbox, cyl, faceTo } from '../geom.js';
 import { skinAt, skinNormal } from '../body.js';
 
 const inRect = (s, v, r) => s >= r[0] && s <= r[1] && v >= r[2] && v <= r[3];
@@ -138,12 +138,15 @@ export function buildExterior(reg) {
     object: region([[0, 0.2, -1, 5]], { mat: 'blackPlastic', offset: 0.002, field: FRONT.nose, dv: FINE, edges: false }),
   });
   for (const [sd, en, ko] of sides) {
+    const sg = sd === 'L' ? -1 : 1;
     reg.add({
       id: `headlamp-${sd}`, ko: `헤드램프 (${ko})`, en: `Headlamp ${en}`, shell: true, tags: `${sd}F`,
       groups: ['headlamps'],
       object: group(
         region([HEADLAMP], { side: sd, mat: 'headlamp', offset: 0.002, field: FRONT.head, dv: FINE, edges: false }),
         ...[[0.16, 2.05], [0.27, 2.22]].map(([s, v]) => projector(s, v, sd)),
+        // lamp housing behind the lens, bolted to the fascia carrier side member (#3 M6x25)
+        named('housing', rbox([0.14, 0.12, 0.18], [2.17, 0.66, sg * 0.72], 'blackPlastic', { r: 0.02 })),
       ),
     });
     reg.add({
@@ -154,7 +157,10 @@ export function buildExterior(reg) {
     reg.add({
       id: `side-repeater-${sd}`, ko: `사이드 리피터 (${ko})`, en: `Side repeater ${en}`, shell: true, tags: `${sd}F`,
       groups: ['front-lights-excluding-headlamps'], match: /REPEATER/,
-      object: region([REPEATER], { side: sd, mat: 'lensAmber', offset: 0.004 }),
+      object: group(
+        region([REPEATER], { side: sd, mat: 'lensAmber', offset: 0.004 }),
+        named('housing', rbox([0.075, 0.05, 0.02], skinAt(1.245, 1.825, sd, -0.004).toArray(), 'blackPlastic', { r: 0.005 })), // clipped into the fender
+      ),
     });
   }
 
@@ -207,19 +213,24 @@ export function buildExterior(reg) {
 
   // --- Doors, body side, rocker -------------------------------------------
   for (const [sd, en, ko] of sides) {
+    // outer panel and inner panel (hinges, latch, glass regulator and door modules mount on it)
+    const door = (r) => group(
+      region([[r[0], r[1], SV.vRockerTop, SV.vBelt]], { side: sd }),
+      named('inner', region([[r[0] + 0.005, r[1] - 0.005, 0.35, 2.8]], { side: sd, offset: -0.04, edges: false })),
+    );
     reg.add({
       id: `door-${sd}F`, ko: `앞 도어 (${ko})`, en: `Front door ${en}`, shell: true, tags: `${sd}F`, match: /DOOR/,
       groups: ['closure-panels'],
-      object: region([[SV.frontDoor[0], SV.frontDoor[1], SV.vRockerTop, SV.vBelt]], { side: sd }),
+      object: door(SV.frontDoor),
     });
     reg.add({
       id: `door-${sd}B`, ko: `뒤 도어 (${ko})`, en: `Rear door ${en}`, shell: true, tags: `${sd}B`, match: /DOOR/,
       groups: ['closure-panels'],
-      object: region([[SV.rearDoor[0], SV.rearDoor[1], SV.vRockerTop, SV.vBelt]], { side: sd }),
+      object: door(SV.rearDoor),
     });
     reg.add({
       id: `body-side-${sd}`, ko: `보디 사이드 아우터 (${ko})`, en: `Body side outer ${en}`, shell: true, tags: sd,
-      groups: ['body-side-panels'],
+      groups: ['body-side-panels'], match: /^(?!.*(HINGE PILLAR|COWL SIDE|A \/ B PILLAR|SEAT BELT ATTACH|BODY IN WHITE))/, // inner sections: hinge-pillar, b-pillar, floor-pan
       object: region([
         [SV.fenderRear, SV.frontGlass[0], SV.vSill, SV.vFrameTop],
         [SV.fenderRear, 3.72, SV.vFrameTop, SV.vRoof],

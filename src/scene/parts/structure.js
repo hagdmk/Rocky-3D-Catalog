@@ -7,6 +7,7 @@ import {
 import {
   V, group, named, hollow, rbox, box, cyl, beam, bar, tube, mesh, quadPlate,
 } from '../geom.js';
+import { region } from './exterior.js';
 
 const SIDES = [
   { sd: 'L', sg: -1, ko: '좌', en: 'LH' },
@@ -64,6 +65,33 @@ export function buildStructure(reg) {
     });
   }
 
+  // --- Pillars and floor (body side panels) ------------------------------------------
+  // Inner closed sections behind the body side outer skin: the door hinges, strikers and
+  // seals sit on them.  Hinge pillar (#5, with the cowl side #6) from the sill up to the
+  // shotgun rail; B-pillar (A/B pillar comp #13, belt mount #12) on the sill between the doors.
+  for (const { sd, sg, ko, en } of SIDES) {
+    reg.add({
+      id: `hinge-pillar-${sd}`, ko: `힌지 필러·카울 사이드 (${ko})`, en: `Hinge pillar & cowl side ${en}`, tags: sd,
+      groups: ['body-side-panels'], match: /HINGE PILLAR|COWL SIDE/,
+      // closed section: the door harness and the roof drain run inside it
+      object: hollow(rbox([0.11, 0.626, 0.16], [0.93, 0.643, sg * 0.87], 'aluminum', { r: 0.015 })),
+    });
+    reg.add({
+      id: `b-pillar-${sd}`, ko: `B필러 (${ko})`, en: `B-pillar ${en}`, tags: sd,
+      groups: ['body-side-panels'], match: /A \/ B PILLAR|SEAT BELT ATTACH/,
+      object: group(
+        named('lower', hollow(rbox([0.07, 0.62, 0.042], [-0.24, 0.65, sg * 0.933], 'aluminum', { r: 0.008 }))), // closed section: belt and rear door harness inside
+        named('upper', region([[2.69, 2.76, 2.0, 3.75]], { side: sd, offset: -0.05, mat: 'aluminum', edges: false })),
+      ),
+    });
+  }
+  // Floor pan between the sills (part of the body in white): the seat tracks bolt to it.
+  reg.add({
+    id: 'floor-pan', ko: '플로어 팬(차체 바닥)', en: 'Floor pan (body floor)',
+    groups: ['body-side-panels'], match: /BODY IN WHITE/,
+    object: quadPlate([[0.72, 0.296, -0.8], [0.72, 0.296, 0.8], [-0.7, 0.296, 0.8], [-0.7, 0.296, -0.8]], 0.004, 'aluminum'),
+  });
+
   // --- Rear structure -------------------------------------------------------------
   for (const { sd, sg, ko, en } of SIDES) {
     reg.add({
@@ -85,6 +113,8 @@ export function buildStructure(reg) {
         named('tower', hollow(rbox([0.2, 0.32, 0.12], [XR - 0.06, 0.82, sg * 0.62], 'aluminum', { r: 0.02 }))),
         // C-pillar reinforcement: from the wheelhouse up behind the rear door opening to the roof rail
         named('cPillar', bar([XR + 0.02, 0.8, sg * 0.71], [-1.21, 1.19, sg * 0.653], 0.04, 0.03, 'aluminum')),
+        // lock pillar behind the rear door: carries the rear door striker
+        named('lockPillar', rbox([0.06, 0.38, 0.043], [-1.095, 0.81, sg * 0.9335], 'aluminum', { r: 0.008 })),
       ),
     });
   }
@@ -246,7 +276,7 @@ export function buildStructure(reg) {
   // --- NVH plugs and patches (spread over the floor pan) -------------------------------
   const plugs = [];
   for (const x of [0.6, 0.1, -0.4, -0.9]) {
-    for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.305, z], 'rubber', { seg: 14 }));
+    for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.3, z], 'rubber', { seg: 14 })); // in the floor pan
   }
   for (const { sg } of SIDES) {
     plugs.push(box([0.004, 0.06, 0.06], [0.45, 0.55, sg * 0.83], 'foam'));
