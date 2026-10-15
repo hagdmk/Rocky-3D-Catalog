@@ -273,13 +273,21 @@ export class Viewer {
     return f;
   }
 
+  /** Drawn as a normal part: shown, and not a faint ghost of a hidden system. */
+  isDrawn(id) {
+    const it = this.byId?.get(id);
+    return !!it && it.root.visible && !it.ghost;
+  }
+
   /** Recompute target opacity/emissive for every component (animated in tick). */
   applyState() {
     if (!this.items) return;
     const focus = this.focusSet();
-    const anyFocus = focus.size > 0;
+    // A selected part whose system was hidden (now hidden or a ghost) is not
+    // highlighted, so it must not dim the parts that are still shown.
+    const anyFocus = [...focus].some((id) => this.isDrawn(id));
     for (const it of this.items) {
-      const isFocus = focus.has(it.id) && !it.ghost;
+      const isFocus = focus.has(it.id) && it.root.visible && !it.ghost;
       const strong = this.selected.has(it.id) || this.emphasis.has(it.id);
       for (const m of it.materials) {
         let op = m.userData.baseOpacity;
@@ -310,7 +318,7 @@ export class Viewer {
       for (const mesh of it.meshes) mesh.renderOrder = order;
       for (const e of it.edges) e.renderOrder = order + 1;
     }
-    const objs = (ids) => [...ids].map((id) => this.byId.get(id)).filter((it) => it && it.root.visible && !it.ghost).map((it) => it.root);
+    const objs = (ids) => [...ids].filter((id) => this.isDrawn(id)).map((id) => this.byId.get(id).root);
     this.selOutline.selectedObjects = objs(new Set([...this.selected, ...this.emphasis]));
     const hov = new Set(this.preview);
     if (this.hovered) hov.add(this.hovered);
@@ -494,10 +502,7 @@ export class Viewer {
   /** Fly the camera to frame the given component ids. */
   frame(ids, animate = true) {
     const box = new THREE.Box3();
-    for (const id of ids) {
-      const it = this.byId.get(id);
-      if (it && it.root.visible && !it.ghost) box.expandByObject(it.root);
-    }
+    for (const id of ids) if (this.isDrawn(id)) box.expandByObject(this.byId.get(id).root);
     if (box.isEmpty()) return;
     const center = box.getCenter(new THREE.Vector3());
     const radius = Math.max(box.getSize(new THREE.Vector3()).length() / 2, 0.25);
