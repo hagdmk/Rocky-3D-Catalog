@@ -6,7 +6,7 @@ import { skinAt, skinPath, findOnFace } from '../body.js';
 import { region, SV } from './exterior.js';
 import { xOf } from '../profile.js';
 import {
-  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, faceTo, mesh, quadPlate,
+  V, group, named, rbox, box, cyl, beam, tube, pipe, faceTo, mesh, quadPlate,
 } from '../geom.js';
 
 const SIDES = [
@@ -78,15 +78,18 @@ export function buildClosures(reg) {
   for (const { sd, sg, ko, en } of SIDES) {
     for (const [fr, range, frKo, frEn] of [['F', SV.frontDoor, '앞', 'front'], ['B', SV.rearDoor, '뒤', 'rear']]) {
       const sm = (range[0] + range[1]) / 2;
+      const vTop = SV.vSill + 0.01;
+      // rail from the inner panel up along the outer skin (clear of the door harness) to the glass edge
+      const rail = (d0, d1) => pipe([[1.0, -0.036], [1.6, -0.019], [2.1, -0.017], [2.5, -0.017], [vTop, -0.012]]
+        .map(([v, o]) => skinAt(sm + d0 + (d1 - d0) * ((v - 1.0) / (vTop - 1.0)), v, sd, o)), 0.008, 'steel');
       reg.add({
         id: `regulator-${sd}${fr}`, ko: `${frKo} 도어 유리 레귤레이터 (${ko})`, en: `${frEn} door glass regulator ${en}`, tags: `${sd}${fr}`,
         groups: ['front-and-rear-door-glass-regulator'],
         // rails on the door inner panel, their carriers clamping the lower edge of the glass;
         // motor on the inboard face of the inner panel
         object: group(
-          ...[['railF', -0.12, -0.1], ['railR', 0.1, 0.07]].map(([n, d0, d1]) => named(n, pipe(
-            [[1.0, -0.036], [1.6, -0.019], [2.1, -0.017], [2.5, -0.017], [SV.vSill + 0.01, -0.012]]
-              .map(([v, o]) => skinAt(sm + d0 + ((d1 - d0) * (v - 1.0)) / 2.01, v, sd, o)), 0.008, 'steel'))),
+          named('railF', rail(-0.12, -0.1)),
+          named('railR', rail(0.1, 0.07)),
           named('motor', cyl(0.04, 0.03, 'z', skinAt(sm, 1.15, sd, -0.05).toArray(), 'darkMetal')),
         ),
       });
