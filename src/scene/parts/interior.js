@@ -62,20 +62,32 @@ export function buildInterior(reg) {
       box([0.004, 0.025, 0.07], [0.82, 0.94, -0.6], 'aluminum'),
     ),
   });
+  // Every duct starts on an outlet of the HVAC case (energy.js): the outer face-level ducts leave
+  // its top (the LH one climbs over the steering column, under the cluster), the centre ones its
+  // front face beside the touchscreen; the rear footwell ducts and the centre console duct leave its
+  // floor outlet and run along the tunnel, clear of the HVAC controller and the USB hub.
+  // (names set inline, as named() does, so the shared import list of this file stays as it is)
+  const duct = (name, pts, r) => Object.assign(tube(pts, r, 'blackPlastic', { tension: 0.2 }), { name });
   const vents = [];
-  for (const z of [-0.62, -0.13, 0.13, 0.62]) {
-    vents.push(rbox([0.03, 0.05, 0.16], [0.444, 0.79, z], 'blackPlastic', { r: 0.008 }));
+  for (const [z, name] of [[-0.62, 'ventL'], [-0.13, 'ventCL'], [0.13, 'ventCR'], [0.62, 'ventR']]) {
+    vents.push(Object.assign(rbox([0.03, 0.05, 0.16], [0.444, 0.79, z], 'blackPlastic', { r: 0.008 }), { name }));
   }
   reg.add({
     id: 'interior-ducts', ko: '실내 덕트·송풍구', en: 'Interior ducts & vents',
     groups: ['interior-ducting-and-vents'],
     object: group(
       vents,
-      tube([[0.62, 0.72, -0.15], [0.55, 0.8, -0.4], [0.47, 0.79, -0.62]], 0.03, 'blackPlastic'),
-      tube([[0.62, 0.72, 0.15], [0.55, 0.8, 0.4], [0.47, 0.79, 0.62]], 0.03, 'blackPlastic'),
-      tube([[0.58, 0.45, -0.1], [0.3, 0.33, -0.28], [-0.45, 0.32, -0.3], [-0.65, 0.33, -0.3]], 0.025, 'blackPlastic'),
-      tube([[0.58, 0.45, 0.1], [0.3, 0.33, 0.28], [-0.45, 0.32, 0.3], [-0.65, 0.33, 0.3]], 0.025, 'blackPlastic'),
-      tube([[0.5, 0.42, 0], [0.1, 0.36, 0], [-0.45, 0.4, 0]], 0.022, 'blackPlastic'),
+      duct('faceL', [[0.63, 0.745, -0.2], [0.63, 0.79, -0.2], [0.66, 0.82, -0.31], [0.66, 0.82, -0.44], [0.57, 0.77, -0.53],
+        [0.55, 0.77, -0.55], [0.455, 0.79, -0.62]], 0.03),
+      duct('faceR', [[0.63, 0.745, 0.2], [0.63, 0.79, 0.2], [0.475, 0.79, 0.62], [0.455, 0.79, 0.62]], 0.03),
+      duct('centreL', [[0.555, 0.72, -0.135], [0.5, 0.77, -0.135], [0.455, 0.79, -0.135]], 0.02),
+      duct('centreR', [[0.555, 0.72, 0.135], [0.5, 0.77, 0.135], [0.455, 0.79, 0.135]], 0.02),
+      duct('floorL', [[0.64, 0.455, -0.2], [0.64, 0.44, -0.2], [0.57, 0.4, -0.23], [0.3, 0.335, -0.28], [-0.45, 0.32, -0.3],
+        [-0.65, 0.33, -0.3]], 0.025),
+      duct('floorR', [[0.64, 0.455, 0.2], [0.59, 0.42, 0.21], [0.57, 0.4, 0.23], [0.3, 0.335, 0.28], [-0.45, 0.32, 0.3],
+        [-0.65, 0.33, 0.3]], 0.025),
+      duct('console', [[0.6, 0.455, 0.035], [0.6, 0.42, 0.035], [0.43, 0.37, 0.04], [-0.32, 0.42, 0.04], [-0.36, 0.45, 0.035],
+        [-0.393, 0.47, 0.035]], 0.022),
     ),
   });
   reg.add({
