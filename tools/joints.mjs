@@ -233,6 +233,13 @@ export const JOINTS = [
     J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE)'),
   ]),
   J('nvh-plugs', 'floor-pan', 'body plugs in the floor pan openings'),
+  ...each((s) => [
+    J(`rocker-${s}#brackets`, `sill-${s}`, 'rocker moulding brackets #7/#8 bolted to the sill (BLT HF M8x20 #11)'),
+    J(`b-pillar-applique-${s}`, `b-pillar-${s}#carriers`, 'B-pillar applique clipped on the body side carriers #10/#11'),
+  ]),
+  J('frunk-carpet', 'frunk', 'carpet lining laid in the frunk tub'),
+  ...each((s) => [J(`rear-undertray#mount${s}`, `rear-subframe#side${s}`, 'mid aero shield #1 bolted to the rear subframe (BLT HF M6x18 #8)')]),
+  J('rear-diffuser', 'rear-undertray', 'diffuser front edge screwed over the mid aero shield (SCR HEX HEAD M6x20 #7)'),
   J('trunk-floor#rearPanel', 'trunk-floor#floor', 'rear body panel #4 joined to the trunk floor #1'),
   J('trunk-floor#rearPanel', 'rear-bumper-beam#beam', 'rear body panel #4 lower edge on the bumper beam'),
   // cabin
@@ -268,6 +275,7 @@ export const JOINTS = [
     J(`wind-deflector#arm${s}`, 'pano-cassette', 'wind deflector arm pivot on the roof cassette frame'),
   ]),
   J('chmsl', 'liftgate', 'CHMSL #8 on the liftgate top edge, under the glass'),
+  ...each((s) => [J(`liftgate-hinge-${s}`, 'roof-panel', 'liftgate hinge bolted to the roof rear header')]),
   J('liftgate-spoiler', 'liftgate', 'spoiler bonded to the liftgate (ADHESIVE TAPE, PRIMER)'),
   J('license-plate-front', 'front-fascia', 'front plate bracket screwed to the fascia (SCR, RVT)'),
   J('labels-underhood', 'hood', 'emission / refrigerant / first responder labels on the hood underside'),
@@ -278,6 +286,14 @@ export const JOINTS = [
     J(`front-seat-switch-${s}`, `front-seat-${s}`, 'seat switch bezel on the cushion side shield'),
   ]),
   ...['bracket0', 'bracket1'].map((n) => J(`instrument-cluster#${n}`, 'dash-support-frame#beam', 'cluster bracket bolted to the cross-car beam')),
+  ...['bracket0', 'bracket1'].map((n) => J(`passenger-airbag#${n}`, 'dash-support-frame#beam', 'passenger airbag module bracket bolted to the cross-car beam (BOLT HF)')),
+  ...each((s) => [J(`knee-airbag-${s}#bracket`, 'dash-support-frame#beam', 'knee airbag bracket bolted to the cross-car beam')]),
+  J('restraint-controller', 'floor-pan', 'PSRCM bolted to the floor tunnel under the console'),
+  J('wall-connector#cable@end', 'charge-port-inlet', 'connector handle plugged into the charge port inlet'),
+  ...each((s) => [
+    J(`dash-support-frame#end${s}`, `hinge-pillar-${s}`, 'cross-car beam end bracket bolted to the hinge pillar'),
+    J(`dash-support-frame#brace${s}`, 'floor-pan#toeBoard', 'cross-car beam tunnel brace bolted to the floor'),
+  ]),
   // panoramic roof
   ...each((s) => [
     J(`pano-frame#drainF${s}@start`, 'pano-cassette', 'front drain tube on the cassette drain spout'),

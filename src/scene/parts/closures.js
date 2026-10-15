@@ -59,7 +59,7 @@ export function buildClosures(reg) {
       id: `liftgate-hinge-${sd}`, ko: `리프트게이트 힌지·스트럿 (${ko})`, en: `Liftgate hinge & strut ${en}`, tags: sd,
       groups: ['liftgate-hinges-and-fittings'], match: /HINGE|STRUT|BALL STUD|WEDGE|BUMPER|ANTI PINCH|push clip|SEALER|BLT|NUT/,
       object: group(
-        rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.04).toArray(), 'steel', { r: 0.008 }),
+        rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 }), // hinge on the roof rear header
         tube([skinAt(3.9, 4.05, sd, -0.05), skinAt(4.15, 3.6, sd, -0.08), skinAt(4.35, 3.0, sd, -0.1)], 0.012, 'steel'),
         tube([skinAt(3.35, 4.06, sd, -0.025), skinAt(4.0, 4.06, sd, -0.025), skinAt(4.5, 4.03, sd, -0.025)], 0.005, 'rubber'), // anti-pinch sensor
       ),

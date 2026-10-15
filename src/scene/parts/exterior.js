@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 import { skinPatch, skinPoint } from '../body.js';
-import { skinMesh, group, named, rbox, cyl, faceTo } from '../geom.js';
+import { skinMesh, group, named, rbox, box, cyl, faceTo } from '../geom.js';
 import { skinAt, skinNormal } from '../body.js';
 
 const inRect = (s, v, r) => s >= r[0] && s <= r[1] && v >= r[2] && v <= r[3];
@@ -230,7 +230,7 @@ export function buildExterior(reg) {
     });
     reg.add({
       id: `body-side-${sd}`, ko: `보디 사이드 아우터 (${ko})`, en: `Body side outer ${en}`, shell: true, tags: sd,
-      groups: ['body-side-panels'], match: /^(?!.*(HINGE PILLAR|COWL SIDE|A \/ B PILLAR|SEAT BELT ATTACH|BODY IN WHITE))/, // inner sections: hinge-pillar, b-pillar, floor-pan
+      groups: ['body-side-panels'], match: /^(?!.*(HINGE PILLAR|COWL SIDE|A \/ B PILLAR|SEAT BELT ATTACH|CARRIER, BODY SIDE B-PILLAR|BODY IN WHITE))/, // inner sections: hinge-pillar, b-pillar, floor-pan
       object: region([
         [SV.fenderRear, SV.frontGlass[0], SV.vSill, SV.vFrameTop],
         [SV.fenderRear, 3.72, SV.vFrameTop, SV.vRoof],
@@ -246,7 +246,11 @@ export function buildExterior(reg) {
     reg.add({
       id: `rocker-${sd}`, ko: `로커 패널 트림 (${ko})`, en: `Rocker panel trim ${en}`, shell: true, tags: sd,
       groups: ['rocker-panel-trim'],
-      object: region([[SV.rocker[0], SV.rocker[1], -0.35, SV.vRockerTop]], { side: sd, mat: 'paintDark' }),
+      object: group(
+        region([[SV.rocker[0], SV.rocker[1], -0.35, SV.vRockerTop]], { side: sd, mat: 'paintDark' }),
+        // moulding brackets (#7 front, #8 rear support) from the trim to the sill
+        named('brackets', group([0.75, 0, -0.75].map((x) => box([0.06, 0.04, 0.025], [x, 0.23, (sd === 'L' ? -1 : 1) * 0.9525], 'blackPlastic')))),
+      ),
     });
     reg.add({
       id: `belt-trim-${sd}`, ko: `벨트라인·윈도 크롬 몰딩 (${ko})`, en: `Bright belt & window moulding ${en}`, shell: true, tags: sd,

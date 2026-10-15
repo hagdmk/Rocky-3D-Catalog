@@ -2,7 +2,7 @@
 // consumables and owner information (kept in the glove box).
 
 import {
-  group, rbox, box, cyl, tube,
+  group, named, rbox, box, cyl, tube,
 } from '../geom.js';
 
 export function buildOffVehicle(reg) {
@@ -13,7 +13,9 @@ export function buildOffVehicle(reg) {
       cyl(0.03, 1.0, 'y', [-3.35, 0.5, -1.95], 'steel'),
       box([0.3, 0.02, 0.3], [-3.35, 0.01, -1.95], 'steel'),
       rbox([0.09, 0.38, 0.26], [-3.3, 1.08, -1.95], 'paint', { r: 0.04 }),
-      tube([[-3.27, 0.95, -1.9], [-3.1, 0.3, -1.75], [-2.8, 0.04, -1.5], [-2.4, 0.05, -1.25], [-2.15, 0.45, -1.02], [-2.08, 0.82, -0.92]], 0.012, 'rubber'),
+      // cable to the connector handle, plugged into the charge port inlet
+      named('cable', tube([[-3.27, 0.95, -1.9], [-3.1, 0.3, -1.75], [-2.8, 0.04, -1.5], [-2.4, 0.05, -1.25], [-2.15, 0.45, -1.02], [-2.08, 0.82, -0.92],
+        [-2.072, 0.828, -0.9]], 0.012, 'rubber')),
       rbox([0.34, 0.12, 0.24], [-2.75, 0.06, -1.05], 'blackPlastic', { r: 0.03 }),
       rbox([0.08, 0.05, 0.05], [-2.55, 0.025, -1.32], 'darkMetal', { r: 0.01 }),
       rbox([0.08, 0.05, 0.05], [-2.45, 0.025, -1.4], 'darkMetal', { r: 0.01 }),

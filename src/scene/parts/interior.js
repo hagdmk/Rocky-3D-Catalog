@@ -63,8 +63,11 @@ export function buildInterior(reg) {
     groups: ['dash-support-frame'],
     object: group(
       named('beam', cyl(0.03, 1.52, 'z', [0.72, 0.72, 0], 'steel')),
-      beam([0.72, 0.72, -0.1], [0.75, 0.32, -0.12], 0.016, 'steel'),
-      beam([0.72, 0.72, 0.1], [0.75, 0.32, 0.12], 0.016, 'steel'),
+      // tunnel braces down to the toe board
+      named('braceL', beam([0.72, 0.72, -0.1], [0.75, 0.31, -0.12], 0.016, 'steel')),
+      named('braceR', beam([0.72, 0.72, 0.1], [0.75, 0.31, 0.12], 0.016, 'steel')),
+      // end brackets bolted to the hinge pillars
+      ...SIDES.map(({ sd, sg }) => named(`end${sd}`, box([0.2, 0.04, 0.06], [0.79, 0.72, sg * 0.77], 'steel'))),
       box([0.06, 0.02, 0.1], [0.72, 0.68, 0.28], 'steel'),
       box([0.004, 0.025, 0.07], [0.82, 0.94, -0.6], 'aluminum'),
     ),
@@ -367,13 +370,27 @@ export function buildInterior(reg) {
   reg.add({
     id: 'passenger-airbag', ko: '조수석 에어백', en: 'Passenger airbag', tags: 'R',
     groups: ['front-air-bags'], match: /PASSENGER AIR BAG|BOLT HF|CLIP/,
-    object: rbox([0.2, 0.08, 0.3], [0.62, 0.89, 0.38], 'fabric', { r: 0.02 }),
+    object: group(
+      rbox([0.2, 0.08, 0.3], [0.62, 0.89, 0.38], 'fabric', { r: 0.02 }),
+      // module brackets bolted to the cross-car beam (BOLT HF)
+      ...[0.32, 0.46].map((z, i) => named(`bracket${i}`, beam([0.68, 0.86, z], [0.712, 0.75, z], 0.008, 'steel'))),
+    ),
   });
   for (const { sd, sg, ko, en } of SIDES) {
     reg.add({
       id: `knee-airbag-${sd}`, ko: `무릎 에어백 (${ko})`, en: `Knee airbag ${en}`, tags: sd,
       groups: ['front-air-bags'], match: /KNEE|KAB/,
-      object: rbox([0.08, 0.1, 0.36], [0.56, 0.5, sg * 0.37], 'fabric', { r: 0.015, rot: [0, 0, -0.6] }),
+      // on a bracket from the cross-car beam: LH under the steering column, outboard of the
+      // HVAC case; RH behind the glove box door, beside the blower
+      object: sd === 'L'
+        ? group(
+          rbox([0.08, 0.1, 0.24], [0.55, 0.5, -0.455], 'fabric', { r: 0.015, rot: [0, 0, -0.6] }),
+          named('bracket', beam([0.565, 0.54, -0.455], [0.705, 0.705, -0.455], 0.008, 'steel')),
+        )
+        : group(
+          rbox([0.045, 0.12, 0.26], [0.556, 0.58, 0.43], 'fabric', { r: 0.012 }),
+          named('bracket', beam([0.556, 0.63, 0.55], [0.705, 0.712, 0.55], 0.008, 'steel')),
+        ),
     });
     const pts = [];
     for (let s = 1.75; s <= 3.72; s += 0.18) pts.push(skinAt(s, 3.9, sd, -0.06));
@@ -406,7 +423,7 @@ export function buildInterior(reg) {
   reg.add({
     id: 'restraint-controller', ko: '에어백 제어 모듈(PSRCM)', en: 'Restraint control module (PSRCM)',
     groups: ['impact-and-acceleration-sensors-na'], match: /PSRCM|RCM/,
-    object: rbox([0.14, 0.05, 0.1], [0.05, 0.47, 0], 'darkMetal', { r: 0.008 }),
+    object: rbox([0.14, 0.05, 0.1], [0.05, 0.323, -0.075], 'darkMetal', { r: 0.008 }), // on the floor tunnel under the console
   });
   reg.add({
     id: 'pedestrian-protection', ko: '보행자 보호 센서·후드 액추에이터(EU/APAC)', en: 'Pedestrian protection sensors & hood actuators (EU/APAC)',

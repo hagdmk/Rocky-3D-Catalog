@@ -5,8 +5,9 @@ import {
   X_FRONT_AXLE as XF, X_REAR_AXLE as XR, WHEEL_Y as WY, ARCH_RADIUS, topY, sOf,
 } from '../profile.js';
 import {
-  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, mesh, quadPlate,
+  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, mesh, quadPlate, faceTo,
 } from '../geom.js';
+import { skinAt, skinNormal } from '../body.js';
 import { region } from './exterior.js';
 
 const SIDES = [
@@ -78,10 +79,16 @@ export function buildStructure(reg) {
     });
     reg.add({
       id: `b-pillar-${sd}`, ko: `B필러 (${ko})`, en: `B-pillar ${en}`, tags: sd,
-      groups: ['body-side-panels'], match: /A \/ B PILLAR|SEAT BELT ATTACH/,
+      groups: ['body-side-panels'], match: /A \/ B PILLAR|SEAT BELT ATTACH|CARRIER, BODY SIDE B-PILLAR/,
       object: group(
         named('lower', hollow(rbox([0.07, 0.62, 0.042], [-0.24, 0.65, sg * 0.933], 'aluminum', { r: 0.008 }))), // closed section: belt and rear door harness inside
         named('upper', region([[2.69, 2.76, 2.0, 3.75]], { side: sd, offset: -0.05, mat: 'aluminum', edges: false })),
+        // applique carriers (#10 front upper, #11 rear upper), between the two door seals
+        named('carriers', group([3.2, 3.5].map((v) => {
+          const n = skinNormal(2.728, v);
+          if (sd === 'R') n.z = -n.z;
+          return faceTo(rbox([0.012, 0.05, 0.05], [0, 0, 0], 'blackPlastic', { r: 0.004 }), skinAt(2.728, v, sd, -0.0245), n, 'z');
+        }))),
       ),
     });
   }
@@ -89,7 +96,10 @@ export function buildStructure(reg) {
   reg.add({
     id: 'floor-pan', ko: '플로어 팬(차체 바닥)', en: 'Floor pan (body floor)',
     groups: ['body-side-panels'], match: /BODY IN WHITE/,
-    object: quadPlate([[0.72, 0.296, -0.8], [0.72, 0.296, 0.8], [-0.7, 0.296, 0.8], [-0.7, 0.296, -0.8]], 0.004, 'aluminum'),
+    object: group(
+      quadPlate([[0.72, 0.296, -0.8], [0.72, 0.296, 0.8], [-0.7, 0.296, 0.8], [-0.7, 0.296, -0.8]], 0.004, 'aluminum'),
+      named('toeBoard', quadPlate([[0.97, 0.41, -0.8], [0.97, 0.41, 0.8], [0.72, 0.296, 0.8], [0.72, 0.296, -0.8]], 0.004, 'aluminum')),
+    ),
   });
 
   // --- Rear structure -------------------------------------------------------------
@@ -191,7 +201,7 @@ export function buildStructure(reg) {
     id: 'rear-diffuser', ko: '리어 디퓨저·에어 익스트랙터', en: 'Rear diffuser & air extractors',
     groups: ['rear-bumper-fascia'], match: /DIFFUSER|AIR EXTRACTOR|APPLIQUE|TRIM/,
     object: group(
-      quadPlate([[-2.12, 0.205, -0.6], [-2.12, 0.205, 0.6], [-2.44, 0.33, 0.6], [-2.44, 0.33, -0.6]], 0.008, 'blackPlastic'),
+      quadPlate([[-2.09, 0.205, -0.6], [-2.09, 0.205, 0.6], [-2.44, 0.33, 0.6], [-2.44, 0.33, -0.6]], 0.008, 'blackPlastic'), // front edge over the mid aero shield
       ...[-0.42, -0.14, 0.14, 0.42].map((z) => quadPlate([[-2.14, 0.21, z], [-2.42, 0.33, z], [-2.42, 0.26, z], [-2.14, 0.17, z]], 0.006, 'blackPlastic')),
     ),
   });
@@ -208,6 +218,8 @@ export function buildStructure(reg) {
     object: group(
       quadPlate([[-1.18, 0.165, -0.66], [-1.18, 0.165, 0.66], [-2.1, 0.2, 0.62], [-2.1, 0.2, -0.62]], 0.008, 'blackPlastic'),
       ...[-0.56, -0.3, 0.3, 0.56].map((z) => quadPlate([[-1.6, 0.17, z], [-2.08, 0.2, z], [-2.08, 0.14, z], [-1.7, 0.155, z]], 0.006, 'blackPlastic')),
+      // stand-off brackets up to the rear subframe side members (#8 BLT HF M6x18)
+      ...SIDES.map(({ sd, sg }) => named(`mount${sd}`, box([0.04, 0.052, 0.04], [-1.72, 0.21, sg * 0.42], 'blackPlastic'))),
     ),
   });
   for (const { sd, sg, ko, en } of SIDES) {
@@ -247,9 +259,9 @@ export function buildStructure(reg) {
     id: 'frunk-carpet', ko: '프렁크 카펫 라이닝', en: 'Frunk carpet lining',
     groups: ['front-luggage-storage-compartment-carpet-lining'],
     object: group(
-      quadPlate([[fx0 - 0.02, fy + 0.012, -fz + 0.02], [fx0 - 0.02, fy + 0.012, fz - 0.02], [fx1 + 0.02, fy + 0.012, fz - 0.02], [fx1 + 0.02, fy + 0.012, -fz + 0.02]], 0.01, 'carpet'),
-      quadPlate([[fx0 - 0.02, fy + 0.02, -fz + 0.012], [fx0 - 0.02, top0 - 0.02, -fz + 0.012], [fx1 + 0.02, top1 - 0.02, -fz + 0.012], [fx1 + 0.02, fy + 0.02, -fz + 0.012]], 0.008, 'carpet'),
-      quadPlate([[fx0 - 0.02, fy + 0.02, fz - 0.012], [fx0 - 0.02, top0 - 0.02, fz - 0.012], [fx1 + 0.02, top1 - 0.02, fz - 0.012], [fx1 + 0.02, fy + 0.02, fz - 0.012]], 0.008, 'carpet'),
+      quadPlate([[fx0 - 0.02, fy + 0.008, -fz + 0.02], [fx0 - 0.02, fy + 0.008, fz - 0.02], [fx1 + 0.02, fy + 0.008, fz - 0.02], [fx1 + 0.02, fy + 0.008, -fz + 0.02]], 0.01, 'carpet'),
+      quadPlate([[fx0 - 0.02, fy + 0.02, -fz + 0.008], [fx0 - 0.02, top0 - 0.02, -fz + 0.008], [fx1 + 0.02, top1 - 0.02, -fz + 0.008], [fx1 + 0.02, fy + 0.02, -fz + 0.008]], 0.008, 'carpet'),
+      quadPlate([[fx0 - 0.02, fy + 0.02, fz - 0.008], [fx0 - 0.02, top0 - 0.02, fz - 0.008], [fx1 + 0.02, top1 - 0.02, fz - 0.008], [fx1 + 0.02, fy + 0.02, fz - 0.008]], 0.008, 'carpet'),
     ),
   });
 
