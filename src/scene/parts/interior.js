@@ -186,7 +186,11 @@ export function buildInterior(reg) {
     reg.add({
       id: `trunk-side-trim-${sd}`, ko: `트렁크 사이드 트림 (${ko})`, en: `Trunk side finisher ${en}`, tags: sd,
       groups: ['trunk-carpet-and-side-finishers'], match: /SIDE TRIM|BRKT|COVER,STRUT|COVER, STRUT|CHARGE PORT COVER/,
-      object: region([[3.95, 4.5, 1.25, 2.95]], { side: sd, offset: -0.11, mat: 'carpet', edges: false }),
+      object: group(
+        named('panel', region([[3.95, 4.5, 1.25, 2.95]], { side: sd, offset: -0.11, mat: 'carpet', edges: false })),
+        // trunk bracket #6 (LH) / #7 (RH): stands on the wheelhouse and carries the finisher's lower edge
+        named('bracket', bar([-1.838, 0.676, sg * 0.864], [-1.765, 0.614, sg * 0.864], 0.025, 0.04, 'steel')),
+      ),
     });
     reg.add({
       id: `trunk-c-pillar-trim-${sd}`, ko: `트렁크 C필러 리어 트림 (${ko})`, en: `Trunk C-pillar rear trim ${en}`, tags: sd,

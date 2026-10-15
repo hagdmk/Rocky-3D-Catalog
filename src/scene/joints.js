@@ -347,6 +347,10 @@ export const JOINTS = [
   ]),
   J('chmsl', 'liftgate', 'CHMSL #8 on the liftgate top edge, under the glass'),
   ...each((s) => [J(`liftgate-hinge-${s}`, 'roof-panel', 'liftgate hinge bolted to the roof rear header')]),
+  ...each((s) => [
+    J(`trunk-side-trim-${s}#bracket`, `rear-quarter-inner-${s}`, 'trunk bracket #6 LH / #7 RH screwed to the wheelhouse'),
+    J(`trunk-side-trim-${s}#bracket`, `trunk-side-trim-${s}#panel`, 'finisher lower edge clipped on the trunk bracket'),
+  ]),
   J('liftgate-spoiler', 'liftgate', 'spoiler bonded to the liftgate (ADHESIVE TAPE, PRIMER)'),
   J('license-plate-front', 'front-fascia', 'front plate bracket screwed to the fascia (SCR, RVT)'),
   J('labels-underhood', 'hood', 'emission / refrigerant / first responder labels on the hood underside'),
