@@ -15,7 +15,12 @@ export function meshesOf(obj) {
 // reads as touching it.  Open cylinders and plates are surface only.
 function solidOf(m) {
   const s = solidShape(m);
-  if (s) s.hollow = !!m.userData.hollow;
+  if (s) {
+    s.hollow = !!m.userData.hollow;
+    s.mesh = m;
+    const sc = new THREE.Vector3().setFromMatrixScale(m.matrixWorld);
+    s.scale = Math.min(Math.abs(sc.x), Math.abs(sc.y), Math.abs(sc.z));
+  }
   return s;
 }
 
@@ -107,6 +112,57 @@ export function insideShape(shape, x, y, z, { skipHollow = false } = {}) {
   return false;
 }
 
+function polyEdgeDist(poly, x, y) {
+  let best = Infinity;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [ax, ay] = poly[j];
+    const [bx, by] = poly[i];
+    const ex = bx - ax; const ey = by - ay;
+    const L = ex * ex + ey * ey;
+    let t = L > 0 ? ((x - ax) * ex + (y - ay) * ey) / L : 0;
+    t = t < 0 ? 0 : t > 1 ? 1 : t;
+    best = Math.min(best, Math.hypot(x - ax - t * ex, y - ay - t * ey));
+  }
+  return best;
+}
+
+/** How deep (m) a point lies inside a solid: distance to its surface, or -1 when outside. */
+export function insideDepth(s, x, y, z) {
+  if (!insideSolid(s, x, y, z)) return -1;
+  _v.set(x, y, z).applyMatrix4(s.inv);
+  const { x: lx, y: ly, z: lz } = _v;
+  let d;
+  switch (s.kind) {
+    case 'box': d = Math.min(s.hx - Math.abs(lx), s.hy - Math.abs(ly), s.hz - Math.abs(lz)); break;
+    case 'cyl': {
+      const r = s.rb + ((s.rt - s.rb) * (ly + s.h / 2)) / s.h;
+      d = Math.min(s.h / 2 - Math.abs(ly), r - Math.hypot(lx, lz));
+      break;
+    }
+    case 'sphere': d = s.r - Math.hypot(lx, ly, lz); break;
+    case 'torus': d = s.r - Math.hypot(Math.hypot(lx, ly) - s.R, lz); break;
+    case 'lathe': d = polyEdgeDist(s.poly, Math.hypot(lx, lz), ly); break;
+    case 'extrude': d = Math.min(s.hd - Math.abs(lz), polyEdgeDist(s.poly, lx, ly)); break;
+    case 'tube': {
+      let best = Infinity;
+      const P = s.pts;
+      for (let i = 0; i < P.length - 1; i++) {
+        const a = P[i]; const b = P[i + 1];
+        const abx = b.x - a.x; const aby = b.y - a.y; const abz = b.z - a.z;
+        const apx = lx - a.x; const apy = ly - a.y; const apz = lz - a.z;
+        const L = abx * abx + aby * aby + abz * abz;
+        let t = L > 0 ? (apx * abx + apy * aby + apz * abz) / L : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        best = Math.min(best, Math.hypot(apx - t * abx, apy - t * aby, apz - t * abz));
+      }
+      d = s.r - best;
+      break;
+    }
+    default: return -1;
+  }
+  return Math.max(0, d) * (s.scale || 1);
+}
+
 // ---------------------------------------------------------------- shapes
 /** World triangle soup + solids of a set of meshes. */
 export function shapeOf(name, meshes) {
@@ -119,7 +175,9 @@ export function shapeOf(name, meshes) {
   const TB = new Float64Array(nt * 6);
   let k = 0;
   const a = new THREE.Vector3();
+  const ranges = [];
   for (const m of meshes) {
+    const t0 = k;
     const g = m.geometry;
     const pos = g.attributes.position;
     const idx = g.index;
@@ -137,30 +195,63 @@ export function shapeOf(name, meshes) {
       TB[k * 6 + 3] = mxx; TB[k * 6 + 4] = mxy; TB[k * 6 + 5] = mxz;
       k++;
     }
+    ranges.push({ mesh: m, t0, t1: k });
   }
   const box = new THREE.Box3();
   for (const m of meshes) box.union(new THREE.Box3().setFromObject(m));
   const solids = meshes.map(solidOf).filter(Boolean);
-  return { name, meshes, T, TB, nt: k, box, solids };
+  return { name, meshes, T, TB, nt: k, box, solids, ranges };
+}
+
+/** Clip a triangle (9 numbers) to an axis-aligned box: a convex polygon as [x, y, z] points. */
+function clipTri(T, o, box) {
+  let poly = [[T[o], T[o + 1], T[o + 2]], [T[o + 3], T[o + 4], T[o + 5]], [T[o + 6], T[o + 7], T[o + 8]]];
+  const lim = [[0, box.min.x, 1], [0, box.max.x, -1], [1, box.min.y, 1], [1, box.max.y, -1], [2, box.min.z, 1], [2, box.max.z, -1]];
+  for (const [ax, v, sg] of lim) {
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const P = poly[i];
+      const Q = poly[(i + 1) % poly.length];
+      const dp = (P[ax] - v) * sg;
+      const dq = (Q[ax] - v) * sg;
+      if (dp >= 0) out.push(P);
+      if ((dp >= 0) !== (dq >= 0)) {
+        const t = dp / (dp - dq);
+        out.push([P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1]), P[2] + t * (Q[2] - P[2])]);
+      }
+    }
+    poly = out;
+    if (poly.length < 3) return null;
+  }
+  return poly;
 }
 
 /** Part of a shape near a point: triangles and solids clipped to a cube of half-size h. */
 export function regionShape(shape, p, h) {
   const clip = new THREE.Box3(new THREE.Vector3(p.x - h, p.y - h, p.z - h), new THREE.Vector3(p.x + h, p.y + h, p.z + h));
-  const keep = [];
+  const tris = [];
   const { TB } = shape;
   for (let t = 0; t < shape.nt; t++) {
     const o = t * 6;
     if (TB[o] > clip.max.x || TB[o + 3] < clip.min.x || TB[o + 1] > clip.max.y || TB[o + 4] < clip.min.y
       || TB[o + 2] > clip.max.z || TB[o + 5] < clip.min.z) continue;
-    keep.push(t);
+    const poly = clipTri(shape.T, t * 9, clip);
+    if (!poly) continue;
+    for (let i = 1; i < poly.length - 1; i++) tris.push(poly[0], poly[i], poly[i + 1]);
   }
-  const T = new Float64Array(keep.length * 9);
-  const TB2 = new Float64Array(keep.length * 6);
-  keep.forEach((t, i) => { T.set(shape.T.subarray(t * 9, t * 9 + 9), i * 9); TB2.set(TB.subarray(t * 6, t * 6 + 6), i * 6); });
+  const n = tris.length / 3;
+  const T = new Float64Array(n * 9);
+  const TB2 = new Float64Array(n * 6);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < 3; j++) T.set(tris[i * 3 + j], i * 9 + j * 3);
+    for (let a = 0; a < 3; a++) {
+      TB2[i * 6 + a] = Math.min(T[i * 9 + a], T[i * 9 + 3 + a], T[i * 9 + 6 + a]);
+      TB2[i * 6 + 3 + a] = Math.max(T[i * 9 + a], T[i * 9 + 3 + a], T[i * 9 + 6 + a]);
+    }
+  }
   const box = shape.box.clone().intersect(clip);
   const solids = shape.solids.map((s) => ({ ...s, clip }));
-  return { name: `${shape.name}@region`, T, TB: TB2, nt: keep.length, box, solids };
+  return { name: `${shape.name}@region`, T, TB: TB2, nt: n, box, solids, ranges: [] };
 }
 
 export function boxGap(b1, b2) {
@@ -171,10 +262,10 @@ export function boxGap(b1, b2) {
 }
 
 /** Points on the triangles of a shape that meet `region`, about `s` apart. */
-function sample(shape, region, s) {
+export function sample(shape, region, s, t0 = 0, t1 = shape.nt) {
   const out = [];
   const { T, TB } = shape;
-  for (let t = 0; t < shape.nt; t++) {
+  for (let t = t0; t < t1; t++) {
     const o = t * 6;
     if (TB[o] > region.max.x || TB[o + 3] < region.min.x || TB[o + 1] > region.max.y || TB[o + 4] < region.min.y
       || TB[o + 2] > region.max.z || TB[o + 5] < region.min.z) continue;
@@ -304,9 +395,9 @@ function closestOnTri(px, py, pz, T, o, out) {
 }
 
 /** Distance from a point to a shape's surface; 0 if the point is inside one of its solids. */
-export function pointToShape(p, shape) {
+export function pointToShape(p, shape, { hollowSurface = false } = {}) {
   const [px, py, pz] = p;
-  if (insideShape(shape, px, py, pz)) return { d: 0, q: [px, py, pz], inside: true };
+  if (insideShape(shape, px, py, pz, { skipHollow: hollowSurface })) return { d: 0, q: [px, py, pz], inside: true };
   let best = Infinity;
   const q = [0, 0, 0];
   const tmp = [0, 0, 0];
@@ -324,8 +415,9 @@ export function pointToShape(p, shape) {
   return { d: best, q, inside: false };
 }
 
-function anyInside(P, shape) {
+function anyInside(P, shape, hollowSurface = false) {
   for (const s of shape.solids) {
+    if (hollowSurface && s.hollow) continue;
     for (let i = 0; i < P.length; i += 3) {
       if (insideSolid(s, P[i], P[i + 1], P[i + 2])) return [P[i], P[i + 1], P[i + 2]];
     }
@@ -339,9 +431,11 @@ const expand = (box, e) => box.clone().expandByScalar(e);
  * Minimum surface distance between two shapes in metres: {d, pa, pb, overlap}.
  * d = 0 when the surfaces cross or one shape lies inside a solid of the other.
  * Coarse 12 mm sampling, a 2.5 mm pass near the closest pair, then an exact
- * point-to-triangle refinement.
+ * point-to-triangle refinement.  With hollowSurface, a hollow placeholder
+ * (hollow()) counts by its shell only: a part must reach that shell.
  */
-export function shapeDist(A, B, { fine = 0.0025, coarse = 0.012, fineLimit = 0.09 } = {}) {
+export function shapeDist(A, B, { fine = 0.0025, coarse = 0.012, fineLimit = 0.09, hollowSurface = false } = {}) {
+  const hs = hollowSurface;
   if (!A.nt || !B.nt) return { d: Infinity, overlap: false };
   let e = boxGap(A.box, B.box) + 0.05;
   let res = null;
@@ -349,7 +443,7 @@ export function shapeDist(A, B, { fine = 0.0025, coarse = 0.012, fineLimit = 0.0
     const PA = sample(A, expand(B.box, e), coarse);
     const PB = sample(B, expand(A.box, e), coarse);
     if (PA.length && PB.length) {
-      const ins = anyInside(PA, B) || anyInside(PB, A);
+      const ins = anyInside(PA, B, hs) || anyInside(PB, A, hs);
       if (ins) return { d: 0, pa: ins, pb: ins, overlap: true };
       res = nearestPair(PA, PB);
       if (res && res.d <= e) break;
@@ -357,19 +451,39 @@ export function shapeDist(A, B, { fine = 0.0025, coarse = 0.012, fineLimit = 0.0
     e = Math.max(e * 2, (res ? res.d : 0) + 0.05);
   }
   if (!res) return { d: Infinity, overlap: false };
-  if (res.d > fineLimit) return { d: refine(res, A, B), pa: res.pa, pb: res.pb, overlap: false };
+  if (res.d > fineLimit) return { d: refine(res, A, B, hs), pa: res.pa, pb: res.pb, overlap: false };
   const m = res.d + 2 * coarse + 0.01;
   const PA = sample(A, expand(B.box, m), fine);
   const PB = sample(B, expand(A.box, m), fine);
-  const ins = anyInside(PA, B) || anyInside(PB, A);
+  const ins = anyInside(PA, B, hs) || anyInside(PB, A, hs);
   if (ins) return { d: 0, pa: ins, pb: ins, overlap: true };
   const r2 = nearestPair(PA, PB) || res;
-  const d = refine(r2, A, B);
+  const d = refine(r2, A, B, hs);
   return { d, pa: r2.pa, pb: r2.pb, overlap: d < 0.0015 };
 }
 
-function refine(r, A, B) {
-  return Math.min(r.d, pointToShape(r.pa, B).d, pointToShape(r.pb, A).d);
+function refine(r, A, B, hollowSurface) {
+  return Math.min(r.d, pointToShape(r.pa, B, { hollowSurface }).d, pointToShape(r.pb, A, { hollowSurface }).d);
+}
+
+/** Does segment p-q cross triangle o of T?  (Moller-Trumbore, t in [0, 1]) */
+export function segmentHitsTri(p, q, T, o) {
+  const ax = T[o]; const ay = T[o + 1]; const az = T[o + 2];
+  const e1x = T[o + 3] - ax; const e1y = T[o + 4] - ay; const e1z = T[o + 5] - az;
+  const e2x = T[o + 6] - ax; const e2y = T[o + 7] - ay; const e2z = T[o + 8] - az;
+  const dx = q.x - p.x; const dy = q.y - p.y; const dz = q.z - p.z;
+  const hx = dy * e2z - dz * e2y; const hy = dz * e2x - dx * e2z; const hz = dx * e2y - dy * e2x;
+  const det = e1x * hx + e1y * hy + e1z * hz;
+  if (Math.abs(det) < 1e-12) return false;
+  const f = 1 / det;
+  const sx = p.x - ax; const sy = p.y - ay; const sz = p.z - az;
+  const u = f * (sx * hx + sy * hy + sz * hz);
+  if (u < 0 || u > 1) return false;
+  const qx = sy * e1z - sz * e1y; const qy = sz * e1x - sx * e1z; const qz = sx * e1y - sy * e1x;
+  const v = f * (dx * qx + dy * qy + dz * qz);
+  if (v < 0 || u + v > 1) return false;
+  const t = f * (e2x * qx + e2y * qy + e2z * qz);
+  return t >= 0 && t <= 1;
 }
 
 // ---------------------------------------------------------------- linear members

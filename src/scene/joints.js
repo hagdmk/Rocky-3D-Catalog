@@ -243,7 +243,7 @@ export const JOINTS = [
     J(`horn-${s}#bracket`, 'front-bumper-beam', 'horn bracket bolted (BLT M6x20 #3) under the energy absorber crush can'),
     J(`horn-${s}#bracket`, `horn-${s}#horn`, 'horn on its integral bracket'),
   ]),
-  J('radar#bracket', 'radar#radar', 'Sub-Asm of Forward Radar Brackets (#2) on the radar'),
+  J('radar#bracket', 'radar#sensor', 'Sub-Asm of Forward Radar Brackets (#2) on the radar'),
   J('radar#bracket', 'cooling-duct', 'BRKT, RADAR STRUCTURE (radar #3 = ducting #1) on the front ducting'),
   J('switches#scrollL', 'steering-wheel#wheel', 'steering control switch (#1) clipped into the LH spoke'),
   J('switches#scrollR', 'steering-wheel#wheel', 'steering control switch (#1) clipped into the RH spoke'),

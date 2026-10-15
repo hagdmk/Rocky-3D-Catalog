@@ -252,7 +252,7 @@ export function buildElectrical(reg) {
       // ducting: a tab on the inboard face of the radar and a strap back to the lower duct, clear of
       // the ankle catcher and the RH active louvre
       object: group(
-        named('radar', radar),
+        named('sensor', radar),
         named('bracket', group(
           box([0.02, 0.07, 0.035], [2.385, 0.335, 0.1625], 'steel'),
           bar([2.385, 0.305, 0.155], [2.306, 0.252, 0.155], 0.006, 0.016, 'steel'),
