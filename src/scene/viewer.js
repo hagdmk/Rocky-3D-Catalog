@@ -37,7 +37,7 @@ export class Viewer {
     this.explode = 0;
     this.hiddenSystems = new Set();
     this.variant = { drive: 'dm', susp: 'air' };
-    this.mounts = new Map(); // component id -> ids of the parts it is fastened to (tools/joints.mjs)
+    this.mounts = new Map(); // component id -> ids of the parts it is fastened to (src/scene/joints.js)
     this.mountContext = true; // show hidden mounting partners of visible parts as faint ghosts
     this.needsRender = true;
     this.inset = { tx: 0, ty: 0, x: 0, y: 0 };

@@ -2,7 +2,7 @@ import { Viewer } from './scene/viewer.js';
 import { buildScene } from './scene/build.js';
 import { Catalog } from './catalog.js';
 import { App } from './ui/app.js';
-import { JOINTS } from '../tools/joints.mjs';
+import { JOINTS } from './scene/joints.js';
 
 async function main() {
   const res = await fetch('data/catalog.json');

@@ -4,7 +4,7 @@
 // * every catalog group has at least one 3D location and vice versa,
 // * every component has geometry inside the scene bounds,
 // * every component's `match` rule selects at least one part row,
-// * joints: parts fastened together touch in every vehicle configuration (tools/joints.mjs),
+// * joints: parts fastened together touch in every vehicle configuration (src/scene/joints.js),
 // * shared parts: a non-fastener part number listed in two groups resolves to
 //   the same component in both, or to components that touch,
 // * pass-through: beams, bars and tubes do not run through other parts.
@@ -16,7 +16,7 @@ const THREE = await import('three');
 const { buildScene } = await import('../src/scene/build.js');
 const { Catalog } = await import('../src/catalog.js');
 const M = await import('./measure.mjs');
-const { JOINTS, PASS_OK, SHARED_OK } = await import('./joints.mjs');
+const { JOINTS, PASS_OK, SHARED_OK } = await import('../src/scene/joints.js');
 
 const args = process.argv.slice(2);
 const only = (args.find((a) => a.startsWith('--only=')) || '').slice(7).split(',').filter(Boolean);

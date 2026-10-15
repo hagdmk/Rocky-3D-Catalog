@@ -21,7 +21,7 @@ export function group(...children) {
   return g;
 }
 
-/** Name a mesh or group so tools/joints.mjs can refer to it as `componentId#name`. */
+/** Name a mesh or group so src/scene/joints.js can refer to it as `componentId#name`. */
 export function named(name, obj) {
   obj.name = name;
   return obj;

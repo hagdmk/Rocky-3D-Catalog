@@ -1,4 +1,5 @@
-// Declarative connectivity rules for tools/check.mjs.
+// Declarative connectivity rules: checked by tools/check.mjs, and used by the viewer to
+// draw the hidden mounting partners of visible parts.
 //
 // Part references:
 //   'componentId'                 the whole component

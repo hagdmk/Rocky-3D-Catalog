@@ -202,8 +202,8 @@ export function buildElectrical(reg) {
     id: 'roof-harness', ko: '파노라믹 루프·헤드라이닝 하네스', en: 'Panoramic roof & headlining harness',
     groups: ['panoramic-roof-and-head-lining-harness'],
     object: group(
-      named('header', pipe([[0.875, 0.83, -0.84], skinAt(1.62, 4.02, 'L', -0.015), skinAt(1.9, 4.02, 'L', -0.015),
-        skinAt(2.2, 4.02, 'L', -0.015), skinAt(2.34, 4.0, 'L', -0.016), [0.03, 1.366, -0.56], [0.03, 1.366, -0.16],
+      named('header', pipe([[0.875, 0.83, -0.84], skinAt(1.62, 4.02, 'L', -0.035), skinAt(1.9, 4.02, 'L', -0.035),
+        skinAt(2.2, 4.02, 'L', -0.035), skinAt(2.34, 4.0, 'L', -0.035), [0.03, 1.366, -0.56], [0.03, 1.366, -0.16],
         skinAt(2.6, 4.75, 'L', -0.026), skinAt(3.0, 4.75, 'L', -0.028), skinAt(3.2, 4.75, 'L', -0.045),
         skinAt(3.3, 4.755, 'L', -0.045)], 0.008, 'wire', { bend: 0.05 })),
       named('consoleLead', tube([[0.03, 1.366, -0.2], [0.045, 1.37, -0.14], [0.065, 1.373, -0.1]], 0.006, 'wire')),
@@ -413,7 +413,7 @@ export function buildInfotainment(reg) {
     reg.add({
       id: `speaker-door-${sd}B`, ko: `뒤 도어 스피커 (${ko})`, en: `Rear door speaker ${en}`, tags: `${sd}B`,
       groups: spk, match: /WOOFER|160MM|GROM|SCR/,
-      object: disc(0.075, 0.05, 'z', [-0.55, 0.46, sg * 0.93], 'darkMetal'), // in the door, behind the trim pad grille
+      object: disc(0.075, 0.05, 'z', [-0.66, 0.45, sg * 0.93], 'darkMetal'), // in the door, behind the trim pad grille, clear of the regulator
     });
     reg.add({
       id: `speaker-dash-${sd}`, ko: `대시 미드레인지 스피커 (${ko})`, en: `Dash mid-range speaker ${en}`, tags: sd,

@@ -129,8 +129,8 @@ export function buildClosures(reg) {
       // release cable (#2): over the carrier beam, outboard of the frunk tub and over the
       // brake booster, through the firewall to the handle on the LH lower dash
       named('cable', tube([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
-        [1.45, 0.7, -0.47], [1.22, 0.78, -0.47], [1.1, 0.8, -0.47], [0.985, 0.79, -0.52], [0.9, 0.72, -0.62], [0.78, 0.58, -0.7],
-        [0.715, 0.525, -0.71]], 0.004, 'steel')),
+        [1.45, 0.7, -0.47], [1.22, 0.78, -0.47], [1.1, 0.8, -0.47], [0.985, 0.79, -0.52], [0.92, 0.74, -0.7], [0.8, 0.6, -0.72],
+        [0.715, 0.525, -0.71]], 0.004, 'steel')), // outboard of the body controller
       named('handle', rbox([0.06, 0.03, 0.04], [0.7, 0.52, -0.71], 'blackPlastic', { r: 0.006 })),
     ),
   });
