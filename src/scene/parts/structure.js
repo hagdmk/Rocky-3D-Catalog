@@ -5,8 +5,10 @@ import {
   X_FRONT_AXLE as XF, X_REAR_AXLE as XR, WHEEL_Y as WY, ARCH_RADIUS, topY, sOf,
 } from '../profile.js';
 import {
-  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, mesh, quadPlate,
+  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, mesh, quadPlate, faceTo,
 } from '../geom.js';
+import { skinAt, skinNormal } from '../body.js';
+import { region } from './exterior.js';
 
 const SIDES = [
   { sd: 'L', sg: -1, ko: '좌', en: 'LH' },
@@ -41,7 +43,7 @@ export function buildStructure(reg) {
         named('tower', hollow(rbox([0.26, 0.3, 0.2], [XF - 0.05, 0.7, sg * 0.6], 'aluminum', { r: 0.03 }))),
         bar([1.85, 0.8, sg * 0.72], [0.95, 0.86, sg * 0.76], 0.06, 0.07, 'aluminum'),
         bar([XF - 0.05, 0.8, sg * 0.62], [1.85, 0.8, sg * 0.72], 0.05, 0.05, 'aluminum'),
-        bar([XF - 0.05, 0.84, sg * 0.56], [1.02, 0.86, sg * 0.32], 0.05, 0.04, 'aluminum'),
+        named('towerBrace', bar([XF - 0.05, 0.84, sg * 0.56], [1.02, 0.86, sg * 0.32], 0.05, 0.04, 'aluminum')),
       ),
     });
   }
@@ -50,7 +52,7 @@ export function buildStructure(reg) {
     groups: ['front-inner-panels-dual-motor', 'front-inner-panels-rear-wheel-drive'],
     match: /CMBR|PLATE|BRKT DC-DC|MOTOR MOUNT|SHOCK TOWER REINFORCEMENT|BRACKET, MOTOR/,
     object: group(
-      bar([1.02, 0.86, -0.34], [1.02, 0.86, 0.34], 0.05, 0.05, 'aluminum'),
+      named('cmbr', bar([1.02, 0.86, -0.34], [1.02, 0.86, 0.34], 0.05, 0.05, 'aluminum')),
       named('torqueBox', box([0.3, 0.012, 0.9], [1.05, 0.33, 0], 'aluminum')),
     ),
   });
@@ -63,6 +65,42 @@ export function buildStructure(reg) {
       object: bar([1.12, 0.3, sg * 0.86], [-1.06, 0.3, sg * 0.86], 0.12, 0.17, 'aluminum'),
     });
   }
+
+  // --- Pillars and floor (body side panels) ------------------------------------------
+  // Inner closed sections behind the body side outer skin: the door hinges, strikers and
+  // seals sit on them.  Hinge pillar (#5, with the cowl side #6) from the sill up to the
+  // shotgun rail; B-pillar (A/B pillar comp #13, belt mount #12) on the sill between the doors.
+  for (const { sd, sg, ko, en } of SIDES) {
+    reg.add({
+      id: `hinge-pillar-${sd}`, ko: `힌지 필러·카울 사이드 (${ko})`, en: `Hinge pillar & cowl side ${en}`, tags: sd,
+      groups: ['body-side-panels'], match: /HINGE PILLAR|COWL SIDE/,
+      // closed section: the door harness and the roof drain run inside it
+      object: hollow(rbox([0.11, 0.626, 0.16], [0.93, 0.643, sg * 0.87], 'aluminum', { r: 0.015 })),
+    });
+    reg.add({
+      id: `b-pillar-${sd}`, ko: `B필러 (${ko})`, en: `B-pillar ${en}`, tags: sd,
+      groups: ['body-side-panels'], match: /A \/ B PILLAR|SEAT BELT ATTACH|CARRIER, BODY SIDE B-PILLAR/,
+      object: group(
+        named('lower', hollow(rbox([0.07, 0.62, 0.042], [-0.24, 0.65, sg * 0.933], 'aluminum', { r: 0.008 }))), // closed section: belt and rear door harness inside
+        named('upper', region([[2.69, 2.76, 2.0, 3.75]], { side: sd, offset: -0.05, mat: 'aluminum', edges: false })),
+        // applique carriers (#10 front upper, #11 rear upper), between the two door seals
+        named('carriers', group([3.2, 3.5].map((v) => {
+          const n = skinNormal(2.728, v);
+          if (sd === 'R') n.z = -n.z;
+          return faceTo(rbox([0.012, 0.05, 0.05], [0, 0, 0], 'blackPlastic', { r: 0.004 }), skinAt(2.728, v, sd, -0.0245), n, 'z');
+        }))),
+      ),
+    });
+  }
+  // Floor pan between the sills (part of the body in white): the seat tracks bolt to it.
+  reg.add({
+    id: 'floor-pan', ko: '플로어 팬(차체 바닥)', en: 'Floor pan (body floor)',
+    groups: ['body-side-panels'], match: /BODY IN WHITE/,
+    object: group(
+      quadPlate([[0.72, 0.296, -0.8], [0.72, 0.296, 0.8], [-0.7, 0.296, 0.8], [-0.7, 0.296, -0.8]], 0.004, 'aluminum'),
+      named('toeBoard', quadPlate([[0.97, 0.41, -0.8], [0.97, 0.41, 0.8], [0.72, 0.296, 0.8], [0.72, 0.296, -0.8]], 0.004, 'aluminum')),
+    ),
+  });
 
   // --- Rear structure -------------------------------------------------------------
   for (const { sd, sg, ko, en } of SIDES) {
@@ -79,63 +117,91 @@ export function buildStructure(reg) {
     });
     reg.add({
       id: `rear-quarter-inner-${sd}`, ko: `리어 휠하우스·쿼터 인너 (${ko})`, en: `Rear wheelhouse & quarter inner ${en}`, tags: sd,
-      groups: ['rear-quarter-inner-panels'],
+      groups: ['rear-quarter-inner-panels'], match: /^(?!.*EXTENSION RR TRUNK FLOOR)/,
       object: group(
         wheelhouse(XR, sg, ARCH_RADIUS + 0.035, 0.6, 0.95, 'aluminum'),
         named('tower', hollow(rbox([0.2, 0.32, 0.12], [XR - 0.06, 0.82, sg * 0.62], 'aluminum', { r: 0.02 }))),
-        bar([XR + 0.0, 0.95, sg * 0.75], [-0.75, 1.32, sg * 0.66], 0.06, 0.05, 'aluminum'),
+        // C-pillar reinforcement: from the wheelhouse up behind the rear door opening to the roof rail
+        named('cPillar', bar([XR + 0.02, 0.8, sg * 0.71], [-1.21, 1.19, sg * 0.653], 0.04, 0.03, 'aluminum')),
+        // lock pillar behind the rear door: carries the rear door striker
+        named('lockPillar', rbox([0.06, 0.38, 0.043], [-1.095, 0.81, sg * 0.9335], 'aluminum', { r: 0.008 })),
       ),
     });
   }
   reg.add({
     id: 'trunk-floor', ko: '트렁크 플로어·리어 바디 패널', en: 'Trunk floor & rear body panel',
-    groups: ['rear-end-panels'], match: /TRUNK FLOOR|DIFFUSER|REAR BODY|BRKT|EXTENSION RR/,
+    groups: ['rear-end-panels'], match: /TRUNK FLOOR(?! PNL)|DIFFUSER|REAR BODY|BRKT/,
     object: group(
-      box([0.86, 0.01, 1.08], [-1.98, 0.615, 0], 'aluminum'),
-      box([0.02, 0.3, 1.3], [-2.36, 0.62, 0], 'aluminum'),
+      named('floor', box([0.86, 0.01, 1.08], [-1.98, 0.615, 0], 'aluminum')),
+      // rear body panel (#4): its lower edge sits on the bumper beam
+      named('rearPanel', box([0.02, 0.225, 1.3], [-2.36, 0.6575, 0], 'aluminum')),
     ),
   });
+  // Trunk floor extension panels (#2/#3, also quarter inner #5/#6): the sloped side
+  // flanges that join the trunk floor to the wheelhouse and shock tower.
+  for (const { sd, sg, ko, en } of SIDES) {
+    reg.add({
+      id: `trunk-floor-ext-${sd}`, ko: `트렁크 플로어 익스텐션 (${ko})`, en: `Trunk floor extension panel ${en}`, tags: sd,
+      groups: ['rear-end-panels', 'rear-quarter-inner-panels'], match: /EXTENSION RR TRUNK FLOOR/,
+      object: quadPlate([[-1.95, 0.615, sg * 0.535], [-1.56, 0.615, sg * 0.535], [-1.56, 0.7, sg * 0.625], [-1.95, 0.7, sg * 0.625]], 0.006, 'aluminum'),
+    });
+  }
 
   // --- Bumper systems --------------------------------------------------------------
+  // The ankle catcher (#2B) and the aero-shield access plugs (single-motor #11)
+  // are listed with the carrier but drawn by their own components.
+  const yLow = 0.218; // carrier lower rail centre: it carries the aero shield's front edge
   reg.add({
     id: 'front-bumper-carrier', ko: '프론트 범퍼 캐리어', en: 'Front bumper (fascia) carrier',
     groups: ['front-bumper-fascia-carrier-single-motor', 'front-bumper-fascia-carrier-dual-motor'],
+    match: /^(?!.*(ANKLE|ACCESS PLUG))/i,
     object: group(
-      bar([2.13, 0.24, -0.62], [2.1, 0.7, -0.62], 0.04, 0.06, 'blackPlastic'),
-      bar([2.13, 0.24, 0.62], [2.1, 0.7, 0.62], 0.04, 0.06, 'blackPlastic'),
-      bar([2.1, 0.7, -0.62], [2.1, 0.7, 0.62], 0.05, 0.04, 'blackPlastic'),
-      bar([2.13, 0.24, -0.62], [2.13, 0.24, 0.62], 0.05, 0.04, 'blackPlastic'),
+      bar([2.13, yLow, -0.62], [2.1, 0.7, -0.62], 0.04, 0.06, 'blackPlastic'),
+      bar([2.13, yLow, 0.62], [2.1, 0.7, 0.62], 0.04, 0.06, 'blackPlastic'),
+      named('upper', bar([2.1, 0.7, -0.62], [2.1, 0.7, 0.62], 0.05, 0.04, 'blackPlastic')),
+      named('lower', bar([2.13, yLow, -0.62], [2.13, yLow, 0.62], 0.05, 0.04, 'blackPlastic')),
       beam([2.1, 0.7, -0.62], [1.85, 0.79, -0.82], 0.008, 'steel'),
       beam([2.1, 0.7, 0.62], [1.85, 0.79, 0.82], 0.008, 'steel'),
+      // mounting brackets from the carrier side members to the outboard faces of the front rails
+      ...SIDES.map(({ sd, sg }) => named(`railMount${sd}`, bar([2.115, 0.464, sg * 0.61], [2.115, 0.464, sg * 0.545], 0.05, 0.04, 'blackPlastic'))),
+      // condenser brackets (#7) on the lower rail under the condenser fan shrouds
+      ...SIDES.map(({ sd, sg }) => named(`condenserBrkt${sd}`, box([0.03, 0.02, 0.06], [2.145, 0.246, sg * 0.27], 'blackPlastic'))),
     ),
   });
   reg.add({
     id: 'front-bumper-beam', ko: '프론트 범퍼 빔(충격 흡수재)', en: 'Front bumper beam (energy absorber)',
     groups: ['front-energy-absorber'], match: /BUMPER SYSTEM|ISOLATOR|BOLT|NUT|SHIM|12V JUMP|CAP|AMP|SCR/,
     object: group(
-      tube([[2.31, 0.47, -0.72], [2.36, 0.47, -0.4], [2.375, 0.47, 0], [2.36, 0.47, 0.4], [2.31, 0.47, 0.72]], 0.05, 'aluminum', { radial: 4 }),
-      bar([2.33, 0.47, -0.5], [2.24, 0.47, -0.5], 0.09, 0.11, 'aluminum'),
-      bar([2.33, 0.47, 0.5], [2.24, 0.47, 0.5], 0.09, 0.11, 'aluminum'),
+      named('beam', tube([[2.31, 0.47, -0.72], [2.36, 0.47, -0.4], [2.375, 0.47, 0], [2.36, 0.47, 0.4], [2.31, 0.47, 0.72]], 0.05, 'aluminum', { radial: 4 })),
+      // crash cans on the isolator brackets (#8), bolted into the rail ends (#9)
+      named('canL', bar([2.33, 0.47, -0.5], [2.24, 0.47, -0.5], 0.09, 0.11, 'aluminum')),
+      named('canR', bar([2.33, 0.47, 0.5], [2.24, 0.47, 0.5], 0.09, 0.11, 'aluminum')),
     ),
   });
   reg.add({
     id: 'front-ankle-catcher', ko: '앵클 캐처(하부 충격 흡수)', en: 'Ankle catcher (lower absorber)',
-    groups: ['front-energy-absorber', 'front-bumper-fascia'], match: /ANKLE|FOAM|NIFCO|Push/i,
-    object: tube([[2.29, 0.25, -0.55], [2.36, 0.24, -0.25], [2.38, 0.24, 0], [2.36, 0.24, 0.25], [2.29, 0.25, 0.55]], 0.035, 'foam', { radial: 6 }),
+    groups: ['front-energy-absorber', 'front-bumper-fascia', 'front-bumper-fascia-carrier-dual-motor', 'front-bumper-fascia-carrier-single-motor'],
+    match: /ANKLE|FOAM|NIFCO|Push/i,
+    object: group(
+      named('catcher', tube([[2.29, 0.25, -0.55], [2.36, 0.24, -0.25], [2.38, 0.24, 0], [2.36, 0.24, 0.25], [2.29, 0.25, 0.55]], 0.035, 'foam', { radial: 6 })),
+      // mounting arms bolted to the carrier lower rail (#3/#4 M6x30)
+      ...SIDES.map(({ sd, sg }) => named(`arm${sd}`, bar([2.135, 0.235, sg * 0.5], [2.31, 0.24, sg * 0.5], 0.04, 0.05, 'blackPlastic'))),
+    ),
   });
   reg.add({
     id: 'rear-bumper-beam', ko: '리어 범퍼 빔·크로스멤버', en: 'Rear bumper beam & crossmember',
     groups: ['rear-energy-absorber'],
     object: group(
-      tube([[-2.33, 0.5, -0.68], [-2.385, 0.5, -0.35], [-2.395, 0.5, 0], [-2.385, 0.5, 0.35], [-2.33, 0.5, 0.68]], 0.045, 'aluminum', { radial: 4 }),
-      bar([-2.3, 0.33, -0.55], [-2.3, 0.33, 0.55], 0.05, 0.04, 'aluminum'),
+      named('beam', tube([[-2.33, 0.5, -0.68], [-2.385, 0.5, -0.35], [-2.395, 0.5, 0], [-2.385, 0.5, 0.35], [-2.33, 0.5, 0.68]], 0.045, 'aluminum', { radial: 4 })),
+      // rear crossmember (#3) bolted under the rear rail ends
+      named('crossmember', bar([-2.3, 0.385, -0.62], [-2.3, 0.385, 0.62], 0.05, 0.05, 'aluminum')),
     ),
   });
   reg.add({
     id: 'rear-diffuser', ko: '리어 디퓨저·에어 익스트랙터', en: 'Rear diffuser & air extractors',
     groups: ['rear-bumper-fascia'], match: /DIFFUSER|AIR EXTRACTOR|APPLIQUE|TRIM/,
     object: group(
-      quadPlate([[-2.12, 0.205, -0.6], [-2.12, 0.205, 0.6], [-2.44, 0.33, 0.6], [-2.44, 0.33, -0.6]], 0.008, 'blackPlastic'),
+      quadPlate([[-2.09, 0.205, -0.6], [-2.09, 0.205, 0.6], [-2.44, 0.33, 0.6], [-2.44, 0.33, -0.6]], 0.008, 'blackPlastic'), // front edge over the mid aero shield
       ...[-0.42, -0.14, 0.14, 0.42].map((z) => quadPlate([[-2.14, 0.21, z], [-2.42, 0.33, z], [-2.42, 0.26, z], [-2.14, 0.17, z]], 0.006, 'blackPlastic')),
     ),
   });
@@ -143,7 +209,7 @@ export function buildStructure(reg) {
   // --- Aero shields and liners -------------------------------------------------------
   reg.add({
     id: 'front-undertray', ko: '프론트 언더트레이(에어로 실드)', en: 'Front undertray (aero shield)',
-    groups: ['front-undertray'],
+    groups: ['front-undertray', 'front-bumper-fascia-carrier-single-motor'], match: /ACCESS PLUG|AERO ?SHIELD/i,
     object: quadPlate([[2.3, 0.2, -0.6], [2.3, 0.2, 0.6], [1.05, 0.158, 0.66], [1.05, 0.158, -0.66]], 0.008, 'blackPlastic'),
   });
   reg.add({
@@ -152,6 +218,8 @@ export function buildStructure(reg) {
     object: group(
       quadPlate([[-1.18, 0.165, -0.66], [-1.18, 0.165, 0.66], [-2.1, 0.2, 0.62], [-2.1, 0.2, -0.62]], 0.008, 'blackPlastic'),
       ...[-0.56, -0.3, 0.3, 0.56].map((z) => quadPlate([[-1.6, 0.17, z], [-2.08, 0.2, z], [-2.08, 0.14, z], [-1.7, 0.155, z]], 0.006, 'blackPlastic')),
+      // stand-off brackets up to the rear subframe side members (#8 BLT HF M6x18)
+      ...SIDES.map(({ sd, sg }) => named(`mount${sd}`, box([0.04, 0.052, 0.04], [-1.72, 0.21, sg * 0.42], 'blackPlastic'))),
     ),
   });
   for (const { sd, sg, ko, en } of SIDES) {
@@ -178,7 +246,7 @@ export function buildStructure(reg) {
   const top1 = hoodY(fx1, 0.05);
   reg.add({
     id: 'frunk', ko: '프렁크(앞 적재함)', en: 'Front trunk (frunk) tub',
-    groups: ['front-luggage-storage-compartment'],
+    groups: ['front-luggage-storage-compartment'], match: /^(?!.*SEAL - HOOD)/, // the hood seal on the rim is hood-seal
     object: group(
       quadPlate([[fx0, fy, -fz], [fx0, fy, fz], [fx1, fy, fz], [fx1, fy, -fz]], 0.006, 'blackPlastic'),
       quadPlate([[fx0, fy, -fz], [fx0, top0, -fz], [fx1, top1, -fz], [fx1, fy, -fz]], 0.006, 'blackPlastic'),
@@ -191,9 +259,9 @@ export function buildStructure(reg) {
     id: 'frunk-carpet', ko: '프렁크 카펫 라이닝', en: 'Frunk carpet lining',
     groups: ['front-luggage-storage-compartment-carpet-lining'],
     object: group(
-      quadPlate([[fx0 - 0.02, fy + 0.012, -fz + 0.02], [fx0 - 0.02, fy + 0.012, fz - 0.02], [fx1 + 0.02, fy + 0.012, fz - 0.02], [fx1 + 0.02, fy + 0.012, -fz + 0.02]], 0.01, 'carpet'),
-      quadPlate([[fx0 - 0.02, fy + 0.02, -fz + 0.012], [fx0 - 0.02, top0 - 0.02, -fz + 0.012], [fx1 + 0.02, top1 - 0.02, -fz + 0.012], [fx1 + 0.02, fy + 0.02, -fz + 0.012]], 0.008, 'carpet'),
-      quadPlate([[fx0 - 0.02, fy + 0.02, fz - 0.012], [fx0 - 0.02, top0 - 0.02, fz - 0.012], [fx1 + 0.02, top1 - 0.02, fz - 0.012], [fx1 + 0.02, fy + 0.02, fz - 0.012]], 0.008, 'carpet'),
+      quadPlate([[fx0 - 0.02, fy + 0.008, -fz + 0.02], [fx0 - 0.02, fy + 0.008, fz - 0.02], [fx1 + 0.02, fy + 0.008, fz - 0.02], [fx1 + 0.02, fy + 0.008, -fz + 0.02]], 0.01, 'carpet'),
+      quadPlate([[fx0 - 0.02, fy + 0.02, -fz + 0.008], [fx0 - 0.02, top0 - 0.02, -fz + 0.008], [fx1 + 0.02, top1 - 0.02, -fz + 0.008], [fx1 + 0.02, fy + 0.02, -fz + 0.008]], 0.008, 'carpet'),
+      quadPlate([[fx0 - 0.02, fy + 0.02, fz - 0.008], [fx0 - 0.02, top0 - 0.02, fz - 0.008], [fx1 + 0.02, top1 - 0.02, fz - 0.008], [fx1 + 0.02, fy + 0.02, fz - 0.008]], 0.008, 'carpet'),
     ),
   });
 
@@ -220,7 +288,7 @@ export function buildStructure(reg) {
   // --- NVH plugs and patches (spread over the floor pan) -------------------------------
   const plugs = [];
   for (const x of [0.6, 0.1, -0.4, -0.9]) {
-    for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.305, z], 'rubber', { seg: 14 }));
+    for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.3, z], 'rubber', { seg: 14 })); // in the floor pan
   }
   for (const { sg } of SIDES) {
     plugs.push(box([0.004, 0.06, 0.06], [0.45, 0.55, sg * 0.83], 'foam'));

@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { skinPath, skinAt } from '../body.js';
 import { region, SV } from './exterior.js';
 import {
-  V, group, hollow, rbox, box, cyl, beam, bar, tube, extrude, quadPlate, disc, mesh,
+  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, extrude, quadPlate, disc, mesh,
 } from '../geom.js';
 
 const SIDES = [
@@ -40,11 +40,18 @@ export function buildInterior(reg) {
   // --- Instrument panel ---------------------------------------------------------
   reg.add({
     id: 'dash-panel', ko: '대시 패널(인스트루먼트 패널)', en: 'Dash panel (instrument panel)',
-    groups: ['dash-panel'], match: /^(?!.*GLOVE)/,
+    groups: ['dash-panel'], match: /^(?!.*(GLOVE|WINDSHIELD EDGE))/,
     object: group(
       hollow(extrude(DASH_PROFILE, 1.46, 'xy', [0, 0, 0], 'leather', { bevel: 0.01 })), // moulded shell: ducts, column and wiring run inside
-      box([0.3, 0.004, 1.2], [0.75, 0.946, 0], 'blackPlastic'),
+      named('topPad', box([0.3, 0.004, 1.2], [0.75, 0.946, 0], 'blackPlastic')),
     ),
+  });
+  // SEAL, WINDSHIELD EDGE: one part, listed with the glass (#2) and the dash panel (#1).
+  // It runs along the windshield base and closes the gap to the IP top pad.
+  reg.add({
+    id: 'windshield-edge-seal', ko: '윈드실드 엣지 실', en: 'Windshield edge seal',
+    groups: ['windshield-and-liftgate-glass', 'dash-panel'], match: /WINDSHIELD EDGE/,
+    object: tube([...skinPath([[1.6, 4.12], [1.6, 5]], 'L', -0.008, 6), ...skinPath([[1.6, 5], [1.6, 4.12]], 'R', -0.008, 6).slice(1)], 0.008, 'rubber'),
   });
   reg.add({
     id: 'glove-box', ko: '글로브 박스', en: 'Glove box', tags: 'R',
@@ -55,9 +62,12 @@ export function buildInterior(reg) {
     id: 'dash-support-frame', ko: '대시 지지 프레임(크로스카 빔)', en: 'Dash support frame (cross-car beam)',
     groups: ['dash-support-frame'],
     object: group(
-      cyl(0.03, 1.52, 'z', [0.72, 0.72, 0], 'steel'),
-      beam([0.72, 0.72, -0.1], [0.75, 0.32, -0.12], 0.016, 'steel'),
-      beam([0.72, 0.72, 0.1], [0.75, 0.32, 0.12], 0.016, 'steel'),
+      named('beam', cyl(0.03, 1.52, 'z', [0.72, 0.72, 0], 'steel')),
+      // tunnel braces down to the toe board
+      named('braceL', beam([0.72, 0.72, -0.1], [0.75, 0.31, -0.12], 0.016, 'steel')),
+      named('braceR', beam([0.72, 0.72, 0.1], [0.75, 0.31, 0.12], 0.016, 'steel')),
+      // end brackets bolted to the hinge pillars
+      ...SIDES.map(({ sd, sg }) => named(`end${sd}`, box([0.2, 0.04, 0.06], [0.79, 0.72, sg * 0.77], 'steel'))),
       box([0.06, 0.02, 0.1], [0.72, 0.68, 0.28], 'steel'),
       box([0.004, 0.025, 0.07], [0.82, 0.94, -0.6], 'aluminum'),
     ),
@@ -96,6 +106,8 @@ export function buildInterior(reg) {
     object: group(
       rbox([0.035, 0.13, 0.33], [0.53, 0.87, -0.37], 'screen', { r: 0.008, rot: [0, 0, 0.2] }),
       rbox([0.09, 0.03, 0.36], [0.55, 0.95, -0.37], 'leather', { r: 0.012 }),
+      // mounting brackets from the cluster housing to the cross-car beam, either side of the column
+      ...[-0.48, -0.215].map((z, i) => named(`bracket${i}`, beam([0.552, 0.86, z], [0.716, 0.753, z], 0.008, 'steel'))),
     ),
   });
   reg.add({
@@ -220,7 +232,7 @@ export function buildInterior(reg) {
     reg.add({
       id: `sun-visor-${sd}`, ko: `선바이저 (${ko})`, en: `Sun visor ${en}`, tags: sd,
       groups: ['sun-visor'],
-      object: rbox([0.17, 0.02, 0.36], [0.12, 1.37, sg * 0.36], 'fabric', { r: 0.008, rot: [0, 0, 0.55] }),
+      object: rbox([0.17, 0.02, 0.34], [0.07, 1.318, sg * 0.35], 'fabric', { r: 0.008, rot: [0, 0, 0.55] }),
     });
   }
 
@@ -244,14 +256,16 @@ export function buildInterior(reg) {
         bar([0.28, 0.33, z + 0.19], [-0.32, 0.33, z + 0.19], 0.04, 0.03, 'steel'),
         cyl(0.025, 0.12, 'z', [0.05, 0.37, z], 'darkMetal'),
         rbox([0.1, 0.04, 0.08], [-0.15, 0.37, z + sg * 0.1], 'blackPlastic', { r: 0.008 }),
+        // track feet bolted through the carpet to the floor pan (M10 / M8 bolts)
+        named('feet', group([0.25, -0.29].flatMap((x) => [-0.19, 0.19].map((dz) => box([0.05, 0.018, 0.04], [x, 0.303, z + dz], 'steel'))))),
       ),
     });
     reg.add({
       id: `front-seat-switch-${sd}`, ko: `앞좌석 조절 스위치 (${ko})`, en: `Front seat control switches ${en}`, tags: sd,
       groups: ['front-seat-control-switches'],
       object: group(
-        rbox([0.16, 0.05, 0.012], [SEAT.x + 0.05, 0.42, z + sg * 0.262], 'chrome', { r: 0.004 }),
-        disc(0.018, 0.012, 'z', [SEAT.x - 0.1, 0.44, z + sg * 0.262], 'chrome'),
+        rbox([0.16, 0.05, 0.012], [SEAT.x + 0.05, 0.42, z + sg * 0.256], 'chrome', { r: 0.004 }),
+        disc(0.018, 0.012, 'z', [SEAT.x - 0.1, 0.44, z + sg * 0.256], 'chrome'),
       ),
     });
     reg.add({
@@ -328,6 +342,7 @@ export function buildInterior(reg) {
       object: group(
         cyl(0.02, 0.2, 'x', [SEAT.x - 0.25, 0.36, sg * 0.66], 'darkMetal'),
         box([0.05, 0.03, 0.03], [SEAT.x - 0.36, 0.37, sg * 0.66], 'steel'),
+        named('anchor', box([0.04, 0.015, 0.14], [SEAT.x - 0.36, 0.352, sg * 0.71], 'steel')), // bolted to the sill inner face
       ),
     });
   }
@@ -367,13 +382,27 @@ export function buildInterior(reg) {
   reg.add({
     id: 'passenger-airbag', ko: '조수석 에어백', en: 'Passenger airbag', tags: 'R',
     groups: ['front-air-bags'], match: /PASSENGER AIR BAG|BOLT HF|CLIP/,
-    object: rbox([0.2, 0.08, 0.3], [0.62, 0.89, 0.38], 'fabric', { r: 0.02 }),
+    object: group(
+      rbox([0.2, 0.08, 0.3], [0.62, 0.89, 0.38], 'fabric', { r: 0.02 }),
+      // module brackets bolted to the cross-car beam (BOLT HF)
+      ...[0.32, 0.46].map((z, i) => named(`bracket${i}`, beam([0.68, 0.86, z], [0.712, 0.75, z], 0.008, 'steel'))),
+    ),
   });
   for (const { sd, sg, ko, en } of SIDES) {
     reg.add({
       id: `knee-airbag-${sd}`, ko: `무릎 에어백 (${ko})`, en: `Knee airbag ${en}`, tags: sd,
       groups: ['front-air-bags'], match: /KNEE|KAB/,
-      object: rbox([0.08, 0.1, 0.36], [0.56, 0.5, sg * 0.37], 'fabric', { r: 0.015, rot: [0, 0, -0.6] }),
+      // on a bracket from the cross-car beam: LH under the steering column, outboard of the
+      // HVAC case; RH behind the glove box door, beside the blower
+      object: sd === 'L'
+        ? group(
+          rbox([0.08, 0.1, 0.24], [0.55, 0.5, -0.455], 'fabric', { r: 0.015, rot: [0, 0, -0.6] }),
+          named('bracket', beam([0.565, 0.54, -0.455], [0.705, 0.705, -0.455], 0.008, 'steel')),
+        )
+        : group(
+          rbox([0.045, 0.12, 0.26], [0.556, 0.58, 0.43], 'fabric', { r: 0.012 }),
+          named('bracket', beam([0.556, 0.63, 0.55], [0.705, 0.712, 0.55], 0.008, 'steel')),
+        ),
     });
     const pts = [];
     for (let s = 1.75; s <= 3.72; s += 0.18) pts.push(skinAt(s, 3.9, sd, -0.06));
@@ -400,13 +429,13 @@ export function buildInterior(reg) {
     reg.add({
       id: `door-pressure-sensor-${sd}`, ko: `앞 도어 압력 센서 (${ko})`, en: `Front door pressure sensor ${en}`, tags: sd,
       groups: sensorGroups, match: /DOOR PRESSURE|PRESSURE SENSOR FASTENER/,
-      object: rbox([0.05, 0.04, 0.025], [0.25, 0.55, sg * 0.86], 'darkMetal', { r: 0.006 }),
+      object: rbox([0.05, 0.04, 0.025], skinAt(2.235, 1.15, sd, -0.04).toArray(), 'darkMetal', { r: 0.006 }), // on the door inner panel
     });
   }
   reg.add({
     id: 'restraint-controller', ko: '에어백 제어 모듈(PSRCM)', en: 'Restraint control module (PSRCM)',
     groups: ['impact-and-acceleration-sensors-na'], match: /PSRCM|RCM/,
-    object: rbox([0.14, 0.05, 0.1], [0.05, 0.47, 0], 'darkMetal', { r: 0.008 }),
+    object: rbox([0.14, 0.05, 0.1], [0.05, 0.323, -0.075], 'darkMetal', { r: 0.008 }), // on the floor tunnel under the console
   });
   reg.add({
     id: 'pedestrian-protection', ko: '보행자 보호 센서·후드 액추에이터(EU/APAC)', en: 'Pedestrian protection sensors & hood actuators (EU/APAC)',
@@ -417,5 +446,5 @@ export function buildInterior(reg) {
       cyl(0.02, 0.1, 'y', [1.0, 0.86, 0.58], 'darkMetal'),
     ),
   });
-  void skinPath; void bar; void beam;
+  void bar; void beam;
 }

@@ -6,7 +6,7 @@ import { skinAt, skinPath, findOnFace } from '../body.js';
 import { region, SV } from './exterior.js';
 import { xOf } from '../profile.js';
 import {
-  V, group, rbox, box, cyl, beam, tube, faceTo, mesh, quadPlate,
+  V, group, named, rbox, box, cyl, beam, tube, pipe, faceTo, mesh, quadPlate,
 } from '../geom.js';
 
 const SIDES = [
@@ -32,17 +32,19 @@ export function buildClosures(reg) {
     reg.add({
       id: `front-door-hinges-${sd}`, ko: `앞 도어 힌지 (${ko})`, en: `Front door hinges ${en}`, tags: `${sd}F`,
       groups: ['front-door-hinges-and-fittings'],
+      // from the hinge pillar to the door inner panel, inboard of the door seal
       object: group(
-        rbox([0.07, 0.05, 0.06], [xf, 0.58, sg * 0.9], 'steel', { r: 0.008 }),
-        rbox([0.07, 0.05, 0.06], [xf, 0.86, sg * 0.88], 'steel', { r: 0.008 }),
+        rbox([0.08, 0.05, 0.044], [xf - 0.02, 0.58, sg * 0.933], 'steel', { r: 0.008 }),
+        rbox([0.08, 0.05, 0.044], [xf - 0.02, 0.86, sg * 0.933], 'steel', { r: 0.008 }),
       ),
     });
     reg.add({
       id: `rear-door-hinges-${sd}`, ko: `뒤 도어 힌지 (${ko})`, en: `Rear door hinges ${en}`, tags: `${sd}B`,
       groups: ['rear-door-hinges-and-fittings'],
+      // from the B-pillar to the rear door inner panel, inboard of the door seals
       object: group(
-        rbox([0.06, 0.05, 0.06], [xr, 0.58, sg * 0.9], 'steel', { r: 0.008 }),
-        rbox([0.06, 0.05, 0.06], [xr, 0.86, sg * 0.89], 'steel', { r: 0.008 }),
+        rbox([0.06, 0.05, 0.044], [xr - 0.01, 0.58, sg * 0.933], 'steel', { r: 0.008 }),
+        rbox([0.06, 0.05, 0.044], [xr - 0.01, 0.86, sg * 0.933], 'steel', { r: 0.008 }),
       ),
     });
     reg.add({
@@ -57,29 +59,38 @@ export function buildClosures(reg) {
       id: `liftgate-hinge-${sd}`, ko: `리프트게이트 힌지·스트럿 (${ko})`, en: `Liftgate hinge & strut ${en}`, tags: sd,
       groups: ['liftgate-hinges-and-fittings'], match: /HINGE|STRUT|BALL STUD|WEDGE|BUMPER|ANTI PINCH|push clip|SEALER|BLT|NUT/,
       object: group(
-        rbox([0.08, 0.04, 0.05], skinAt(3.26, 4.55, sd, -0.04).toArray(), 'steel', { r: 0.008 }),
+        rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 }), // hinge on the roof rear header
         tube([skinAt(3.9, 4.05, sd, -0.05), skinAt(4.15, 3.6, sd, -0.08), skinAt(4.35, 3.0, sd, -0.1)], 0.012, 'steel'),
-        tube([skinAt(3.35, 4.06, sd, -0.025), skinAt(4.0, 4.06, sd, -0.025), skinAt(4.6, 4.0, sd, -0.025)], 0.005, 'rubber'),
+        tube([skinAt(3.35, 4.06, sd, -0.025), skinAt(4.0, 4.06, sd, -0.025), skinAt(4.5, 4.03, sd, -0.025)], 0.005, 'rubber'), // anti-pinch sensor
       ),
     });
   }
   reg.add({
     id: 'liftgate-spoiler', ko: '리프트게이트 스포일러(카본, 옵션)', en: 'Liftgate spoiler (carbon fibre, option)', tags: 'B',
     groups: ['liftgate-hinges-and-fittings'], match: /SPOILER|ADHESIVE TAPE|PRIMER/,
-    object: region([[4.585, 4.66, 4.1, 5]], { offset: 0.008, mat: 'carbon' }),
+    object: group(
+      region([[4.585, 4.66, 4.1, 5]], { offset: 0.008, mat: 'carbon' }),
+      region([[4.585, 4.66, 4.1, 5]], { offset: 0.001, mat: 'carbon', edges: false }), // underside on the adhesive tape
+    ),
   });
 
   // --- Glass regulators, handles, latches --------------------------------------------
   for (const { sd, sg, ko, en } of SIDES) {
     for (const [fr, range, frKo, frEn] of [['F', SV.frontDoor, '앞', 'front'], ['B', SV.rearDoor, '뒤', 'rear']]) {
-      const xm = xOf((range[0] + range[1]) / 2);
+      const sm = (range[0] + range[1]) / 2;
+      const vTop = SV.vSill + 0.01;
+      // rail from the inner panel up along the outer skin (clear of the door harness) to the glass edge
+      const rail = (d0, d1) => pipe([[1.0, -0.036], [1.6, -0.019], [2.1, -0.017], [2.5, -0.017], [vTop, -0.012]]
+        .map(([v, o]) => skinAt(sm + d0 + (d1 - d0) * ((v - 1.0) / (vTop - 1.0)), v, sd, o)), 0.008, 'steel');
       reg.add({
         id: `regulator-${sd}${fr}`, ko: `${frKo} 도어 유리 레귤레이터 (${ko})`, en: `${frEn} door glass regulator ${en}`, tags: `${sd}${fr}`,
         groups: ['front-and-rear-door-glass-regulator'],
+        // rails on the door inner panel, their carriers clamping the lower edge of the glass;
+        // motor on the inboard face of the inner panel
         object: group(
-          beam([xm + 0.12, 0.5, sg * 0.87], [xm + 0.1, 0.97, sg * 0.85], 0.008, 'steel'),
-          beam([xm - 0.12, 0.5, sg * 0.87], [xm - 0.14, 0.97, sg * 0.85], 0.008, 'steel'),
-          cyl(0.04, 0.03, 'z', [xm, 0.55, sg * 0.86], 'darkMetal'),
+          named('railF', rail(-0.12, -0.1)),
+          named('railR', rail(0.1, 0.07)),
+          named('motor', cyl(0.04, 0.03, 'z', skinAt(sm, 1.15, sd, -0.05).toArray(), 'darkMetal')),
         ),
       });
       const hs = fr === 'F' ? 2.47 : 3.31;
@@ -100,8 +111,8 @@ export function buildClosures(reg) {
         id: `door-latch-${sd}${fr}`, ko: `${frKo} 도어 래치·실내 릴리스 (${ko})`, en: `${frEn} door latch & interior release ${en}`, tags: `${sd}${fr}`,
         groups: latchGroups,
         object: group(
-          rbox([0.05, 0.09, 0.05], skinAt(ls, 1.75, sd, -0.04).toArray(), 'darkMetal', { r: 0.008 }),
-          rbox([0.03, 0.03, 0.03], skinAt(range[1] + 0.03, 1.75, sd, -0.03).toArray(), 'steel', { r: 0.006 }),
+          named('latch', rbox([0.05, 0.09, 0.05], skinAt(ls, 1.75, sd, -0.04).toArray(), 'darkMetal', { r: 0.008 })), // on the door inner panel
+          named('striker', rbox([0.03, 0.03, 0.03], skinAt(range[1] + (fr === 'F' ? 0.01 : 0.03), 1.75, sd, -0.03).toArray(), 'steel', { r: 0.006 })), // on the B / lock pillar
           rbox([0.1, 0.03, 0.025], skinAt(range[1] - 0.25, 2.15, sd, -0.105).toArray(), 'chrome', { r: 0.008 }),
           tube([skinAt(ls, 1.75, sd, -0.05), skinAt(range[1] - 0.15, 2.0, sd, -0.08), skinAt(range[1] - 0.25, 2.15, sd, -0.1)], 0.003, 'steel'),
         ),
@@ -112,10 +123,15 @@ export function buildClosures(reg) {
     id: 'hood-latch', ko: '후드 래치·릴리스 케이블', en: 'Hood latch & release cable',
     groups: ['dual-hood-latch-and-release', 'single-hood-latch-and-release'],
     object: group(
-      rbox([0.06, 0.08, 0.16], [2.08, 0.72, 0], 'darkMetal', { r: 0.01 }),
-      rbox([0.04, 0.03, 0.05], [2.1, 0.78, 0], 'steel', { r: 0.006 }),
-      tube([[2.06, 0.7, -0.05], [1.8, 0.6, -0.4], [1.2, 0.55, -0.6], [0.9, 0.5, -0.66], [0.82, 0.46, -0.7]], 0.004, 'steel'),
-      rbox([0.06, 0.03, 0.04], [0.8, 0.46, -0.7], 'blackPlastic', { r: 0.006 }),
+      // latch (#5) bolted to the front face of the carrier upper beam, striker (#3) above it
+      named('latch', rbox([0.06, 0.08, 0.16], [2.155, 0.7, 0], 'darkMetal', { r: 0.01 })),
+      rbox([0.04, 0.025, 0.05], [2.155, 0.752, 0], 'steel', { r: 0.006 }),
+      // release cable (#2): over the carrier beam, outboard of the frunk tub and over the
+      // brake booster, through the firewall to the handle on the LH lower dash
+      named('cable', tube([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
+        [1.45, 0.7, -0.47], [1.22, 0.78, -0.47], [1.1, 0.8, -0.47], [0.985, 0.79, -0.52], [0.9, 0.72, -0.62], [0.78, 0.58, -0.7],
+        [0.715, 0.525, -0.71]], 0.004, 'steel')),
+      named('handle', rbox([0.06, 0.03, 0.04], [0.7, 0.52, -0.71], 'blackPlastic', { r: 0.006 })),
     ),
   });
   reg.add({
@@ -138,7 +154,10 @@ export function buildClosures(reg) {
     reg.add({
       id: `liftgate-drain-${sd}`, ko: `리프트게이트(램프 하우징) 배수관 (${ko})`, en: `Liftgate (lamp housing) drain tube ${en}`, tags: sd,
       groups: ['liftgate-drain'],
-      object: tube([skinAt(4.6, 2.9, sd, -0.06), skinAt(4.6, 2.0, sd, -0.08), skinAt(4.58, 0.9, sd, -0.06), skinAt(4.55, 0.0, sd, -0.04)], 0.006, 'rubber'),
+      // funnel (#1) in the lamp housing gutter under the liftgate seal, straight down behind
+      // the charge port inlet (LH) to the elbow (#2) at the lower body
+      object: pipe([skinAt(4.618, 2.74, sd, -0.03), [-2.126, 0.9, sg * 0.835], [-2.126, 0.8, sg * 0.83], [-2.132, 0.55, sg * 0.845],
+        skinAt(4.62, 0.0, sd, -0.04)], 0.006, 'rubber'),
     });
   }
 
@@ -157,21 +176,26 @@ export function buildClosures(reg) {
       object: loop([[r[0] + 0.01, 0.32], [r[1] - 0.01, 0.32], [r[1] - 0.01, 3.0], [r[1] - 0.06, 3.9], [r[0] + 0.01, 3.9], [r[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
     });
   }
+  // SEAL - HOOD (#1) is the closed loop on the frunk tub rim (frunk group #19); its rear
+  // corners are cut where the shock-tower braces cross the tub.
+  // SEAL - HOOD TO COWL (#2) runs across the cowl between the hood hinges.
+  const rim = (x, z) => [x, 0.748 + ((2.04 - x) / 0.84) * 0.116, z];
   reg.add({
-    id: 'hood-seal', ko: '후드 실', en: 'Hood seals', tags: 'F',
-    groups: ['hood-seals'],
-    object: group(
-      tube([[2.15, 0.775, -0.6], [2.15, 0.775, 0.6]], 0.008, 'rubber'),
-      tube([[1.0, 0.89, -0.62], [1.0, 0.89, 0.62]], 0.008, 'rubber'),
-      tube([[2.15, 0.775, -0.6], [1.6, 0.83, -0.66], [1.0, 0.89, -0.62]], 0.008, 'rubber'),
-      tube([[2.15, 0.775, 0.6], [1.6, 0.83, 0.66], [1.0, 0.89, 0.62]], 0.008, 'rubber'),
-    ),
+    id: 'hood-seal', ko: '후드 실(프렁크 림)', en: 'Hood seal (frunk rim)', tags: 'F',
+    groups: ['hood-seals', 'front-luggage-storage-compartment'], match: /SEAL - HOOD(?! TO COWL)/,
+    object: tube([rim(2.04, -0.44), rim(2.04, 0.44), rim(1.34, 0.44), rim(1.2, 0.368), rim(1.2, -0.368), rim(1.34, -0.44)], 0.008, 'rubber', { closed: true, tension: 0 }),
   });
-  const lgOutline = [[3.26, 5], [3.26, 3.93], [4.61, 3.93], [4.61, 2.76], [4.95, 2.76], [4.95, 5]];
+  reg.add({
+    id: 'hood-cowl-seal', ko: '후드-카울 실', en: 'Hood to cowl seal', tags: 'F',
+    groups: ['hood-seals'], match: /HOOD TO COWL/,
+    object: tube([[1.0, 0.89, -0.54], [1.0, 0.89, 0.54]], 0.008, 'rubber'),
+  });
+  // on the body opening flange, just inside the liftgate edge and above the rear door seals
+  const lgOutline = [[3.3, 5], [3.3, 3.97], [4.61, 3.97], [4.61, 2.76], [4.95, 2.76], [4.95, 5]];
   reg.add({
     id: 'liftgate-seal', ko: '리프트게이트(트렁크) 실', en: 'Liftgate (trunk lid) seal', tags: 'B',
     groups: ['trunk-lid-seal'],
-    object: group(loop(lgOutline, 'L', -0.03, 0.007, 'rubber'), loop(lgOutline, 'R', -0.03, 0.007, 'rubber')),
+    object: group(loop(lgOutline, 'L', -0.024, 0.007, 'rubber'), loop(lgOutline, 'R', -0.024, 0.007, 'rubber')),
   });
 
   // --- Exterior mirrors -----------------------------------------------------------------
@@ -211,7 +235,7 @@ export function buildClosures(reg) {
   reg.add({
     id: 'license-plate-front', ko: '앞 번호판 브래킷', en: 'Front licence plate bracket', tags: 'F',
     groups: plateGroups, match: /FR |FRONT|BRKT|CLIP|RVT|E-CLIP/,
-    object: onFace('front', 0.36, 0, [0.008, 0.16, 0.31], 'blackPlastic', 0.01),
+    object: onFace('front', 0.36, 0, [0.008, 0.16, 0.31], 'blackPlastic', 0.004), // screwed to the fascia
   });
   reg.add({
     id: 'license-plate-rear', ko: '뒤 번호판 프레임', en: 'Rear licence plate frame', tags: 'B',
@@ -224,7 +248,7 @@ export function buildClosures(reg) {
   reg.add({
     id: 'chmsl', ko: '보조 제동등(CHMSL)', en: 'High-mount stop lamp (CHMSL)', tags: 'B',
     groups: ['tail-lights'], match: /CHMSL/,
-    object: region([[3.27, 3.3, 4.7, 5]], { offset: -0.01, mat: 'lensRed', edges: false }),
+    object: region([[3.27, 3.3, 4.7, 5]], { offset: -0.001, mat: 'lensRed', edges: false }), // on the liftgate top edge, under the glass
   });
   reg.add({
     id: 'license-lamp', ko: '번호판 램프', en: 'Licence plate lamp', tags: 'B',
@@ -246,8 +270,9 @@ export function buildClosures(reg) {
     id: 'labels-underhood', ko: '라벨 - 후드 아래(배출가스·냉매·구조대원)', en: 'Labels - under hood (emissions, refrigerant, first responder)', tags: 'F',
     groups: ['labels'], match: /EMISSION|REFRIGERANT|FIRST RESPONDER|FRONT INFO|VEHICLE|LBL/,
     object: group(
-      box([0.1, 0.002, 0.07], [1.95, 0.785, 0.35], 'paper'),
-      box([0.08, 0.002, 0.05], [1.95, 0.785, -0.35], 'paper'),
+      // on the hood underside, above the frunk
+      box([0.1, 0.002, 0.07], [1.95, 0.7985, 0.35], 'paper'),
+      box([0.08, 0.002, 0.05], [1.95, 0.7985, -0.35], 'paper'),
     ),
   });
   reg.add({
@@ -285,10 +310,17 @@ export function buildClosures(reg) {
     id: 'pano-drive', ko: '루프 구동 모터·케이블·트랙', en: 'Roof drive motors, cables & tracks',
     groups: ['drive-motor-and-cable-mechanism'], object: group(tracks),
   });
+  // Drain tubes from the cassette corner spouts, between the outer skin and the
+  // pillar trims (outboard of the curtain airbags and the liftgate harness): the front
+  // ones down the A-pillar ahead of the door hinges, the rear ones down the C-pillar.
   const drains = [];
   for (const { sd } of SIDES) {
-    drains.push(tube([skinAt(R0, 4.12, sd, -0.04), skinAt(2.0, 3.97, sd, -0.05), skinAt(1.66, 3.6, sd, -0.07), skinAt(1.6, 2.4, sd, -0.1)], 0.005, 'rubber'));
-    drains.push(tube([skinAt(R1, 4.12, sd, -0.04), skinAt(3.55, 3.97, sd, -0.05), skinAt(3.62, 3.2, sd, -0.07), skinAt(3.62, 2.2, sd, -0.12)], 0.005, 'rubber'));
+    drains.push(named(`drainF${sd}`, tube([skinAt(R0 - 0.02, 4.17, sd, -0.022), skinAt(2.2, 4.08, sd, -0.016), skinAt(1.95, 3.97, sd, -0.015),
+      skinAt(1.72, 3.8, sd, -0.015), skinAt(1.6, 3.3, sd, -0.015), skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02),
+      skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
+    drains.push(named(`drainR${sd}`, tube([skinAt(R1 + 0.02, 4.17, sd, -0.022), skinAt(3.35, 4.1, sd, -0.016), skinAt(3.55, 3.95, sd, -0.015),
+      skinAt(3.62, 3.5, sd, -0.015), skinAt(3.64, 3.0, sd, -0.015), skinAt(3.64, 2.4, sd, -0.02), skinAt(3.64, 1.5, sd, -0.02),
+      skinAt(3.64, 0.8, sd, -0.02)], 0.005, 'rubber')));
   }
   reg.add({
     id: 'pano-frame', ko: '루프 프레임·배수관', en: 'Roof frame & drain tubes',
@@ -313,7 +345,11 @@ export function buildClosures(reg) {
   reg.add({
     id: 'wind-deflector', ko: '윈드 디플렉터', en: 'Wind deflector',
     groups: ['shades-and-wind-deflector'],
-    object: region([[R0 + 0.005, R0 + 0.04, 4.3, 5]], { offset: 0.012, mat: 'blackPlastic', edges: false }),
+    object: group(
+      region([[R0 + 0.005, R0 + 0.04, 4.3, 5]], { offset: 0.012, mat: 'blackPlastic', edges: false }),
+      // pivot arms down to the roof cassette frame
+      ...SIDES.map(({ sd }) => named(`arm${sd}`, rbox([0.03, 0.034, 0.03], skinAt(R0 + 0.022, 4.31, sd, -0.006).toArray(), 'darkMetal', { r: 0.004 }))),
+    ),
   });
   void V; void cyl; void mesh; void quadPlate; void THREE;
 }
