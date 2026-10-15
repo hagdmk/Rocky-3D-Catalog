@@ -5,7 +5,7 @@ import {
   X_FRONT_AXLE as XF, X_REAR_AXLE as XR, WHEEL_Y as WY, TRACK_FRONT, TRACK_REAR, TIRE_RADIUS, TIRE_WIDTH,
 } from '../profile.js';
 import {
-  V, group, named, rbox, box, cyl, beam, bar, tube, torus, lathe, disc, helix, mesh,
+  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, torus, lathe, disc, helix, mesh,
 } from '../geom.js';
 
 const ZF = TRACK_FRONT / 2;
@@ -598,8 +598,8 @@ export function buildChassisSystems(reg) {
     groups: ['brake-vacuum-pump-and-booster'], variant: { booster: 'vacuum' },
     match: /BOOSTER|PIN|CLIP|NUT|Sensor - Vacuum|HOSE/i,
     object: group(
-      cyl(0.12, 0.15, 'x', [1.07, 0.66, bz], 'darkMetal', { seg: 32 }),
-      tube([[1.07, 0.78, bz], [1.3, 0.62, -0.6], [1.7, 0.42, -0.58]], 0.008, 'rubber'),
+      named('booster', cyl(0.12, 0.15, 'x', [1.07, 0.66, bz], 'darkMetal', { seg: 32 })),
+      named('hose', tube([[1.07, 0.78, bz], [1.3, 0.62, -0.6], [1.7, 0.42, -0.58]], 0.008, 'rubber')), // to the vacuum pump
     ),
   });
   reg.add({
@@ -641,23 +641,20 @@ export function buildChassisSystems(reg) {
     groups: ['abs-module-and-esc-sensor'], match: /ESC SENSOR|NUT,LCK/,
     object: rbox([0.07, 0.03, 0.06], [-0.1, 0.32, 0.12], 'darkMetal', { r: 0.006 }),
   });
-  const absOut = [1.18, 0.57, 0.6];
-  // the rear lines split at a junction block bolted to the top of the LH rear-subframe side member
-  const jb = [-1.15, 0.325, -0.42];
-  const hoseEnd = (key) => hoseBodyEnd(CORNERS.find((c) => c.key === key));
+  // Rear lines split at a junction block bolted to the top of the RH rear-subframe side member;
+  // the front-to-rear line runs along the RH sill beside the battery pack, the LH rear line
+  // crosses under the drive unit.
   reg.add({
     id: 'brake-lines', ko: '브레이크 라인(하드 파이프)', en: 'Brake lines (hard pipes)',
     groups: ['brake-lines'],
     object: group(
-      named('mcToAbs', tube([[1.31, 0.64, bz], [1.35, 0.6, -0.2], [1.3, 0.6, 0.3], absOut], 0.005, 'steel')),
-      named('frontL', tube([absOut, [1.4, 0.5, 0.4], [XF - 0.1, 0.62, -0.1], [1.32, 0.62, -0.45], hoseEnd('LF')], 0.004, 'steel')),
-      named('frontR', tube([absOut, [1.3, 0.6, 0.6], [1.33, 0.68, 0.585], hoseEnd('RF')], 0.004, 'steel')),
-      named('toRear', tube([absOut, [1.1, 0.4, 0.5], [0.9, 0.29, 0.25], [-0.9, 0.3, 0.25], [-1.0, 0.325, 0.2],
-        [-1.14, 0.325, 0.1], [-1.15, 0.325, -0.2], jb], 0.004, 'steel')),
-      named('rearL', tube([jb, [-1.3, 0.36, -0.47], [-1.45, 0.5, -0.48], [-1.55, 0.6, -0.55], hoseEnd('LB')], 0.004, 'steel')),
-      named('rearR', tube([jb, [-1.15, 0.325, -0.2], [-1.15, 0.325, 0.3], [-1.18, 0.34, 0.44], [-1.3, 0.36, 0.47],
-        [-1.45, 0.5, 0.48], [-1.55, 0.6, 0.55], hoseEnd('RB')], 0.004, 'steel')),
-      named('junction', rbox([0.04, 0.02, 0.03], [jb[0], jb[1] - 0.003, jb[2]], 'steel', { r: 0.003 })),
+      named('mcToAbs', pipe([[1.31, 0.64, -0.52], [1.2, 0.6, -0.46], [1.18, 0.58, -0.44], [1.18, 0.57, 0.6]], 0.005, 'steel')),
+      named('frontL', pipe([[1.18, 0.57, 0.6], [1.18, 0.59, 0.56], [1.18, 0.64, -0.44], [1.22, 0.68, -0.48], [1.25, 0.69, -0.49], [1.27, 0.71, -0.51], [1.35, 0.7, -0.58]], 0.004, 'steel')),
+      named('frontR', pipe([[1.18, 0.57, 0.6], [1.35, 0.7, 0.58]], 0.004, 'steel')),
+      named('toRear', pipe([[1.18, 0.57, 0.6], [1.15, 0.27, 0.76], [1.13, 0.228, 0.757], [-1.02, 0.228, 0.757], [-1.058, 0.228, 0.74], [-1.06, 0.228, 0.5], [-1.1, 0.27, 0.47], [-1.15, 0.325, 0.43], [-1.15, 0.325, 0.42]], 0.004, 'steel')),
+      named('rearL', pipe([[-1.15, 0.325, 0.42], [-1.15, 0.3, 0.375], [-1.16, 0.21, 0.3], [-1.16, 0.21, -0.3], [-1.16, 0.3, -0.375], [-1.53, 0.6, -0.54], [-1.58, 0.65, -0.59], [-1.59, 0.68, -0.6]], 0.004, 'steel')),
+      named('rearR', pipe([[-1.15, 0.325, 0.42], [-1.48, 0.55, 0.49], [-1.55, 0.62, 0.56], [-1.59, 0.68, 0.6]], 0.004, 'steel')),
+      named('junction', rbox([0.04, 0.02, 0.03], [-1.15, 0.322, 0.42], 'steel', { r: 0.003 })),
     ),
   });
 
@@ -681,17 +678,17 @@ export function buildChassisSystems(reg) {
     id: 'air-lines-front', ko: '프론트 에어 라인', en: 'Front air suspension lines', tags: 'F',
     groups: ['front-air-suspension-pressure-lines'], variant: { susp: 'air' },
     object: group(
-      named('toLF', tube([[1.82, 0.32, -0.59], [XF + 0.05, 0.6, -0.62], [XF - 0.05, WY + 0.4, -0.6]], 0.004, 'blackPlastic')),
-      named('toRF', tube([[1.82, 0.32, -0.53], [1.9, 0.35, 0.0], [XF + 0.05, 0.6, 0.62], [XF - 0.05, WY + 0.4, 0.6]], 0.004, 'blackPlastic')),
-      named('toReservoir', tube([[1.82, 0.3, -0.53], [1.95, 0.318, 0.165]], 0.004, 'blackPlastic')), // valve block to reservoir (#4)
+      named('toLF', pipe([[1.82, 0.32, -0.59], [1.78, 0.44, -0.59], [1.5, 0.75, -0.6]], 0.004, 'blackPlastic')),
+      named('toRF', pipe([[1.82, 0.32, -0.53], [1.74, 0.4, -0.18], [1.7, 0.44, 0.25], [1.63, 0.51, 0.44], [1.55, 0.59, 0.52], [1.5, 0.75, 0.6]], 0.004, 'blackPlastic')),
+      named('toReservoir', pipe([[1.82, 0.3, -0.55], [1.81, 0.3, -0.28], [1.83, 0.3, 0.04], [1.88, 0.3, 0.09], [1.95, 0.318, 0.165]], 0.004, 'blackPlastic')),  // valve block to reservoir (#4)
     ),
   });
   reg.add({
     id: 'air-lines-rear', ko: '리어 에어 라인(좌측 실 경유)', en: 'Rear air suspension lines (via LH sill)', tags: 'B',
     groups: ['rear-air-suspension-pressure-lines'], variant: { susp: 'air' },
     object: group(
-      named('main', tube([[1.82, 0.3, -0.596], [1.2, 0.27, -0.68], [-0.9, 0.27, -0.68], [XR + 0.1, 0.45, -0.62], [XR - 0.06, WY + 0.35, -0.6]], 0.004, 'blackPlastic')),
-      named('toRB', tube([[-0.9, 0.27, -0.68], [-1.15, 0.3, 0.0], [XR + 0.1, 0.45, 0.62], [XR - 0.06, WY + 0.35, 0.6]], 0.004, 'blackPlastic')),
+      named('main', pipe([[1.82, 0.3, -0.596], [1.58, 0.26, -0.62], [1.29, 0.25, -0.63], [1.14, 0.23, -0.76], [1.13, 0.232, -0.757], [-0.95, 0.232, -0.757], [-1.05, 0.23, -0.76], [-1.13, 0.28, -0.71], [-1.18, 0.28, -0.72], [-1.19, 0.29, -0.73], [-1.35, 0.51, -0.73], [-1.46, 0.63, -0.63], [-1.485, 0.7, -0.6]], 0.004, 'blackPlastic')),  // along the LH sill beside the battery pack
+      named('toRB', pipe([[-0.96, 0.232, -0.757], [-1.02, 0.23, -0.757], [-1.058, 0.23, -0.74], [-1.06, 0.22, -0.55], [-1.18, 0.21, -0.3], [-1.18, 0.21, 0.3], [-1.18, 0.27, 0.37], [-1.18, 0.31, 0.37], [-1.19, 0.33, 0.38], [-1.29, 0.45, 0.38], [-1.49, 0.69, 0.6], [-1.485, 0.7, 0.6]], 0.004, 'blackPlastic')),  // crosses under the drive unit
     ),
   });
   reg.add({

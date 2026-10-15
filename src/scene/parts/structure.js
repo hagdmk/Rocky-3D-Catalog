@@ -166,7 +166,7 @@ export function buildStructure(reg) {
   reg.add({
     id: 'motor-bay-absorber', ko: '모터룸 흡음재', en: 'Motor bay absorber',
     groups: ['motor-bay-absorber'],
-    object: box([0.82, 0.03, 0.82], [1.6, 0.49, 0], 'foam'),
+    object: box([0.82, 0.012, 0.82], [1.6, 0.521, 0], 'foam'), // pad on the underside of the frunk tub
   });
 
   // --- Frunk ----------------------------------------------------------------------

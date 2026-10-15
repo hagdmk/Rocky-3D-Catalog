@@ -104,6 +104,32 @@ export function tube(points, r, mat, { closed = false, seg = null, radial = 8, t
   return m;
 }
 
+/**
+ * Pipe, hose or cable along a polyline (routed waypoints) with rounded bends of up
+ * to `bend` metres, so it stays on the routed path instead of overshooting corners.
+ */
+export function pipe(points, r, mat, { bend = 0.03, radial = 8 } = {}) {
+  const P = points.map((p) => (Array.isArray(p) ? V(...p) : p));
+  const path = new THREE.CurvePath();
+  let start = P[0];
+  for (let i = 1; i < P.length - 1; i++) {
+    const a = P[i - 1];
+    const b = P[i];
+    const c = P[i + 1];
+    const d = Math.min(bend, a.distanceTo(b) * 0.45, b.distanceTo(c) * 0.45);
+    const p1 = b.clone().addScaledVector(a.clone().sub(b).normalize(), d);
+    const p2 = b.clone().addScaledVector(c.clone().sub(b).normalize(), d);
+    if (start.distanceTo(p1) > 1e-6) path.add(new THREE.LineCurve3(start, p1));
+    path.add(new THREE.QuadraticBezierCurve3(p1, b, p2));
+    start = p2;
+  }
+  path.add(new THREE.LineCurve3(start, P[P.length - 1]));
+  const g = new THREE.TubeGeometry(path, Math.max(8, Math.ceil(path.getLength() / 0.02)), r, radial, false);
+  const m = mesh(g, mat);
+  m.userData.span = true;
+  return m;
+}
+
 export function torus(R, r, axis, pos, mat, { arc = Math.PI * 2, seg = 32, rot = null } = {}) {
   const g = new THREE.TorusGeometry(R, r, 10, seg, arc);
   const rotation = rot || { x: [0, Math.PI / 2, 0], y: [Math.PI / 2, 0, 0], z: [0, 0, 0] }[axis];
