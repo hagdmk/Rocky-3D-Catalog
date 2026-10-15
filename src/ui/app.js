@@ -11,6 +11,15 @@ const VARIANT_KO = {
   booster: { vacuum: '진공 부스터', ibooster: 'iBooster' },
 };
 
+// Fasteners and consumables: a bolt or clip listed in two groups does not make them one part.
+const HARDWARE = /\b(BOLTS?|BLT|NUTS?|SCREWS?|SCR|WASHERS?|WSHR|CLIPS?|RIVETS?|RIVITS?|RVT|RIVNUT|NUTSERT|STUDS?|GROMMETS?|TAPE|SEALANT|SEALER|PRIMER|CABLE TIES?|TIE STRAPS?|TIE-STRAP|ZIP TIE|LABELS?|STICKER|ADHESIVE|GLUE|COMPOUND|GREASE|LUBRICANT|BETASEAL|INSTAPACK|BUTYL|URETHANE|FASTENERS?|HARDWARE|PUSH ?PIN|SHIM|CLAMP|HOSE RING)\b/i;
+const NO_PN = /^(NA|N\/A|-|NO LONGER AVAILABLE|DISCONTINUED|TBA|)$/i;
+// Group-name qualifiers for vehicle configurations: "Front Subframe" / "Front Subframe - Dual Motor",
+// "Motor Cooling - RWD" / "Motor Cooling - Dual Motor - Large Rear Drive Unit", trims, regions, generations.
+const CONFIG_QUALIFIER = /\s+-\s+(Dual Motor|Single Motor|Rear Wheel Drive|RWD|(?:1st|2nd) Generation|(?:Base|Performance|Premium|Signature|Next Generation) Trim|Base|Premium|NA|EU and APAC|North America|Europe|China|Japan and Australia|Park Assist|Driver Assist|(?:Large|Small) Rear Drive Unit)(?=\s+-\s+|$)/gi;
+/** Groups with the same family are versions of one assembly for different configurations. */
+const groupFamily = (name) => name.replace(CONFIG_QUALIFIER, '').replace(/^(Dual|Single)\s+/i, '').trim().toUpperCase();
+
 const $ = (sel, el = document) => el.querySelector(sel);
 const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -35,6 +44,7 @@ export class App {
     this.state = { mode: null };
     this.locFilter = true;
     this.tableFilter = '';
+    this.groupLinks = new Map(); // component id -> how its catalog groups relate (see groupLink)
   }
 
   init() {
@@ -60,18 +70,70 @@ export class App {
     return `${c.ko}`;
   }
 
-  /** Make sure at least one component of a group is visible (switch variant / unhide). */
-  ensureVisible(comps) {
-    if (comps.some((c) => this.visible(c))) return;
+  /**
+   * Show the locations of a catalog group (or one location): unhide the system that owns the
+   * group `gid` (every location of the group lists it; without `gid`, the location's own system)
+   * when one of them is hidden only by that, and switch the vehicle configuration when none of
+   * them is fitted in the current one.
+   */
+  ensureVisible(comps, gid = null) {
     const c = comps[0];
     if (!c) return;
-    if (c.systems.every((s) => this.viewer.hiddenSystems.has(s))) this.setSystemHidden(c.system, false);
+    const sid = gid ? this.cat.systemOfGroup(gid) : c.system;
+    const sysHidden = (x) => x.systems.every((s) => this.viewer.hiddenSystems.has(s));
+    const fitted = comps.filter((x) => this.viewer.inConfig(x));
+    if ((fitted.length ? fitted : comps).some(sysHidden)) this.setSystemHidden(sid, false);
+    if (fitted.length) return;
     if (c.variant) {
       for (const [k, v] of Object.entries(c.variant)) {
         const val = Array.isArray(v) ? v[0] : v;
         if (this.viewer.variant[k] !== val && !(Array.isArray(v) && v.includes(this.viewer.variant[k]))) this.setVariant(k, val);
       }
     }
+  }
+
+  /**
+   * How the catalog groups of a location relate, for the chip in its info panel:
+   * 'shared'   — a part (not a fastener) with the same part number is listed in groups of
+   *              different assemblies, e.g. the lower I-shaft link in both steering groups;
+   * 'variants' — the groups are versions of one assembly for different configurations
+   *              (drive, generation, trim, region), e.g. Front Subframe / - Dual Motor;
+   * 'split'    — the location's parts are spread over unrelated groups.
+   */
+  groupLink(comp) {
+    let r = this.groupLinks.get(comp.id);
+    if (r) return r;
+    const family = new Map(comp.groups.map((gid) => [gid, groupFamily(this.cat.groups.get(gid).name)]));
+    const families = new Set(family.values());
+    const seen = new Map(); // part number -> first row listing it for this location
+    const same = []; // [row, the same part in another assembly's group]
+    for (const gid of comp.groups) {
+      for (const p of this.cat.groups.get(gid).parts) {
+        const pn = (p.pn || '').trim().toUpperCase();
+        if (NO_PN.test(pn) || HARDWARE.test(p.name) || !this.cat.partMatches(comp, p)) continue;
+        const first = seen.get(pn);
+        if (!first) seen.set(pn, p);
+        else if (family.get(first.group.id) !== family.get(gid)) same.push([first, p]);
+      }
+    }
+    const kind = same.length ? 'shared' : families.size < family.size ? 'variants' : 'split';
+    r = { kind, same };
+    this.groupLinks.set(comp.id, r);
+    return r;
+  }
+
+  groupLinkChip(comp) {
+    const n = comp.groups.length;
+    const { kind, same } = this.groupLink(comp);
+    if (kind === 'shared') {
+      const where = (p) => `${p.group.nameKo}${p.no && p.no !== '*' ? ` #${p.no}` : ''}`;
+      const examples = [...new Map(same.map(([a, b]) => [`${where(a)} = ${where(b)}`, a])).entries()]
+        .slice(0, 3).map(([pair, a]) => `${a.name} ${a.pn} — ${pair}`);
+      const title = `같은 부품이 카탈로그의 여러 그룹에 실려 있어 한 위치로 표시합니다. 예: ${examples.join('; ')}`;
+      return `<span class="chip" title="${esc(title)}">${n}개 그룹 공유</span>`;
+    }
+    if (kind === 'variants') return `<span class="chip" title="이 위치는 차량 구성·사양(구동 방식, 세대, 트림, 지역 등)별로 나뉜 카탈로그 그룹을 함께 다룹니다">${n}개 그룹(구성별)</span>`;
+    return `<span class="chip" title="이 위치의 부품이 카탈로그의 여러 그룹에 나뉘어 실려 있습니다">${n}개 그룹</span>`;
   }
 
   // ------------------------------------------------------------------ tree
@@ -132,6 +194,7 @@ export class App {
       $('input', node).checked = !hidden;
       node.classList.toggle('hidden-sys', hidden);
     }
+    this.syncInfoVisibility();
   }
 
   syncTreeSelection() {
@@ -153,8 +216,9 @@ export class App {
   selectComponent(id, { gid = null, part = null, frame = false, hash = true } = {}) {
     const comp = this.cat.componentById.get(id);
     if (!comp) return;
-    this.ensureVisible([comp]);
-    const g = gid && comp.groups.includes(gid) ? gid : this.preferredGroup(comp);
+    const asked = gid && comp.groups.includes(gid) ? gid : null;
+    this.ensureVisible([comp], asked);
+    const g = asked || this.preferredGroup(comp);
     this.state = { mode: 'comp', comp, gid: g, part };
     this.tableFilter = '';
     const emphasis = part ? this.instancesForPart(part).map((c) => c.id) : [];
@@ -169,11 +233,13 @@ export class App {
     const g = this.cat.groups.get(gid);
     if (!g) return;
     const all = this.cat.componentsByGroup.get(gid) || [];
-    this.ensureVisible(all);
+    this.ensureVisible(all, gid);
     const comps = all.filter((c) => this.visible(c));
     this.state = { mode: 'group', gid, part };
     this.tableFilter = '';
-    this.viewer.setSelected(comps.map((c) => c.id), part ? this.instancesForPart(part).map((c) => c.id) : []);
+    // all locations of the group: the viewer highlights whichever of them are drawn, also
+    // after systems are hidden or shown again
+    this.viewer.setSelected(all.map((c) => c.id), part ? this.instancesForPart(part).map((c) => c.id) : []);
     if (frame && comps.length) this.viewer.frame(comps.map((c) => c.id));
     this.renderInfo();
     this.syncTreeSelection();
@@ -273,10 +339,42 @@ export class App {
     const body = el('<div class="info-body"></div>');
     body.append(...this.renderGroupBody(st.gid, st.mode === 'comp' ? st.comp : null));
     info.append(body);
+    this.syncInfoVisibility();
     this.updateInsets();
     if (st.part) {
       const row = $(`tr.row[data-i="${st.part.index}"]`, info);
       if (row) requestAnimationFrame(() => row.scrollIntoView({ block: 'center' }));
+    }
+  }
+
+  /**
+   * Keep the open panel truthful when systems are hidden or shown without redrawing it (the
+   * table keeps its scroll): a selected location that is hidden, or drawn only as a faint
+   * mounting ghost, is not highlighted, and the panel says so.
+   */
+  syncInfoVisibility() {
+    const st = this.state;
+    const info = $('#info');
+    if (!st.mode || info.hidden) return;
+    const note = $('[data-role=drawn-note]', info);
+    if (note) {
+      const comps = st.mode === 'comp' ? [st.comp] : (this.cat.componentsByGroup.get(st.gid) || []);
+      const off = comps.length > 0 && !comps.some((c) => this.viewer.isDrawn(c.id));
+      note.hidden = !off;
+      if (off) {
+        const ghost = comps.some((c) => c.ghost);
+        const why = ghost ? '시스템이 숨겨져, 보이는 부품의 장착 상대로 흐린 윤곽만 그려지며 강조되지 않습니다.'
+          : comps.some((c) => this.viewer.inConfig(c)) ? '시스템이 숨겨져 3D에 그려지지 않습니다.'
+            : '현재 차량 구성에는 이 위치가 없습니다.';
+        note.textContent = ghost ? '윤곽만 표시' : '3D 숨김';
+        note.title = `${why} “${st.mode === 'comp' ? '이 부품으로 이동' : '위치로 이동'}”을 누르면 다시 표시합니다.`;
+      }
+    }
+    for (const b of $$('.inst button[data-c]', info)) {
+      const c = this.cat.componentById.get(b.dataset.c);
+      const vis = this.visible(c);
+      $('.off-mark', b).hidden = vis;
+      b.title = vis ? '' : this.viewer.inConfig(c) ? '시스템이 숨겨져 3D에 표시되지 않음' : '현재 차량 구성에서 숨겨짐';
     }
   }
 
@@ -291,7 +389,8 @@ export class App {
       }
     }
     if (comp.shell) chips.push('<span class="chip">외판</span>');
-    if (comp.groups.length > 1) chips.push(`<span class="chip" title="같은 부품이 카탈로그의 여러 그룹에 실려 있어 한 위치로 표시합니다">${comp.groups.length}개 그룹 공유</span>`);
+    if (comp.groups.length > 1) chips.push(this.groupLinkChip(comp));
+    chips.push('<span class="chip off" data-role="drawn-note" hidden></span>');
     const head = el(`<div class="info-head">
       <div class="kicker"><span class="dot" style="background:${this.sysColor(sys.id)}"></span>${esc(sys.nameKo)} · ${esc(sys.name)}</div>
       <h2>${esc(comp.ko)}</h2>
@@ -303,7 +402,10 @@ export class App {
       </div>
       <button class="close-x" title="닫기 (Esc)">×</button>
     </div>`);
-    $('[data-act=frame]', head).addEventListener('click', () => this.viewer.frame([comp.id]));
+    $('[data-act=frame]', head).addEventListener('click', () => {
+      this.ensureVisible([comp], this.state.gid); // its system may have been hidden since it was selected
+      this.viewer.frame([comp.id]);
+    });
     $('[data-act=isolate]', head).addEventListener('click', () => this.isolateSystem(comp.system));
     $('.close-x', head).addEventListener('click', () => this.clearSelection());
     return head;
@@ -315,14 +417,17 @@ export class App {
       <div class="kicker"><span class="dot" style="background:${this.sysColor(g.system.id)}"></span>${esc(g.system.nameKo)} · ${esc(g.system.name)}</div>
       <h2>${esc(g.nameKo)}</h2>
       <div class="en">${esc(g.name)} — 카탈로그 그룹</div>
-      <div class="chips"><span class="chip">3D 위치 ${comps.length}곳</span><span class="chip">부품 ${g.parts.length}행</span></div>
+      <div class="chips"><span class="chip">3D 위치 ${comps.length}곳</span><span class="chip">부품 ${g.parts.length}행</span><span class="chip off" data-role="drawn-note" hidden></span></div>
       <div class="info-actions">
         <button class="btn primary" data-act="frame">위치로 이동</button>
         <button class="btn" data-act="isolate">이 시스템만 보기</button>
       </div>
       <button class="close-x" title="닫기 (Esc)">×</button>
     </div>`);
-    $('[data-act=frame]', head).addEventListener('click', () => this.viewer.frame(comps.filter((c) => this.visible(c)).map((c) => c.id)));
+    $('[data-act=frame]', head).addEventListener('click', () => {
+      this.ensureVisible(comps, g.id);
+      this.viewer.frame(comps.map((c) => c.id));
+    });
     $('[data-act=isolate]', head).addEventListener('click', () => this.isolateSystem(g.system.id));
     $('.close-x', head).addEventListener('click', () => this.clearSelection());
     return head;
@@ -380,10 +485,9 @@ export class App {
       const inst = el(`<div class="inst"><div class="lbl">${comp ? '이 그룹의 다른 위치' : '3D 위치'} (${comps.length})</div><div class="chips"></div></div>`);
       const chipsEl = $('.chips', inst);
       for (const c of comps) {
-        const vis = this.visible(c);
-        const b = el(`<button class="chip ${c === comp ? 'loc' : ''}" ${vis ? '' : 'title="현재 차량 구성에서 숨겨짐"'}>${esc(c.ko)}${vis ? '' : ' ⦸'}</button>`);
+        const b = el(`<button class="chip ${c === comp ? 'loc' : ''}" data-c="${c.id}">${esc(c.ko)}<span class="off-mark" hidden> ⦸</span></button>`);
         b.addEventListener('click', () => this.selectComponent(c.id, { gid }));
-        b.addEventListener('mouseenter', () => vis && this.viewer.setPreview([c.id]));
+        b.addEventListener('mouseenter', () => this.visible(c) && this.viewer.setPreview([c.id]));
         b.addEventListener('mouseleave', () => this.viewer.setPreview([]));
         chipsEl.append(b);
       }
@@ -559,13 +663,13 @@ export class App {
   }
 
   openPart(p) {
-    const inst = this.instancesForPart(p);
-    const all = this.cat.componentsByGroup.get(p.group.id) || [];
-    this.ensureVisible(inst.length ? inst : all);
-    const vis = this.instancesForPart(p);
-    const target = vis[0] || all[0];
-    if (!target) return;
-    this.selectComponent(target.id, { gid: p.group.id, part: p, frame: true });
+    const gid = p.group.id;
+    const all = this.cat.componentsByGroup.get(gid) || [];
+    if (!all.length) return;
+    // the locations this row belongs to, shown or not; the group's system is shown for them
+    this.ensureVisible(this.cat.componentsForPart(p), gid);
+    const target = this.instancesForPart(p)[0] || all[0];
+    this.selectComponent(target.id, { gid, part: p, frame: true });
   }
 
   closeSideOnMobile() {
