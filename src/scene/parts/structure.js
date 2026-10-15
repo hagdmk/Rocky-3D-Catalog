@@ -5,7 +5,7 @@ import {
   X_FRONT_AXLE as XF, X_REAR_AXLE as XR, WHEEL_Y as WY, ARCH_RADIUS, topY, sOf,
 } from '../profile.js';
 import {
-  V, group, rbox, box, cyl, beam, bar, tube, mesh, quadPlate,
+  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, mesh, quadPlate,
 } from '../geom.js';
 
 const SIDES = [
@@ -37,8 +37,8 @@ export function buildStructure(reg) {
       groups: ['front-inner-panels-dual-motor', 'front-inner-panels-rear-wheel-drive'],
       match: /SHOCK TOWER|SHOTGUN|RAIL|EXTN|EXTENSION|TORQUE BOX|REINF/,
       object: group(
-        bar([2.26, 0.47, sg * 0.5], [1.02, 0.42, sg * 0.5], 0.08, 0.12, 'aluminum'),
-        rbox([0.26, 0.3, 0.2], [XF - 0.05, 0.7, sg * 0.6], 'aluminum', { r: 0.03 }),
+        named('rail', bar([2.26, 0.47, sg * 0.5], [1.02, 0.42, sg * 0.5], 0.08, 0.12, 'aluminum')),
+        named('tower', hollow(rbox([0.26, 0.3, 0.2], [XF - 0.05, 0.7, sg * 0.6], 'aluminum', { r: 0.03 }))),
         bar([1.85, 0.8, sg * 0.72], [0.95, 0.86, sg * 0.76], 0.06, 0.07, 'aluminum'),
         bar([XF - 0.05, 0.8, sg * 0.62], [1.85, 0.8, sg * 0.72], 0.05, 0.05, 'aluminum'),
         bar([XF - 0.05, 0.84, sg * 0.56], [1.02, 0.86, sg * 0.32], 0.05, 0.04, 'aluminum'),
@@ -51,7 +51,7 @@ export function buildStructure(reg) {
     match: /CMBR|PLATE|BRKT DC-DC|MOTOR MOUNT|SHOCK TOWER REINFORCEMENT|BRACKET, MOTOR/,
     object: group(
       bar([1.02, 0.86, -0.34], [1.02, 0.86, 0.34], 0.05, 0.05, 'aluminum'),
-      box([0.3, 0.012, 0.9], [1.05, 0.33, 0], 'aluminum'),
+      named('torqueBox', box([0.3, 0.012, 0.9], [1.05, 0.33, 0], 'aluminum')),
     ),
   });
 
@@ -70,8 +70,11 @@ export function buildStructure(reg) {
       id: `rear-rail-${sd}`, ko: `리어 레일·노드 (${ko})`, en: `Rear rail & node ${en}`, tags: sd,
       groups: ['rear-end-panels'], match: /RAIL|NODE|RETRACTOR|REINF|WHL ARCH|QTR INR|WHEELHOUSE/,
       object: group(
-        bar([-1.0, 0.36, sg * 0.56], [-2.3, 0.45, sg * 0.56], 0.09, 0.11, 'aluminum'),
-        rbox([0.3, 0.26, 0.16], [XR + 0.3, 0.42, sg * 0.66], 'aluminum', { r: 0.03 }),
+        // kicks up over the rear axle so the halfshafts and struts pass beneath it
+        named('railFront', bar([-1.0, 0.36, sg * 0.55], [-1.25, 0.425, sg * 0.55], 0.09, 0.11, 'aluminum')),
+        named('rail', bar([-1.25, 0.425, sg * 0.55], [-2.3, 0.45, sg * 0.55], 0.09, 0.11, 'aluminum')),
+        named('node', rbox([0.3, 0.26, 0.14], [XR + 0.3, 0.42, sg * 0.65], 'aluminum', { r: 0.03 })),
+        named('closeout', rbox([0.085, 0.1, 0.07], [-1.0175, 0.32, sg * 0.755], 'aluminum', { r: 0.01 })), // node to sill
       ),
     });
     reg.add({
@@ -79,7 +82,7 @@ export function buildStructure(reg) {
       groups: ['rear-quarter-inner-panels'],
       object: group(
         wheelhouse(XR, sg, ARCH_RADIUS + 0.035, 0.6, 0.95, 'aluminum'),
-        rbox([0.2, 0.32, 0.12], [XR - 0.06, 0.82, sg * 0.62], 'aluminum', { r: 0.02 }),
+        named('tower', hollow(rbox([0.2, 0.32, 0.12], [XR - 0.06, 0.82, sg * 0.62], 'aluminum', { r: 0.02 }))),
         bar([XR + 0.0, 0.95, sg * 0.75], [-0.75, 1.32, sg * 0.66], 0.06, 0.05, 'aluminum'),
       ),
     });

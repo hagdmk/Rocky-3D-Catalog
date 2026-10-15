@@ -4,7 +4,7 @@ import {
   X_FRONT_AXLE as XF, X_REAR_AXLE as XR, WHEEL_Y as WY,
 } from '../profile.js';
 import {
-  group, rbox, box, cyl, beam, bar, tube, quadPlate,
+  group, named, rbox, box, cyl, beam, bar, tube, quadPlate,
 } from '../geom.js';
 
 export const PACK = { x0: 1.15, x1: -1.13, y0: 0.158, y1: 0.285, z: 0.74 };
@@ -104,9 +104,10 @@ export function buildEnergy(reg) {
     id: 'dc-dc-converter', ko: 'DC-DC 컨버터', en: 'DC-DC converter',
     groups: ['dc-dc-converter-1st-generation', 'dc-dc-converter-2nd-generation'],
     match: /DC-DC|DCDC|WASHER|NUT|SCR|SCREW|COVER|HEADER|CLIP|BRKT|STRAP|WSHR|BOLT|BLT/,
+    // on top of the RH front rail, ahead of the shock tower
     object: group(
-      rbox([0.3, 0.09, 0.22], [1.72, 0.44, 0.56], 'aluminum', { r: 0.015 }),
-      ...[0, 1, 2, 3, 4].map((i) => box([0.004, 0.02, 0.2], [1.6 + i * 0.06, 0.495, 0.56], 'aluminum')),
+      named('case', rbox([0.3, 0.09, 0.135], [1.78, 0.535, 0.5175], 'aluminum', { r: 0.015 })),
+      ...[0, 1, 2, 3, 4].map((i) => box([0.004, 0.02, 0.125], [1.66 + i * 0.06, 0.59, 0.5175], 'aluminum')),
     ),
   });
   reg.add({

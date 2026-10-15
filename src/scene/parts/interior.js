@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { skinPath, skinAt } from '../body.js';
 import { region, SV } from './exterior.js';
 import {
-  V, group, rbox, box, cyl, beam, bar, tube, extrude, quadPlate, disc, mesh,
+  V, group, hollow, rbox, box, cyl, beam, bar, tube, extrude, quadPlate, disc, mesh,
 } from '../geom.js';
 
 const SIDES = [
@@ -42,7 +42,7 @@ export function buildInterior(reg) {
     id: 'dash-panel', ko: '대시 패널(인스트루먼트 패널)', en: 'Dash panel (instrument panel)',
     groups: ['dash-panel'], match: /^(?!.*GLOVE)/,
     object: group(
-      extrude(DASH_PROFILE, 1.46, 'xy', [0, 0, 0], 'leather', { bevel: 0.01 }),
+      hollow(extrude(DASH_PROFILE, 1.46, 'xy', [0, 0, 0], 'leather', { bevel: 0.01 })), // moulded shell: ducts, column and wiring run inside
       box([0.3, 0.004, 1.2], [0.75, 0.946, 0], 'blackPlastic'),
     ),
   });
@@ -100,7 +100,7 @@ export function buildInterior(reg) {
     id: 'center-console', ko: '센터 콘솔(터널 트림)', en: 'Center console (tunnel trim)',
     groups: ['center-tunnel-trim'],
     object: group(
-      rbox([0.82, 0.12, 0.26], [0.0, 0.37, 0], 'leather', { r: 0.03 }),
+      hollow(rbox([0.82, 0.12, 0.26], [0.0, 0.37, 0], 'leather', { r: 0.03 })), // tunnel trim shell over ducts and wiring
       rbox([0.3, 0.08, 0.2], [-0.32, 0.6, 0], 'leather', { r: 0.03 }),
       rbox([0.06, 0.18, 0.2], [-0.42, 0.48, 0], 'leather', { r: 0.02 }),
     ),
@@ -270,7 +270,7 @@ export function buildInterior(reg) {
     id: 'rear-seat-back-60', ko: '2열 시트 등받이 60% (좌)', en: '2nd row seat back 60% (LH)', tags: 'L',
     groups: rearGroups, match: /BACK|60|PIVOT|LATCH|HEADREST|HRST|GROMMET|SLEEVE|BRACKET|BRKT|STRIKER|ESCUTCHEON|PUSH ROD|CIRCLIP/,
     object: group(
-      rbox([0.12, 0.6, 0.72], [rx - 0.34, 0.87, -0.22], 'leather', { r: 0.045, rot: [0, 0, 0.3] }),
+      hollow(rbox([0.12, 0.6, 0.72], [rx - 0.34, 0.87, -0.22], 'leather', { r: 0.045, rot: [0, 0, 0.3] })), // upholstered frame
       rbox([0.08, 0.14, 0.24], [rx - 0.47, 1.22, -0.36], 'leather', { r: 0.035, rot: [0, 0, 0.3] }),
       rbox([0.08, 0.12, 0.2], [rx - 0.47, 1.21, 0.0], 'leather', { r: 0.035, rot: [0, 0, 0.3] }),
     ),
@@ -279,7 +279,7 @@ export function buildInterior(reg) {
     id: 'rear-seat-back-40', ko: '2열 시트 등받이 40% (우)', en: '2nd row seat back 40% (RH)', tags: 'R',
     groups: rearGroups, match: /BACK|40|PIVOT|LATCH|HEADREST|HRST|GROMMET|BRACKET|BRKT|STRIKER|ESCUTCHEON|PUSH ROD|CIRCLIP/,
     object: group(
-      rbox([0.12, 0.6, 0.47], [rx - 0.34, 0.87, 0.375], 'leather', { r: 0.045, rot: [0, 0, 0.3] }),
+      hollow(rbox([0.12, 0.6, 0.47], [rx - 0.34, 0.87, 0.375], 'leather', { r: 0.045, rot: [0, 0, 0.3] })),
       rbox([0.08, 0.14, 0.24], [rx - 0.47, 1.22, 0.36], 'leather', { r: 0.035, rot: [0, 0, 0.3] }),
     ),
   });
@@ -288,7 +288,7 @@ export function buildInterior(reg) {
     groups: ['3rd-row-seats'],
     object: group(
       rbox([0.36, 0.08, 0.9], [-1.86, 0.69, 0], 'leather', { r: 0.03 }),
-      rbox([0.08, 0.42, 0.9], [-1.66, 0.88, 0], 'leather', { r: 0.03, rot: [0, 0, -0.32] }),
+      hollow(rbox([0.08, 0.42, 0.9], [-1.66, 0.88, 0], 'leather', { r: 0.03, rot: [0, 0, -0.32] })),
       rbox([0.06, 0.1, 0.18], [-1.6, 1.12, -0.24], 'leather', { r: 0.02, rot: [0, 0, -0.32] }),
       rbox([0.06, 0.1, 0.18], [-1.6, 1.12, 0.24], 'leather', { r: 0.02, rot: [0, 0, -0.32] }),
     ),

@@ -5,11 +5,15 @@ import {
   X_FRONT_AXLE as XF, X_REAR_AXLE as XR, WHEEL_Y as WY, TRACK_FRONT, TRACK_REAR, TIRE_RADIUS, TIRE_WIDTH,
 } from '../profile.js';
 import {
-  V, group, rbox, box, cyl, beam, bar, tube, torus, lathe, disc, helix, mesh,
+  V, group, named, rbox, box, cyl, beam, bar, tube, torus, lathe, disc, helix, mesh,
 } from '../geom.js';
 
 const ZF = TRACK_FRONT / 2;
 const ZR = TRACK_REAR / 2;
+
+const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+/** Point on segment a-b where coordinate `axis` (0 x, 1 y, 2 z) equals v. */
+const at = (a, b, axis, v) => lerp(a, b, (v - a[axis]) / (b[axis] - a[axis]));
 
 export const CORNERS = [
   { key: 'LF', x: XF, z: -ZF, sg: -1, front: true, ko: '앞 좌', en: 'front LH' },
@@ -50,7 +54,7 @@ function wheelMesh(c) {
     parts.push(bar(p0, p1, 0.026, 0.02, 'aluminum'));
     void a;
   }
-  parts.push(disc(0.075, 0.03, 'z', [c.x, WY, faceZ + sg * 0.01], 'aluminum'));
+  parts.push(named('centre', disc(0.075, 0.03, 'z', [c.x, WY, faceZ + sg * 0.01], 'aluminum'))); // mounting face on the rotor hat
   parts.push(disc(0.035, 0.012, 'z', [c.x, WY, faceZ + sg * 0.03], 'paintDark'));
   return group(parts);
 }
@@ -59,8 +63,9 @@ function rotorMesh(c) {
   const r = c.front ? 0.178 : 0.183;
   const zc = c.z - c.sg * 0.035;
   return group(
-    disc(r, 0.03, 'z', [c.x, WY, zc], 'steel', 40),
-    cyl(0.085, 0.05, 'z', [c.x, WY, zc + c.sg * 0.03], 'darkMetal', { seg: 28 }),
+    named('disc', disc(r, 0.03, 'z', [c.x, WY, zc], 'steel', 40)),
+    // hat from the hub flange out to the wheel mounting face
+    named('hat', cyl(0.085, 0.1, 'z', [c.x, WY, zc + c.sg * 0.05], 'darkMetal', { seg: 28 })),
   );
 }
 
@@ -71,16 +76,41 @@ function caliperMesh(c, scale = 1, angle = 2.6, matKey = 'paintDark') {
   const zc = c.z - c.sg * 0.035;
   const m = rbox([0.07 * scale, 0.17 * scale, 0.085 * scale], [x, y, zc], matKey, { r: 0.012 });
   m.rotation.z = angle - Math.PI / 2;
-  return m;
+  return named('caliper', m);
 }
 
+/** Caliper mounting bracket from the caliper body to the knuckle upright. */
+function caliperBracket(c, angle) {
+  const r = (c.front ? 0.15 : 0.155) - 0.02;
+  const y = WY + Math.sin(angle) * r;
+  return named('bracket', beam([c.x + Math.cos(angle) * r, y, c.z - c.sg * 0.06], [c.x - 0.04, y, c.z - c.sg * 0.11], 0.012, 'paintDark'));
+}
+
+/** Brake hose body bracket: on the rear face of the shock tower, clear of the spring. */
+export const hoseBodyEnd = (c) => (c.front ? [1.35, 0.7, c.sg * 0.58] : [-1.59, 0.68, c.sg * 0.6]);
+
 function knuckleMesh(c) {
-  const zi = c.z - c.sg * 0.11;
-  return group(
-    cyl(0.07, 0.07, 'z', [c.x, WY, c.z - c.sg * 0.07], 'steel', { seg: 24 }),
-    rbox([0.09, 0.36, 0.06], [c.x - 0.01, WY + 0.02, zi], 'aluminum', { r: 0.02 }),
-    beam([c.x - 0.01, WY + 0.17, zi], [c.x - 0.02, WY + 0.27, zi + c.sg * 0.05], 0.022, 'aluminum'),
-  );
+  const sg = c.sg;
+  const zi = c.z - sg * 0.11;
+  const parts = [
+    named('hub', cyl(0.07, 0.07, 'z', [c.x, WY, c.z - sg * 0.07], 'steel', { seg: 24 })),
+    named('upright', rbox([0.09, 0.36, 0.06], [c.x - 0.01, WY + 0.02, zi], 'aluminum', { r: 0.02 })),
+  ];
+  if (c.front) {
+    parts.push(
+      // leans inboard so the upper ball joint sits clear of the tyre
+      named('gooseneck', beam([c.x - 0.01, WY + 0.17, zi], [c.x - 0.02, WY + 0.27, zi - sg * 0.031], 0.022, 'aluminum')),
+      // pinch clamp around the upper-arm ball stud (bolt #4 / nut #5 of the arm group)
+      named('clamp', rbox([0.05, 0.035, 0.05], [c.x - 0.02, WY + 0.253, zi - sg * 0.031], 'aluminum', { r: 0.006 })),
+      // steering arm; the outer tie-rod ball stud comes up through its eye
+      named('steerArm', beam([c.x - 0.045, WY + 0.02, zi], [c.x - 0.14, WY + 0.02, c.z - sg * 0.13], 0.016, 'aluminum')),
+      named('steerEye', cyl(0.02, 0.02, 'y', [c.x - 0.14, WY + 0.02, c.z - sg * 0.13], 'aluminum')),
+    );
+  } else {
+    // turned inboard, clear of the tyre, to take the upper link
+    parts.push(named('gooseneck', beam([c.x - 0.01, WY + 0.17, zi], [c.x + 0.02, WY + 0.25, zi - sg * 0.04], 0.022, 'aluminum')));
+  }
+  return group(parts);
 }
 
 export function buildChassis(reg) {
@@ -109,19 +139,27 @@ export function buildChassis(reg) {
       groups: [brakeGroup], match: /ROTOR|DISC|SHIELD|BLT CSK/,
       object: group(
         rotorMesh(c),
-        disc(0.19, 0.004, 'z', [c.x, WY, c.z - c.sg * 0.075], 'steel', 40),
+        named('shield', disc(0.19, 0.004, 'z', [c.x, WY, c.z - c.sg * 0.075], 'steel', 40)),
       ),
     });
     reg.add({
       id: `brake-caliper-${c.key}`, ko: `브레이크 캘리퍼·패드 (${c.ko})`, en: `Brake caliper & pads ${c.en}`, tags: `${side}${fr}`,
       groups: [brakeGroup], match: /CALIPER|PAD|BLEED|BOOT|GREASE|BOLT HF M12/,
-      object: caliperMesh(c, 1, c.front ? Math.PI * 0.82 : Math.PI * 0.8, 'paintDark'),
+      object: group(
+        caliperMesh(c, 1, c.front ? Math.PI * 0.82 : Math.PI * 0.8, 'paintDark'),
+        caliperBracket(c, c.front ? Math.PI * 0.82 : Math.PI * 0.8),
+      ),
     });
     if (!c.front) {
       reg.add({
         id: `park-brake-${c.key}`, ko: `주차 브레이크 캘리퍼 (${c.ko})`, en: `Parking brake caliper ${c.en}`, tags: `${side}B`,
         groups: ['park-brake-calipers-and-pads'], match: /CALIPER|PAD|SPRING|BLT H|EPB CONNECTOR/,
-        object: caliperMesh(c, 0.62, Math.PI * 1.2, 'darkMetal'),
+        object: group(
+          caliperMesh(c, 0.62, Math.PI * 1.2, 'darkMetal'),
+          // bracket to the knuckle (BLT M10x86 #2)
+          named('bracket', beam([c.x + Math.cos(Math.PI * 1.2) * 0.14, WY + Math.sin(Math.PI * 1.2) * 0.14, c.z - c.sg * 0.06],
+            [c.x - 0.05, WY - 0.07, c.z - c.sg * 0.11], 0.01, 'steel')),
+        ),
       });
     }
     reg.add({
@@ -133,80 +171,155 @@ export function buildChassis(reg) {
       id: `wheel-speed-sensor-${c.key}`, ko: `휠 속도 센서 (${c.ko})`, en: `Wheel speed sensor ${c.en}`, tags: `${side}${fr}`,
       groups: ['wheel-speed-sensors'],
       object: group(
-        cyl(0.009, 0.06, 'z', [c.x + 0.07, WY - 0.05, c.z - c.sg * 0.13], 'blackPlastic'),
-        tube([[c.x + 0.07, WY - 0.05, c.z - c.sg * 0.16], [c.x + 0.1, WY + 0.15, c.z - c.sg * 0.2],
-          [c.x + 0.05, WY + 0.38, c.z - c.sg * 0.24]], 0.004, 'wire'),
+        // sensor head pushed into the knuckle, lead up to the wheelhouse
+        named('head', cyl(0.009, 0.06, 'z', [c.x + 0.04, WY - 0.05, c.z - c.sg * 0.13], 'blackPlastic')),
+        named('lead', tube(c.front
+          ? [[c.x + 0.04, WY - 0.05, c.z - c.sg * 0.13], [1.62, 0.32, c.sg * 0.66], [1.64, 0.5, c.sg * 0.63], [1.625, 0.62, c.sg * 0.62]]
+          : [[c.x + 0.04, WY - 0.05, c.z - c.sg * 0.16], [c.x + 0.09, WY + 0.15, c.z - c.sg * 0.2], [c.x + 0.05, WY + 0.38, c.z - c.sg * 0.24]],
+        0.004, 'wire')),
       ),
     });
-    // jounce (flexible brake) hose: from body bracket to caliper
+    // jounce (flexible brake) hose: from the caliper up to the body bracket on the shock tower,
+    // routed behind the spring
     const calX = c.x + Math.cos(Math.PI * 0.82) * 0.15;
+    const hb = hoseBodyEnd(c);
+    const hosePath = c.front
+      ? [[calX, WY + 0.11, c.z - c.sg * 0.07], [calX - 0.03, WY + 0.2, c.z - c.sg * 0.15], [1.345, 0.64, c.sg * 0.63], hb]
+      : [[calX, WY + 0.11, c.z - c.sg * 0.07], [-1.585, 0.55, c.sg * 0.7], [-1.615, 0.63, c.sg * 0.63], hb];
     reg.add({
       id: `jounce-hose-${c.key}`, ko: `브레이크 호스 (${c.ko})`, en: `Brake jounce hose ${c.en}`, tags: `${side}${fr}`,
       groups: ['jounce-hoses'],
-      object: tube([[calX, WY + 0.11, c.z - c.sg * 0.07], [calX - 0.03, WY + 0.2, c.z - c.sg * 0.15],
-        [calX + 0.02, WY + 0.3, c.z - c.sg * 0.24], [calX + 0.06, WY + 0.36, c.z - c.sg * 0.3]], 0.006, 'rubber'),
+      object: named('hose', tube(hosePath, 0.006, 'rubber')),
     });
   }
 
   // --- Front suspension -------------------------------------------------------
+  // Upper control arm on the body shock tower, fore and aft lower links on the
+  // subframe, strut clevis bolted through the aft link (catalog front-suspension-arms,
+  // front-air-spring, front-coil-spring-and-damper).
+  const frontPts = (c) => {
+    const sg = c.sg;
+    const BJA = [c.x - 0.02, WY - 0.137, sg * 0.716];
+    const BA = [c.x - 0.06, WY - 0.14, sg * 0.395];
+    return {
+      BJU: [c.x - 0.01, WY + 0.27, sg * 0.69], // upper ball joint in the knuckle clamp
+      PF: [c.x + 0.065, WY + 0.3, sg * 0.52], // upper-arm pivots inside the shock tower
+      PR: [c.x - 0.155, WY + 0.3, sg * 0.52],
+      BJF: [c.x + 0.025, WY - 0.137, sg * 0.716], // fore link: knuckle ball joint -> subframe bushing
+      BF: [c.x + 0.265, WY - 0.13, sg * 0.395],
+      BJA, BA, // aft link
+      E: at(BJA, BA, 2, sg * 0.66), // damper bushing in the aft link
+      TOP: [c.x - 0.035, WY + 0.46, sg * 0.575], // strut top mount in the shock tower
+    };
+  };
+  const ballJoint = (name, q) => named(name, group(
+    cyl(0.021, 0.03, 'y', q, 'steel'),
+    cyl(0.008, 0.045, 'y', [q[0], q[1] - 0.035, q[2]], 'steel'), // stud pointing down into the knuckle
+    cyl(0.013, 0.004, 'y', [q[0], q[1] - 0.026, q[2]], 'steel'), // Nordlock washer #14
+    cyl(0.012, 0.012, 'y', [q[0], q[1] - 0.035, q[2]], 'steel'), // nut #10
+  ));
   for (const c of CORNERS.filter((k) => k.front)) {
     const side = c.sg < 0 ? 'L' : 'R';
     const sg = c.sg;
-    const kz = c.z - sg * 0.11;
+    const P = frontPts(c);
     reg.add({
       id: `front-arms-${c.key}`, ko: `프론트 서스펜션 암 (${c.ko})`, en: `Front suspension arms ${c.en}`, tags: `${side}F`,
       groups: ['front-suspension-arms'],
       object: group(
-        // upper control arm (A-arm)
-        beam([c.x - 0.01, WY + 0.27, kz + sg * 0.05], [c.x + 0.11, WY + 0.3, sg * 0.46], 0.016, 'aluminum'),
-        beam([c.x - 0.01, WY + 0.27, kz + sg * 0.05], [c.x - 0.14, WY + 0.3, sg * 0.46], 0.016, 'aluminum'),
-        // fore link and lateral link
-        beam([c.x + 0.0, WY - 0.16, kz], [c.x + 0.34, WY - 0.13, sg * 0.34], 0.02, 'aluminum'),
-        beam([c.x - 0.01, WY - 0.16, kz], [c.x - 0.06, WY - 0.15, sg * 0.32], 0.02, 'aluminum'),
+        // upper control arm #1: two legs, bushings and BLT M10x100 #2 / nut #3 in the tower
+        named('ucaFront', beam(P.BJU, P.PF, 0.016, 'aluminum')),
+        named('ucaRear', beam(P.BJU, P.PR, 0.016, 'aluminum')),
+        named('ucaBushF', cyl(0.018, 0.04, 'x', P.PF, 'rubber')),
+        named('ucaBushR', cyl(0.018, 0.04, 'x', P.PR, 'rubber')),
+        cyl(0.006, 0.1, 'x', P.PF, 'steel'),
+        cyl(0.006, 0.1, 'x', P.PR, 'steel'),
+        named('ucaBJ', cyl(0.017, 0.025, 'y', [P.BJU[0], P.BJU[1] + 0.012, P.BJU[2]], 'steel')),
+        // button-head M10x57 #4 through the knuckle clamp, nut #5 on its rear end
+        cyl(0.005, 0.057, 'x', [c.x - 0.02, WY + 0.246, P.BJU[2]], 'steel'),
+        cyl(0.009, 0.008, 'x', [c.x - 0.053, WY + 0.246, P.BJU[2]], 'steel'),
+        // fore link #6: vertical cam bolt #7 in the subframe bushing
+        named('foreLink', beam(P.BJF, P.BF, 0.02, 'aluminum')),
+        named('foreBush', cyl(0.032, 0.05, 'y', P.BF, 'rubber')),
+        cyl(0.007, 0.114, 'y', P.BF, 'steel'),
+        ballJoint('foreBJ', P.BJF),
+        // aft link #11: horizontal cam bolt #12, damper bushing near the outer end
+        named('aftLink', beam(P.BJA, P.BA, 0.02, 'aluminum')),
+        named('aftBush', cyl(0.028, 0.06, 'x', P.BA, 'rubber')),
+        cyl(0.007, 0.114, 'x', P.BA, 'steel'),
+        named('damperBush', cyl(0.022, 0.05, 'x', P.E, 'rubber')),
+        ballJoint('aftBJ', P.BJA),
       ),
     });
-    const strutTop = [c.x - 0.05, WY + 0.46, sg * 0.6];
-    const strutBot = [c.x - 0.03, WY - 0.12, sg * 0.66];
+    // strut: two-lug clevis bolted through the aft-link damper bushing (#3 M14x94 + nut #4),
+    // damper rod up into the shock tower (3 studs, nuts #2); spring sits above the upper arm
+    const strut = () => {
+      const { E, TOP } = P;
+      const SB = [E[0], E[1] + 0.045, E[2]];
+      return [
+        named('damper', beam(SB, TOP, 0.024, 'steel')),
+        rbox([0.068, 0.012, 0.04], SB, 'steel', { r: 0.004 }),
+        rbox([0.008, 0.06, 0.04], [E[0] - 0.03, SB[1] - 0.03, E[2]], 'steel', { r: 0.003 }),
+        rbox([0.008, 0.06, 0.04], [E[0] + 0.03, SB[1] - 0.03, E[2]], 'steel', { r: 0.003 }),
+        named('clevisBolt', cyl(0.007, 0.094, 'x', E, 'steel')),
+      ];
+    };
+    const T = P.TOP;
     reg.add({
       id: `front-air-spring-${c.key}`, ko: `프론트 에어 스프링 모듈 (${c.ko})`, en: `Front air spring module ${c.en}`, tags: `${side}F`,
       groups: ['front-air-spring'], variant: { susp: 'air' },
       object: group(
-        beam(strutBot, strutTop, 0.024, 'steel'),
-        beam([strutTop[0], WY + 0.12, strutTop[2] + sg * 0.01], [strutTop[0], WY + 0.38, strutTop[2]], 0.065, 'rubber'),
-        cyl(0.06, 0.03, 'y', [strutTop[0], strutTop[1] - 0.02, strutTop[2]], 'aluminum'),
+        ...strut(),
+        named('bellows', beam([T[0], WY + 0.332, T[2]], [T[0], WY + 0.418, T[2]], 0.062, 'rubber')),
+        named('topMount', cyl(0.06, 0.03, 'y', [T[0], T[1] - 0.02, T[2]], 'aluminum')),
       ),
     });
     reg.add({
       id: `front-coil-spring-${c.key}`, ko: `프론트 코일 스프링·댐퍼 (${c.ko})`, en: `Front coil spring & damper ${c.en}`, tags: `${side}F`,
       groups: ['front-coil-spring-and-damper'], variant: { susp: 'coil' },
       object: group(
-        beam(strutBot, strutTop, 0.024, 'steel'),
-        helix(0.06, 0.26, 5.5, 0.009, [strutTop[0], WY + 0.27, strutTop[2] - sg * 0.004], 'paintDark'),
-        cyl(0.07, 0.012, 'y', [strutTop[0], WY + 0.135, strutTop[2]], 'steel'),
-        cyl(0.07, 0.012, 'y', [strutTop[0], WY + 0.405, strutTop[2]], 'steel'),
+        ...strut(),
+        helix(0.055, 0.08, 3, 0.009, [T[0], WY + 0.373, T[2]], 'paintDark'),
+        cyl(0.062, 0.012, 'y', [T[0], WY + 0.328, T[2]], 'steel'),
+        named('topMount', cyl(0.062, 0.012, 'y', [T[0], WY + 0.418, T[2]], 'steel')),
       ),
     });
+    const hs = at(P.BJA, P.BA, 2, sg * 0.45);
     reg.add({
       id: `front-height-sensor-${c.key}`, ko: `프론트 차고 센서 (${c.ko})`, en: `Front ride height sensor ${c.en}`, tags: `${side}F`,
       groups: ['height-sensors'], variant: { susp: 'air' },
       object: group(
-        rbox([0.05, 0.04, 0.03], [c.x - 0.12, WY - 0.02, sg * 0.42], 'blackPlastic', { r: 0.006 }),
-        beam([c.x - 0.12, WY - 0.03, sg * 0.42], [c.x - 0.06, WY - 0.13, sg * 0.5], 0.004, 'steel'),
+        named('body', rbox([0.05, 0.04, 0.03], [c.x - 0.12, WY - 0.076, sg * 0.37], 'blackPlastic', { r: 0.006 })),
+        named('link', beam([c.x - 0.12, WY - 0.086, sg * 0.37], [hs[0], WY - 0.147, sg * 0.45], 0.004, 'steel')),
       ),
     });
   }
-  reg.add({
-    id: 'front-stabilizer', ko: '프론트 스태빌라이저 바·링크', en: 'Front stabilizer bar & links',
-    groups: ['front-stabilizer-bar-and-links'],
-    object: group(
-      tube([[XF + 0.06, WY - 0.06, -0.62], [XF + 0.2, WY - 0.08, -0.5], [XF + 0.24, WY - 0.08, -0.25],
-        [XF + 0.24, WY - 0.08, 0.25], [XF + 0.2, WY - 0.08, 0.5], [XF + 0.06, WY - 0.06, 0.62]], 0.013, 'steel'),
-      beam([XF + 0.06, WY - 0.06, -0.62], [XF + 0.06, WY - 0.15, -0.62], 0.007, 'steel'),
-      beam([XF + 0.06, WY - 0.06, 0.62], [XF + 0.06, WY - 0.15, 0.62], 0.007, 'steel'),
-    ),
-  });
+  {
+    const eye = (sg) => [XF + 0.06, WY - 0.06, sg * 0.62];
+    const low = (sg) => {
+      const P = frontPts(CORNERS.find((k) => k.front && k.sg === sg));
+      const q = at(P.BJF, P.BF, 0, XF + 0.06);
+      return [q[0], q[1] + 0.02, q[2]];
+    };
+    const parts = [named('bar', tube([eye(-1), [XF + 0.2, WY - 0.08, -0.5], [XF + 0.24, WY - 0.08, -0.25],
+      [XF + 0.24, WY - 0.08, 0.25], [XF + 0.2, WY - 0.08, 0.5], eye(1)], 0.013, 'steel'))];
+    for (const [sd, sg] of [['L', -1], ['R', 1]]) {
+      parts.push(named(`link${sd}`, beam(eye(sg), low(sg), 0.007, 'steel'))); // links #5 / #6, nuts #7
+      // bushing clamp on the subframe rail, BOLT M10x30 #4
+      parts.push(named(`clamp${sd}`, rbox([0.05, 0.03, 0.045], [XF + 0.228, WY - 0.08, sg * 0.34], 'rubber', { r: 0.006 })));
+      parts.push(cyl(0.005, 0.03, 'y', [XF + 0.228, WY - 0.087, sg * 0.322], 'steel'));
+    }
+    reg.add({
+      id: 'front-stabilizer', ko: '프론트 스태빌라이저 바·링크', en: 'Front stabilizer bar & links',
+      groups: ['front-stabilizer-bar-and-links'],
+      object: group(parts),
+    });
+  }
 
   // --- Rear suspension -------------------------------------------------------
+  // Per side (catalog rear-suspension-arms, qty 2 = one each side): lower control
+  // arm #1 on the subframe side member, short integral link #6 from the LCA to the
+  // knuckle, toe link #8 from the knuckle to the side member, and one upper link
+  // #16 from the knuckle top to a tower on the subframe.
   for (const c of CORNERS.filter((k) => !k.front)) {
     const side = c.sg < 0 ? 'L' : 'R';
     const sg = c.sg;
@@ -215,40 +328,38 @@ export function buildChassis(reg) {
       id: `rear-arms-${c.key}`, ko: `리어 서스펜션 암 (${c.ko})`, en: `Rear suspension arms ${c.en}`, tags: `${side}B`,
       groups: ['rear-suspension-arms'],
       object: group(
-        // lower control arm (large casting)
-        rbox([0.16, 0.04, 0.42], [c.x + 0.02, WY - 0.15, sg * 0.5], 'aluminum', { r: 0.015 }),
-        // integral, toe and upper links
-        beam([c.x - 0.1, WY - 0.12, kz], [c.x - 0.12, WY - 0.08, sg * 0.36], 0.013, 'steel'),
-        beam([c.x + 0.13, WY - 0.05, kz], [c.x + 0.16, WY - 0.04, sg * 0.36], 0.013, 'steel'),
-        beam([c.x + 0.02, WY + 0.25, kz + sg * 0.03], [c.x + 0.16, WY + 0.25, sg * 0.42], 0.014, 'aluminum'),
-        beam([c.x - 0.02, WY + 0.25, kz + sg * 0.03], [c.x - 0.14, WY + 0.26, sg * 0.42], 0.014, 'aluminum'),
+        named('lca', rbox([0.2, 0.04, 0.34], [c.x, WY - 0.135, sg * 0.54], 'aluminum', { r: 0.015 })),
+        named('integral', beam([c.x - 0.045, WY - 0.13, sg * 0.69], [c.x - 0.045, WY - 0.1, sg * 0.735], 0.013, 'steel')),
+        named('toe', beam([c.x + 0.025, WY - 0.09, kz], [c.x + 0.16, WY - 0.085, sg * 0.39], 0.013, 'steel')),
+        named('upper', beam([c.x + 0.02, WY + 0.25, kz - sg * 0.04], [c.x + 0.17, WY + 0.15, sg * 0.43], 0.014, 'aluminum')),
       ),
     });
-    const top = [c.x - 0.06, WY + 0.44, sg * 0.6];
-    const bot = [c.x - 0.04, WY - 0.12, sg * 0.64];
+    // bottom eye bolted to the LCA (#3 M14x84 + nut #4), top through the body shock tower
+    const top = [c.x - 0.06, WY + 0.44, sg * 0.62];
+    const bot = [c.x - 0.08, WY - 0.13, sg * 0.66];
     reg.add({
       id: `rear-air-spring-${c.key}`, ko: `리어 에어 스프링 모듈 (${c.ko})`, en: `Rear air spring module ${c.en}`, tags: `${side}B`,
       groups: ['rear-air-spring'], variant: { susp: 'air' },
       object: group(
-        beam(bot, top, 0.024, 'steel'),
-        beam([top[0], WY + 0.1, top[2]], [top[0], WY + 0.36, top[2]], 0.07, 'rubber'),
-        cyl(0.065, 0.03, 'y', [top[0], top[1] - 0.02, top[2]], 'aluminum'),
+        named('damper', beam(bot, top, 0.024, 'steel')),
+        named('sleeve', beam([top[0], WY + 0.135, top[2]], [top[0], WY + 0.36, top[2]], 0.07, 'rubber')),
+        named('topMount', cyl(0.065, 0.03, 'y', [top[0], top[1] - 0.02, top[2]], 'aluminum')),
       ),
     });
     reg.add({
       id: `rear-coil-spring-${c.key}`, ko: `리어 코일 스프링·댐퍼 (${c.ko})`, en: `Rear coil spring & damper ${c.en}`, tags: `${side}B`,
       groups: ['rear-coil-spring-and-damper'], variant: { susp: 'coil' },
       object: group(
-        beam(bot, top, 0.024, 'steel'),
-        helix(0.065, 0.24, 5, 0.01, [top[0], WY + 0.24, top[2]], 'paintDark'),
+        named('damper', beam(bot, top, 0.024, 'steel')),
+        helix(0.065, 0.22, 5, 0.01, [top[0], WY + 0.26, top[2]], 'paintDark'),
       ),
     });
     reg.add({
       id: `rear-height-sensor-${c.key}`, ko: `리어 차고 센서 (${c.ko})`, en: `Rear ride height sensor ${c.en}`, tags: `${side}B`,
       groups: ['height-sensors'], variant: { susp: 'air' },
       object: group(
-        rbox([0.05, 0.04, 0.03], [c.x + 0.16, WY - 0.0, sg * 0.4], 'blackPlastic', { r: 0.006 }),
-        beam([c.x + 0.16, WY - 0.01, sg * 0.4], [c.x + 0.1, WY - 0.13, sg * 0.48], 0.004, 'steel'),
+        named('body', rbox([0.05, 0.04, 0.03], [c.x + 0.1, WY - 0.021, sg * 0.4], 'blackPlastic', { r: 0.006 })),
+        named('link', beam([c.x + 0.1, WY - 0.03, sg * 0.4], [c.x + 0.09, WY - 0.142, sg * 0.47], 0.004, 'steel')),
       ),
     });
   }
@@ -256,26 +367,80 @@ export function buildChassis(reg) {
     id: 'rear-stabilizer', ko: '리어 스태빌라이저 바·링크', en: 'Rear stabilizer bar & links',
     groups: ['rear-stabilizer-bar-and-links'],
     object: group(
-      tube([[XR - 0.12, WY - 0.05, -0.58], [XR - 0.22, WY - 0.09, -0.45], [XR - 0.25, WY - 0.09, 0],
-        [XR - 0.22, WY - 0.09, 0.45], [XR - 0.12, WY - 0.05, 0.58]], 0.011, 'steel'),
-      beam([XR - 0.12, WY - 0.05, -0.58], [XR - 0.1, WY - 0.15, -0.6], 0.006, 'steel'),
-      beam([XR - 0.12, WY - 0.05, 0.58], [XR - 0.1, WY - 0.15, 0.6], 0.006, 'steel'),
+      named('bar', tube([[XR - 0.12, WY - 0.05, -0.58], [XR - 0.22, WY - 0.09, -0.45], [XR - 0.25, WY - 0.09, 0],
+        [XR - 0.22, WY - 0.09, 0.45], [XR - 0.12, WY - 0.05, 0.58]], 0.011, 'steel')),
+      // links #5 (2 nuts #6 each): bar end down to the lower control arm
+      named('linkL', beam([XR - 0.12, WY - 0.05, -0.58], [XR - 0.09, WY - 0.13, -0.6], 0.006, 'steel')),
+      named('linkR', beam([XR - 0.12, WY - 0.05, 0.58], [XR - 0.09, WY - 0.13, 0.6], 0.006, 'steel')),
     ),
   });
 
   // --- Steering -----------------------------------------------------------------
-  const rackX = XF - 0.15;
-  const rackY = WY - 0.02;
+  // Column (upper group) -> upper I-shaft link #6 -> lower I-shaft link through the
+  // dash seal -> pinion input shaft of the EPS gear, which sits on the front
+  // subframe behind the front drive unit.  The lower link, its M10 bolt and the
+  // dash seal are listed in both steering groups (lower #6/#7/#8 = upper #11/#8/#10)
+  // and are drawn once, as the shared component 'steering-ishaft'.
+  const rackX = XF - 0.265;
+  const rackY = WY - 0.065;
+  const pinion = [rackX - 0.02, rackY + 0.06, -0.2];
+  const pinionShaft = [rackX - 0.02, rackY + 0.08, -0.22];
+  const colEnd = [0.82, 0.66, -0.37]; // column output spline
+  const ujLower = lerp(pinionShaft, [0.985, 0.548, -0.37], 0.4); // lower U-joint on the pinion input shaft
+  const dashSeal = at(ujLower, colEnd, 0, 0.985); // the shaft is straight between its two U-joints
+  const coupling = at(ujLower, colEnd, 0, 0.955); // upper-link sleeve on the lower-link spline, cabin side
+  const tieRod = (sd, sg) => {
+    const c = CORNERS.find((k) => k.front && k.sg === sg);
+    const I = [rackX, rackY, sg * 0.36];
+    const T = [c.x - 0.14, WY - 0.01, c.z - sg * 0.13]; // ball-joint housing under the knuckle steering-arm eye
+    const jn = lerp(I, T, 0.72);
+    return [
+      beam(I, lerp(I, T, 0.32), 0.022, 'rubber', { r2: 0.014 }), // bellows boot
+      beam(I, jn, 0.009, 'steel'), // inner tie rod
+      beam(jn, lerp(I, T, 0.75), 0.014, 'steel'), // jam nut #4
+      named(`tieRod${sd}`, beam(jn, T, 0.012, 'steel')), // outer tie rod #3
+      cyl(0.02, 0.03, 'y', T, 'steel'),
+      named(`stud${sd}`, cyl(0.008, 0.05, 'y', [T[0], T[1] + 0.025, T[2]], 'steel')),
+      cyl(0.013, 0.012, 'y', [T[0], T[1] + 0.046, T[2]], 'steel'), // NUT M14x2 #5 on top of the eye
+    ];
+  };
   reg.add({
-    id: 'steering-gear', ko: '스티어링 기어(EPS 랙)·하부 칼럼', en: 'Steering gear (EPS rack) & lower column',
-    groups: ['steering-gear-and-lower-column'],
+    id: 'steering-gear', ko: '스티어링 기어(EPS 랙)', en: 'Steering gear (EPS rack)',
+    groups: ['steering-gear-and-lower-column'], match: /^(?!.*(I-SHAFT|DASH SEAL|M10X1\.50X35))/i,
     object: group(
-      cyl(0.03, 0.72, 'z', [rackX, rackY, 0], 'aluminum'),
-      cyl(0.055, 0.18, 'z', [rackX, rackY + 0.01, 0.16], 'darkMetal'),
-      rbox([0.09, 0.09, 0.12], [rackX + 0.02, rackY + 0.06, -0.2], 'darkMetal', { r: 0.01 }),
-      beam([rackX, rackY, -0.36], [XF - 0.14, WY + 0.02, -0.7], 0.011, 'steel'),
-      beam([rackX, rackY, 0.36], [XF - 0.14, WY + 0.02, 0.7], 0.011, 'steel'),
-      beam([rackX + 0.02, rackY + 0.08, -0.22], [0.98, 0.55, -0.37], 0.014, 'steel'),
+      named('rack', cyl(0.03, 0.72, 'z', [rackX, rackY, 0], 'aluminum')),
+      named('eps', cyl(0.05, 0.18, 'z', [rackX, rackY + 0.01, 0.175], 'darkMetal')),
+      named('pinion', rbox([0.09, 0.09, 0.12], pinion, 'darkMetal', { r: 0.01 })),
+      named('inputShaft', beam(pinionShaft, ujLower, 0.012, 'steel')),
+      // mounting bosses on the subframe rails, BOLT HF M14x78 #2
+      named('bossL', rbox([0.06, 0.03, 0.045], [rackX, rackY - 0.025, -0.325], 'aluminum', { r: 0.006 })),
+      named('bossR', rbox([0.06, 0.03, 0.045], [rackX, rackY - 0.025, 0.325], 'aluminum', { r: 0.006 })),
+      cyl(0.007, 0.078, 'y', [rackX, rackY - 0.035, -0.325], 'steel'),
+      cyl(0.007, 0.078, 'y', [rackX, rackY - 0.035, 0.325], 'steel'),
+      ...tieRod('L', -1),
+      ...tieRod('R', 1),
+    ),
+  });
+  reg.add({
+    id: 'steering-ishaft', ko: '스티어링 I-샤프트 하부 링크·대시 실', en: 'Steering I-shaft lower link & dash seal',
+    groups: ['steering-gear-and-lower-column', 'steering-column-and-wheel'], match: /LOWER|DASH SEAL|M10X1\.50X35/i,
+    object: group(
+      named('lowerLink', beam(coupling, ujLower, 0.012, 'steel')),
+      named('dashSeal', cyl(0.04, 0.03, 'x', dashSeal, 'rubber')),
+      named('ujLower', rbox([0.045, 0.045, 0.045], ujLower, 'steel', { r: 0.006 })),
+      cyl(0.006, 0.06, 'z', ujLower, 'steel'), // BOLT H M10x35 at the pinion
+      cyl(0.006, 0.05, 'z', coupling, 'steel'), // BOLT H M10x35 at the coupling
+    ),
+  });
+  reg.add({
+    id: 'steering-ishaft-upper', ko: '스티어링 I-샤프트 상부 링크', en: 'Steering I-shaft upper link',
+    groups: ['steering-column-and-wheel'], match: /LINK UPPER|M8X1\.25X35|NUT HF M10X1\.5/i,
+    object: group(
+      named('yoke', rbox([0.045, 0.045, 0.045], colEnd, 'steel', { r: 0.006 })), // U-joint on the column spline
+      cyl(0.005, 0.06, 'z', colEnd, 'steel'), // pinch bolt M8x35 #7
+      named('link', beam(colEnd, coupling, 0.016, 'steel')),
+      named('sleeve', rbox([0.04, 0.04, 0.04], coupling, 'steel', { r: 0.006 })),
+      cyl(0.009, 0.008, 'z', [coupling[0], coupling[1], coupling[2] + 0.028], 'steel'), // NUT HF M10 #9
     ),
   });
   // Column and wheel (LHD: driver on the left, -z)
@@ -298,11 +463,11 @@ export function buildChassis(reg) {
   swGroup.position.copy(swC);
   reg.add({
     id: 'steering-wheel', ko: '스티어링 휠·칼럼', en: 'Steering wheel & column',
-    groups: ['steering-column-and-wheel'],
+    groups: ['steering-column-and-wheel'], match: /^(?!.*(I-SHAFT|M8X1\.25X35|M10X1\.50X35|NUT HF M10X1\.5))/i,
     object: group(
-      swGroup,
-      beam([0.43, 0.84, -0.37], [0.82, 0.66, -0.37], 0.03, 'blackPlastic'),
-      rbox([0.16, 0.09, 0.1], [0.55, 0.78, -0.37], 'blackPlastic', { r: 0.02, rot: [0, 0, 0.45] }),
+      named('wheel', swGroup),
+      named('column', beam([swC.x, swC.y, swC.z], colEnd, 0.03, 'blackPlastic')),
+      named('shroud', rbox([0.16, 0.09, 0.1], [0.55, 0.78, -0.37], 'blackPlastic', { r: 0.02, rot: [0, 0, 0.45] })),
     ),
   });
 
@@ -312,26 +477,41 @@ export function buildChassis(reg) {
     id: 'front-subframe', ko: '프론트 서브프레임', en: 'Front subframe',
     groups: ['front-subframe', 'front-subframe-dual-motor'],
     object: group(
-      bar([XF + 0.42, fy, -0.34], [XF - 0.3, fy, -0.34], 0.07, 0.06, 'aluminum'),
-      bar([XF + 0.42, fy, 0.34], [XF - 0.3, fy, 0.34], 0.07, 0.06, 'aluminum'),
-      bar([XF + 0.42, fy, -0.34], [XF + 0.42, fy, 0.34], 0.06, 0.06, 'aluminum'),
-      bar([XF - 0.3, fy, -0.34], [XF - 0.3, fy, 0.34], 0.06, 0.06, 'aluminum'),
-      bar([XF - 0.3, fy, -0.34], [XF - 0.52, fy + 0.03, -0.5], 0.04, 0.04, 'aluminum'),
-      bar([XF - 0.3, fy, 0.34], [XF - 0.52, fy + 0.03, 0.5], 0.04, 0.04, 'aluminum'),
+      named('railL', bar([XF + 0.42, fy, -0.34], [XF - 0.3, fy, -0.34], 0.07, 0.06, 'aluminum')),
+      named('railR', bar([XF + 0.42, fy, 0.34], [XF - 0.3, fy, 0.34], 0.07, 0.06, 'aluminum')),
+      named('frontCross', bar([XF + 0.42, fy, -0.34], [XF + 0.42, fy, 0.34], 0.06, 0.06, 'aluminum')),
+      named('rearCross', bar([XF - 0.3, fy, -0.34], [XF - 0.3, fy, 0.34], 0.06, 0.06, 'aluminum')),
+      // four body mounts (BOLT M14x50 #8): rear legs to the rail ends at the torque boxes, front posts up into the rails
+      named('rearLegL', bar([XF - 0.3, fy, -0.34], [1.03, 0.39, -0.5], 0.04, 0.04, 'aluminum')),
+      named('rearLegR', bar([XF - 0.3, fy, 0.34], [1.03, 0.39, 0.5], 0.04, 0.04, 'aluminum')),
+      named('postL', bar([XF + 0.315, fy + 0.035, -0.34], [XF + 0.315, 0.425, -0.47], 0.05, 0.05, 'aluminum')),
+      named('postR', bar([XF + 0.315, fy + 0.035, 0.34], [XF + 0.315, 0.425, 0.47], 0.05, 0.05, 'aluminum')),
       box([0.6, 0.006, 0.62], [XF + 0.05, fy - 0.05, 0], 'aluminum'),
     ),
   });
   const ry = WY - 0.08;
+  // rear rail underside height along x (the rail kicks up over the axle, structure.js)
+  const railY = (x) => (x >= -1.25 ? 0.36 + 0.065 * ((-1.0 - x) / 0.25) : 0.425 + 0.025 * ((-1.25 - x) / 1.05));
   reg.add({
     id: 'rear-subframe', ko: '리어 서브프레임', en: 'Rear subframe',
     groups: ['rear-subframe'],
     object: group(
-      bar([XR + 0.4, ry, -0.42], [XR - 0.36, ry, -0.42], 0.08, 0.07, 'aluminum'),
-      bar([XR + 0.4, ry, 0.42], [XR - 0.36, ry, 0.42], 0.08, 0.07, 'aluminum'),
-      bar([XR + 0.4, ry, -0.42], [XR + 0.4, ry, 0.42], 0.07, 0.07, 'aluminum'),
-      bar([XR - 0.36, ry, -0.42], [XR - 0.36, ry, 0.42], 0.07, 0.07, 'aluminum'),
-      bar([XR + 0.4, ry, -0.42], [XR + 0.4, ry + 0.25, -0.5], 0.05, 0.05, 'aluminum'),
-      bar([XR + 0.4, ry, 0.42], [XR + 0.4, ry + 0.25, 0.5], 0.05, 0.05, 'aluminum'),
+      named('sideL', bar([XR + 0.4, ry, -0.42], [XR - 0.36, ry, -0.42], 0.08, 0.07, 'aluminum')),
+      named('sideR', bar([XR + 0.4, ry, 0.42], [XR - 0.36, ry, 0.42], 0.08, 0.07, 'aluminum')),
+      named('frontCross', bar([XR + 0.4, ry, -0.42], [XR + 0.4, ry, 0.42], 0.07, 0.07, 'aluminum')),
+      named('rearCross', bar([XR - 0.36, ry, -0.42], [XR - 0.36, ry, 0.42], 0.07, 0.07, 'aluminum')),
+      // isolator posts to the rear rails: front pair stud #2 + nut #6 through shear plates #4/#5, rear pair bolt #3 M14x120
+      named('postFL', bar([XR + 0.4, ry, -0.42], [XR + 0.4, railY(XR + 0.4), -0.55], 0.05, 0.05, 'aluminum')),
+      named('postFR', bar([XR + 0.4, ry, 0.42], [XR + 0.4, railY(XR + 0.4), 0.55], 0.05, 0.05, 'aluminum')),
+      named('postBL', bar([XR - 0.36, ry, -0.42], [XR - 0.36, railY(XR - 0.36), -0.55], 0.05, 0.05, 'aluminum')),
+      named('postBR', bar([XR - 0.36, ry, 0.42], [XR - 0.36, railY(XR - 0.36), 0.55], 0.05, 0.05, 'aluminum')),
+      // upper-link towers on the side members
+      named('towerL', bar([XR + 0.17, ry + 0.03, -0.42], [XR + 0.17, WY + 0.165, -0.42], 0.06, 0.05, 'aluminum')),
+      named('towerR', bar([XR + 0.17, ry + 0.03, 0.42], [XR + 0.17, WY + 0.165, 0.42], 0.06, 0.05, 'aluminum')),
+      // drive-unit mounts: side motor mount #8 and the front / rear transmission mount brackets (LDU group #20 / #21)
+      named('sideMount', rbox([0.1, 0.06, 0.07], [XR + 0.13, WY - 0.06, 0.385], 'rubber', { r: 0.01 })),
+      named('frontMount', bar([XR + 0.17, WY - 0.08, 0], [XR + 0.385, WY - 0.08, 0], 0.05, 0.06, 'aluminum')),
+      named('rearMount', bar([XR - 0.13, WY - 0.042, 0], [XR - 0.345, WY - 0.042, 0], 0.05, 0.06, 'aluminum')),
     ),
   });
 
@@ -341,48 +521,61 @@ export function buildChassis(reg) {
     id: 'rear-drive-unit-large', ko: '대형 리어 구동 유닛 (LDU)', en: 'Large rear drive unit (LDU)',
     groups: ['motor-large-rear-drive-unit'], variant: { drive: ['rwd', 'pdm'] },
     object: group(
-      cyl(0.135, 0.4, 'z', [XR + 0.14, dy + 0.02, 0.27], 'aluminum', { seg: 32 }),
-      rbox([0.42, 0.3, 0.2], [XR + 0.02, dy, 0.0], 'aluminum', { r: 0.04 }),
-      cyl(0.14, 0.3, 'z', [XR + 0.12, dy + 0.02, -0.26], 'darkMetal', { seg: 32 }),
-      rbox([0.26, 0.12, 0.3], [XR + 0.14, dy + 0.2, -0.24], 'darkMetal', { r: 0.02 }),
+      named('motor', cyl(0.135, 0.29, 'z', [XR + 0.14, dy + 0.02, 0.215], 'aluminum', { seg: 32 })),
+      named('gearbox', rbox([0.42, 0.3, 0.2], [XR + 0.02, dy, 0.0], 'aluminum', { r: 0.04 })),
+      named('inverterEnd', cyl(0.14, 0.25, 'z', [XR + 0.12, dy + 0.02, -0.235], 'darkMetal', { seg: 32 })),
+      named('inverter', rbox([0.26, 0.12, 0.3], [XR + 0.14, dy + 0.2, -0.24], 'darkMetal', { r: 0.02 })),
     ),
   });
   reg.add({
     id: 'rear-drive-unit-small', ko: '소형 리어 구동 유닛 (SDU)', en: 'Small rear drive unit (SDU)',
     groups: ['motor-small-rear-drive-unit'], variant: { drive: 'dm' },
     object: group(
-      cyl(0.11, 0.3, 'z', [XR + 0.13, dy + 0.02, 0.22], 'aluminum', { seg: 32 }),
-      rbox([0.34, 0.26, 0.18], [XR + 0.02, dy, 0.0], 'aluminum', { r: 0.04 }),
-      rbox([0.24, 0.2, 0.22], [XR + 0.1, dy + 0.02, -0.2], 'darkMetal', { r: 0.03 }),
+      named('motor', cyl(0.11, 0.3, 'z', [XR + 0.13, dy + 0.02, 0.22], 'aluminum', { seg: 32 })),
+      named('gearbox', rbox([0.34, 0.26, 0.18], [XR + 0.02, dy, 0.0], 'aluminum', { r: 0.04 })),
+      named('inverter', rbox([0.24, 0.2, 0.22], [XR + 0.1, dy + 0.02, -0.2], 'darkMetal', { r: 0.03 })),
     ),
   });
   reg.add({
     id: 'front-drive-unit', ko: '프론트 구동 유닛', en: 'Front drive unit',
     groups: ['front-drive-unit-motor'], variant: { drive: ['dm', 'pdm'] },
     object: group(
-      cyl(0.11, 0.3, 'z', [XF - 0.12, WY + 0.02, 0.2], 'aluminum', { seg: 32 }),
-      rbox([0.34, 0.26, 0.18], [XF - 0.02, WY, 0.0], 'aluminum', { r: 0.04 }),
-      rbox([0.24, 0.2, 0.22], [XF - 0.1, WY + 0.02, -0.2], 'darkMetal', { r: 0.03 }),
-      rbox([0.12, 0.16, 0.08], [XF + 0.12, WY + 0.0, -0.28], 'rubber', { r: 0.02 }),
+      named('motor', cyl(0.11, 0.3, 'z', [XF - 0.12, WY + 0.02, 0.2], 'aluminum', { seg: 32 })),
+      named('gearbox', rbox([0.34, 0.26, 0.18], [XF - 0.02, WY, 0.0], 'aluminum', { r: 0.04 })),
+      named('inverter', rbox([0.24, 0.2, 0.22], [XF - 0.1, WY + 0.02, -0.2], 'darkMetal', { r: 0.03 })),
+      // LHS motor mount #8/#9 on the left subframe rail, torque reaction arm #13 to the rear cross member
+      named('mount', rbox([0.155, 0.09, 0.07], [XF + 0.0875, WY - 0.075, -0.31], 'rubber', { r: 0.02 })),
+      named('torqueArm', bar([XF - 0.17, WY - 0.12, 0.05], [XF - 0.3, WY - 0.12, 0.05], 0.035, 0.05, 'aluminum')),
     ),
   });
-  const shaft = (x, z0, z1, mat = 'steel') => group(
-    beam([x, WY, z0], [x, WY, z1], 0.017, mat),
-    cyl(0.045, 0.09, 'z', [x, WY, z0 + Math.sign(z1 - z0) * 0.05], 'rubber', { r2: 0.03 }),
-    cyl(0.045, 0.09, 'z', [x, WY, z1 - Math.sign(z1 - z0) * 0.05], 'rubber', { r2: 0.03 }),
-  );
+  // Halfshafts: inner spline in the drive unit, outer stub through the hub (nut M24).
+  const shaft = (x, z0, z1, extra = []) => {
+    const sd = Math.sign(z1);
+    return group(
+      named('shaft', beam([x, WY, z0], [x, WY, z1], 0.017, 'steel')),
+      cyl(0.045, 0.09, 'z', [x, WY, z0 + sd * 0.05], 'rubber', { r2: 0.03 }),
+      cyl(0.045, 0.09, 'z', [x, WY, z1 - sd * 0.05], 'rubber', { r2: 0.03 }),
+      named('stub', beam([x, WY, z1], [x, WY, z1 + sd * 0.075], 0.012, 'steel')),
+      ...extra,
+    );
+  };
   for (const sd of [-1, 1]) {
     const side = sd < 0 ? 'L' : 'R';
     const ko = sd < 0 ? '좌' : '우';
     reg.add({
       id: `rear-halfshaft-${side}`, ko: `리어 하프샤프트 (${ko})`, en: `Rear halfshaft ${side}H`, tags: `${side}B`,
       groups: ['rear-drive-unit-halfshafts'],
-      object: shaft(XR, sd * 0.12, sd * (ZR - 0.13)),
+      object: shaft(XR, sd * 0.09, sd * (ZR - 0.13)),
     });
+    // RH front shaft: jackshaft #3 from the drive unit, flange bolted with #6 M10x25
+    const jack = sd > 0 ? [
+      named('jackshaft', beam([XF, WY, 0.09], [XF, WY, 0.38], 0.02, 'steel')),
+      rbox([0.06, 0.06, 0.03], [XF - 0.02, WY, 0.33], 'aluminum', { r: 0.005 }),
+    ] : [];
     reg.add({
       id: `front-halfshaft-${side}`, ko: `프론트 하프샤프트 (${ko})`, en: `Front halfshaft ${side}H`, tags: `${side}F`,
       groups: ['front-drive-unit-halfshafts'], variant: { drive: ['dm', 'pdm'] },
-      object: shaft(XF, sd * 0.12, sd * (ZF - 0.13)),
+      object: shaft(XF, sd > 0 ? 0.38 : -0.12, sd * (ZF - 0.13), jack),
     });
   }
 }
@@ -395,8 +588,9 @@ export function buildChassisSystems(reg) {
     groups: ['brake-pedal'],
     object: group(
       rbox([0.02, 0.06, 0.1], [0.7, 0.4, -0.42], 'rubber', { r: 0.008, rot: [0, 0, -0.4] }),
-      beam([0.71, 0.42, -0.42], [0.86, 0.7, -0.42], 0.01, 'steel'),
-      beam([0.86, 0.66, -0.42], [0.98, 0.66, bz], 0.008, 'steel'),
+      named('arm', beam([0.71, 0.42, -0.42], [0.86, 0.7, -0.42], 0.01, 'steel')),
+      // pushrod to the booster input, PIN BOOSTER TO PEDAL #5 (also in the booster group)
+      named('pushrod', beam([0.84, 0.66, -0.42], [1.0, 0.66, bz], 0.008, 'steel')),
     ),
   });
   reg.add({
@@ -447,17 +641,23 @@ export function buildChassisSystems(reg) {
     groups: ['abs-module-and-esc-sensor'], match: /ESC SENSOR|NUT,LCK/,
     object: rbox([0.07, 0.03, 0.06], [-0.1, 0.32, 0.12], 'darkMetal', { r: 0.006 }),
   });
-  const absOut = [1.18, 0.56, 0.6];
+  const absOut = [1.18, 0.57, 0.6];
+  // the rear lines split at a junction block bolted to the top of the LH rear-subframe side member
+  const jb = [-1.15, 0.325, -0.42];
+  const hoseEnd = (key) => hoseBodyEnd(CORNERS.find((c) => c.key === key));
   reg.add({
     id: 'brake-lines', ko: '브레이크 라인(하드 파이프)', en: 'Brake lines (hard pipes)',
     groups: ['brake-lines'],
     object: group(
-      tube([[1.31, 0.64, bz], [1.35, 0.6, -0.2], [1.3, 0.6, 0.3], absOut], 0.005, 'steel'),
-      tube([absOut, [1.4, 0.5, 0.4], [XF - 0.1, 0.62, -0.1], [XF - 0.1, 0.55, -0.5], [XF + 0.02, 0.62, -0.68]], 0.004, 'steel'),
-      tube([absOut, [1.4, 0.52, 0.62], [XF + 0.02, 0.62, 0.68]], 0.004, 'steel'),
-      tube([absOut, [1.1, 0.4, 0.5], [0.9, 0.29, 0.25], [-1.0, 0.29, 0.25], [-1.25, 0.32, 0.0]], 0.004, 'steel'),
-      tube([[-1.25, 0.32, 0.0], [XR + 0.1, 0.4, -0.4], [XR - 0.02, 0.62, -0.7]], 0.004, 'steel'),
-      tube([[-1.25, 0.32, 0.0], [XR + 0.1, 0.4, 0.4], [XR - 0.02, 0.62, 0.7]], 0.004, 'steel'),
+      named('mcToAbs', tube([[1.31, 0.64, bz], [1.35, 0.6, -0.2], [1.3, 0.6, 0.3], absOut], 0.005, 'steel')),
+      named('frontL', tube([absOut, [1.4, 0.5, 0.4], [XF - 0.1, 0.62, -0.1], [1.32, 0.62, -0.45], hoseEnd('LF')], 0.004, 'steel')),
+      named('frontR', tube([absOut, [1.3, 0.6, 0.6], [1.33, 0.68, 0.585], hoseEnd('RF')], 0.004, 'steel')),
+      named('toRear', tube([absOut, [1.1, 0.4, 0.5], [0.9, 0.29, 0.25], [-0.9, 0.3, 0.25], [-1.0, 0.325, 0.2],
+        [-1.14, 0.325, 0.1], [-1.15, 0.325, -0.2], jb], 0.004, 'steel')),
+      named('rearL', tube([jb, [-1.3, 0.36, -0.47], [-1.45, 0.5, -0.48], [-1.55, 0.6, -0.55], hoseEnd('LB')], 0.004, 'steel')),
+      named('rearR', tube([jb, [-1.15, 0.325, -0.2], [-1.15, 0.325, 0.3], [-1.18, 0.34, 0.44], [-1.3, 0.36, 0.47],
+        [-1.45, 0.5, 0.48], [-1.55, 0.6, 0.55], hoseEnd('RB')], 0.004, 'steel')),
+      named('junction', rbox([0.04, 0.02, 0.03], [jb[0], jb[1] - 0.003, jb[2]], 'steel', { r: 0.003 })),
     ),
   });
 
@@ -467,36 +667,37 @@ export function buildChassisSystems(reg) {
     groups: ['air-suspension-compressor-and-reservoir'], variant: { susp: 'air' },
     match: /COMPRESSOR|SOLENOID|INTAKE|SOL TO|COMP TO|VOSS|BLT - TRX|BLT M6/i,
     object: group(
-      cyl(0.055, 0.2, 'x', [1.95, 0.3, -0.56], 'darkMetal', { seg: 24 }),
-      rbox([0.08, 0.07, 0.08], [1.82, 0.31, -0.56], 'aluminum', { r: 0.01 }),
+      named('compressor', cyl(0.055, 0.2, 'x', [1.95, 0.3, -0.56], 'darkMetal', { seg: 24 })),
+      named('valveBlock', rbox([0.08, 0.07, 0.08], [1.82, 0.31, -0.56], 'aluminum', { r: 0.01 })),
     ),
   });
   reg.add({
     id: 'air-reservoir', ko: '에어 서스펜션 리저버', en: 'Air suspension reservoir',
     groups: ['air-suspension-compressor-and-reservoir'], variant: { susp: 'air' },
     match: /RESERVOIR|RSVR|RESVR|FILL VALVE/i,
-    object: cyl(0.065, 0.32, 'z', [1.95, 0.25, 0.32], 'aluminum', { seg: 24 }),
+    object: cyl(0.065, 0.26, 'z', [1.95, 0.318, 0.29], 'aluminum', { seg: 24 }), // strapped on the subframe front cross member
   });
   reg.add({
     id: 'air-lines-front', ko: '프론트 에어 라인', en: 'Front air suspension lines', tags: 'F',
     groups: ['front-air-suspension-pressure-lines'], variant: { susp: 'air' },
     object: group(
-      tube([[1.82, 0.32, -0.6], [XF + 0.05, 0.6, -0.62], [XF - 0.05, WY + 0.4, -0.6]], 0.004, 'blackPlastic'),
-      tube([[1.82, 0.32, -0.52], [1.9, 0.35, 0.0], [XF + 0.05, 0.6, 0.62], [XF - 0.05, WY + 0.4, 0.6]], 0.004, 'blackPlastic'),
-      tube([[1.82, 0.3, -0.5], [1.95, 0.25, 0.15]], 0.004, 'blackPlastic'),
+      named('toLF', tube([[1.82, 0.32, -0.59], [XF + 0.05, 0.6, -0.62], [XF - 0.05, WY + 0.4, -0.6]], 0.004, 'blackPlastic')),
+      named('toRF', tube([[1.82, 0.32, -0.53], [1.9, 0.35, 0.0], [XF + 0.05, 0.6, 0.62], [XF - 0.05, WY + 0.4, 0.6]], 0.004, 'blackPlastic')),
+      named('toReservoir', tube([[1.82, 0.3, -0.53], [1.95, 0.318, 0.165]], 0.004, 'blackPlastic')), // valve block to reservoir (#4)
     ),
   });
   reg.add({
     id: 'air-lines-rear', ko: '리어 에어 라인(좌측 실 경유)', en: 'Rear air suspension lines (via LH sill)', tags: 'B',
     groups: ['rear-air-suspension-pressure-lines'], variant: { susp: 'air' },
     object: group(
-      tube([[1.82, 0.3, -0.62], [1.2, 0.27, -0.68], [-0.9, 0.27, -0.68], [XR + 0.1, 0.45, -0.62], [XR - 0.06, WY + 0.38, -0.6]], 0.004, 'blackPlastic'),
-      tube([[-0.9, 0.27, -0.68], [-1.15, 0.3, 0.0], [XR + 0.1, 0.45, 0.62], [XR - 0.06, WY + 0.38, 0.6]], 0.004, 'blackPlastic'),
+      named('main', tube([[1.82, 0.3, -0.596], [1.2, 0.27, -0.68], [-0.9, 0.27, -0.68], [XR + 0.1, 0.45, -0.62], [XR - 0.06, WY + 0.35, -0.6]], 0.004, 'blackPlastic')),
+      named('toRB', tube([[-0.9, 0.27, -0.68], [-1.15, 0.3, 0.0], [XR + 0.1, 0.45, 0.62], [XR - 0.06, WY + 0.35, 0.6]], 0.004, 'blackPlastic')),
     ),
   });
   reg.add({
     id: 'air-suspension-ecu', ko: '에어 서스펜션 ECU', en: 'Air suspension ECU', tags: 'LB',
     groups: ['module-air-suspension'], variant: { susp: 'air' },
-    object: rbox([0.13, 0.09, 0.035], [-1.98, 0.82, -0.72], 'darkMetal', { r: 0.008 }),
+    // on its bracket (#1) behind the LH trunk side trim
+    object: rbox([0.13, 0.09, 0.035], [-1.9, 0.82, -0.8735], 'darkMetal', { r: 0.008 }),
   });
 }

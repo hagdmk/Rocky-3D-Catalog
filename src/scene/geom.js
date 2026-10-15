@@ -21,6 +21,21 @@ export function group(...children) {
   return g;
 }
 
+/** Name a mesh or group so tools/joints.mjs can refer to it as `componentId#name`. */
+export function named(name, obj) {
+  obj.name = name;
+  return obj;
+}
+
+/**
+ * Mark the meshes of a placeholder block that stands for a hollow part (a shock
+ * tower, a trim shell): lines may run inside it (tools/check.mjs pass-through rule).
+ */
+export function hollow(obj) {
+  obj.traverse((o) => { if (o.isMesh) o.userData.hollow = true; });
+  return obj;
+}
+
 function place(m, pos, rot) {
   if (pos) m.position.set(pos[0], pos[1], pos[2]);
   if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
@@ -61,6 +76,7 @@ export function beam(a, b, r, mat, { seg = 12, r2 = r } = {}) {
   const m = mesh(g, mat);
   m.position.copy(pa).addScaledVector(dir, 0.5);
   m.quaternion.setFromUnitVectors(_up, dir.normalize());
+  m.userData.span = true; // linear member, local +y runs from a to b
   return m;
 }
 
@@ -73,6 +89,7 @@ export function bar(a, b, w, h, mat) {
   const m = mesh(new THREE.BoxGeometry(w, len, h), mat);
   m.position.copy(pa).addScaledVector(dir, 0.5);
   m.quaternion.setFromUnitVectors(_up, dir.normalize());
+  m.userData.span = true;
   return m;
 }
 
@@ -82,7 +99,9 @@ export function tube(points, r, mat, { closed = false, seg = null, radial = 8, t
   const curve = new THREE.CatmullRomCurve3(pts, closed, 'catmullrom', tension);
   const len = curve.getLength();
   const g = new THREE.TubeGeometry(curve, seg || Math.max(8, Math.ceil(len / 0.03)), r, radial, closed);
-  return mesh(g, mat);
+  const m = mesh(g, mat);
+  m.userData.span = !closed;
+  return m;
 }
 
 export function torus(R, r, axis, pos, mat, { arc = Math.PI * 2, seg = 32, rot = null } = {}) {
