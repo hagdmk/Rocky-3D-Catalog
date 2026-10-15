@@ -183,7 +183,7 @@ export function buildExterior(reg) {
 
   // --- Glass ---------------------------------------------------------------
   reg.add({
-    id: 'windshield', ko: '윈드실드', en: 'Windshield', shell: true, match: /WINDSHIELD|WSHLD|SEAL, WINDSHIELD|BetaSeal|primer/i,
+    id: 'windshield', ko: '윈드실드', en: 'Windshield', shell: true, match: /^(?!.*WINDSHIELD EDGE).*(WINDSHIELD|WSHLD|BetaSeal|primer)/i,
     groups: ['windshield-and-liftgate-glass'],
     object: region([[SV.cowlRear, SV.roof[0], SV.vRoof, 5]], { mat: 'glass', dv: 0.05 }),
   });

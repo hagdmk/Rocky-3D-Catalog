@@ -197,6 +197,50 @@ export const JOINTS = [
   J('four-way-valve', 'motor-bay-absorber', 'valve bracket under the frunk tub'),
   J('ambient-temp-sensor', 'cooling-duct', 'ambient sensor clipped to the duct'),
   J('ambient-temp-sensor', 'radiator', 'ambient sensor at the radiator'),
+
+  // --- body and closures
+  // front structure and bumper systems
+  ...each((s) => [
+    J('front-crossmember#cmbr', `front-inner-${s}#towerBrace`, 'shock tower crossmember #12 bolted to the tower brace member #9/#10 (BLT M8x25 #11)'),
+    J(`front-bumper-beam#can${s}`, `front-inner-${s}#rail`, 'bumper beam isolator bracket #8 bolted to the rail end (BOLT M10x25 #9)'),
+    J(`front-bumper-carrier#railMount${s}`, `front-inner-${s}#rail`, 'carrier bolted to the front rail (energy absorber #23 SHIM, FRONT RAIL TO CARRIER)'),
+    J(`front-ankle-catcher#arm${s}`, 'front-bumper-carrier#lower', 'ankle catcher #2B bolted to the carrier lower rail (BLT M6x30 #3)'),
+  ]),
+  J('front-ankle-catcher#armL', 'front-ankle-catcher#catcher', 'mounting arm moulded on the ankle catcher #2B'),
+  J('front-ankle-catcher#armR', 'front-ankle-catcher#catcher', 'mounting arm moulded on the ankle catcher #2B'),
+  J('front-undertray', 'front-bumper-carrier#lower', 'front aero shield #1 front edge on the carrier lower rail (BLT M6x18 #4)'),
+  ...each((s) => [J(`front-bumper-carrier#condenserBrkt${s}`, 'ac-condenser', 'CONDENSER BRACKET (DM carrier #7 = condenser #8) holds the condenser module on the carrier')]),
+  J('hood-latch#latch', 'front-bumper-carrier#upper', 'hood latch #5 bolted to the carrier upper beam (BLT M8x24 #4)'),
+  J('hood-latch#cable@start', 'hood-latch#latch', 'release cable #2 hooked into the latch'),
+  J('hood-latch#cable@end', 'hood-latch#handle', 'release cable #2 on the release handle #1'),
+  J('hood-latch#handle', 'dash-panel', 'release handle #1 on the LH lower instrument panel'),
+  J('hood-seal', 'frunk', 'SEAL - HOOD on the frunk tub rim (frunk #19 = hood seals #1)'),
+  J('hood-cowl-seal', 'underhood-apron-rear', 'SEAL - HOOD TO COWL #2 on the rear underhood apron'),
+  // rear structure and bumper
+  ...each((s) => [
+    J(`trunk-floor-ext-${s}`, 'trunk-floor#floor', 'trunk floor extension #2/#3 joined to the trunk floor #1'),
+    J(`trunk-floor-ext-${s}`, `rear-quarter-inner-${s}#tower`, 'trunk floor extension (quarter inner #5/#6) joined to the shock tower'),
+    J('rear-bumper-beam#beam', `rear-rail-${s}#rail`, 'rear bumper beam #1 bolted to the rail ends (NUT M10 #2)'),
+    J('rear-bumper-beam#crossmember', `rear-rail-${s}#rail`, 'rear crossmember #3 bolted under the rail ends'),
+  ]),
+  ...each((s) => [J(`rear-quarter-inner-${s}#cPillar`, `body-side-${s}`, 'quarter inner C-pillar reinforcement bonded to the body side outer (REINF - RR LAMP HOUSING, body side #4 = quarter inner #15/#16)')]),
+  J('trunk-floor#rearPanel', 'trunk-floor#floor', 'rear body panel #4 joined to the trunk floor #1'),
+  J('trunk-floor#rearPanel', 'rear-bumper-beam#beam', 'rear body panel #4 lower edge on the bumper beam'),
+  // cabin
+  J('windshield-edge-seal', 'windshield', 'SEAL, WINDSHIELD EDGE (glass #2) along the windshield base'),
+  J('windshield-edge-seal', 'dash-panel#topPad', 'SEAL, WINDSHIELD EDGE (dash panel #1) on the IP top pad'),
+  J('dash-support-frame#beam', 'hvac-unit', 'HVAC case bolted to the cross-car beam (dash support frame #7 BLT M8x25)'),
+  J('driver-airbag', 'steering-wheel#wheel', 'driver airbag module clipped into the steering wheel hub'),
+  ...each((s) => [J(`driver-airbag#switchLead${s}`, 'switches', 'ASY, STEERING CONTROL SWITCH HARNESS (front airbags #2 = switches #1) plugged into the spoke switch')]),
+  ...each((s) => [J(`sun-visor-${s}`, 'headliner', 'sun visor pivot clipped through the headliner to the roof header')]),
+  // closures
+  ...each((s) => [J(`liftgate-drain-${s}@start`, 'liftgate-seal', 'drain tube funnel #1 in the lamp housing gutter under the liftgate seal flange')]),
+  J('liftgate-drain-L', 'charge-port-inlet', 'drain tube #1 (charge port group #*) clipped behind the charge port inlet'),
+  // panoramic roof
+  ...each((s) => [
+    J(`pano-frame#drainF${s}@start`, 'pano-cassette', 'front drain tube on the cassette drain spout'),
+    J(`pano-frame#drainR${s}@start`, 'pano-cassette', 'rear drain tube on the cassette drain spout'),
+  ]),
 ];
 
 export const PASS_OK = [

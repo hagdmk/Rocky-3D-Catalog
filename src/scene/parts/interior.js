@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { skinPath, skinAt } from '../body.js';
 import { region, SV } from './exterior.js';
 import {
-  V, group, hollow, rbox, box, cyl, beam, bar, tube, extrude, quadPlate, disc, mesh,
+  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, extrude, quadPlate, disc, mesh,
 } from '../geom.js';
 
 const SIDES = [
@@ -40,11 +40,18 @@ export function buildInterior(reg) {
   // --- Instrument panel ---------------------------------------------------------
   reg.add({
     id: 'dash-panel', ko: '대시 패널(인스트루먼트 패널)', en: 'Dash panel (instrument panel)',
-    groups: ['dash-panel'], match: /^(?!.*GLOVE)/,
+    groups: ['dash-panel'], match: /^(?!.*(GLOVE|WINDSHIELD EDGE))/,
     object: group(
       hollow(extrude(DASH_PROFILE, 1.46, 'xy', [0, 0, 0], 'leather', { bevel: 0.01 })), // moulded shell: ducts, column and wiring run inside
-      box([0.3, 0.004, 1.2], [0.75, 0.946, 0], 'blackPlastic'),
+      named('topPad', box([0.3, 0.004, 1.2], [0.75, 0.946, 0], 'blackPlastic')),
     ),
+  });
+  // SEAL, WINDSHIELD EDGE: one part, listed with the glass (#2) and the dash panel (#1).
+  // It runs along the windshield base and closes the gap to the IP top pad.
+  reg.add({
+    id: 'windshield-edge-seal', ko: '윈드실드 엣지 실', en: 'Windshield edge seal',
+    groups: ['windshield-and-liftgate-glass', 'dash-panel'], match: /WINDSHIELD EDGE/,
+    object: tube([...skinPath([[1.6, 4.12], [1.6, 5]], 'L', -0.008, 6), ...skinPath([[1.6, 5], [1.6, 4.12]], 'R', -0.008, 6).slice(1)], 0.008, 'rubber'),
   });
   reg.add({
     id: 'glove-box', ko: '글로브 박스', en: 'Glove box', tags: 'R',
@@ -55,7 +62,7 @@ export function buildInterior(reg) {
     id: 'dash-support-frame', ko: '대시 지지 프레임(크로스카 빔)', en: 'Dash support frame (cross-car beam)',
     groups: ['dash-support-frame'],
     object: group(
-      cyl(0.03, 1.52, 'z', [0.72, 0.72, 0], 'steel'),
+      named('beam', cyl(0.03, 1.52, 'z', [0.72, 0.72, 0], 'steel')),
       beam([0.72, 0.72, -0.1], [0.75, 0.32, -0.12], 0.016, 'steel'),
       beam([0.72, 0.72, 0.1], [0.75, 0.32, 0.12], 0.016, 'steel'),
       box([0.06, 0.02, 0.1], [0.72, 0.68, 0.28], 'steel'),
@@ -208,7 +215,7 @@ export function buildInterior(reg) {
     reg.add({
       id: `sun-visor-${sd}`, ko: `선바이저 (${ko})`, en: `Sun visor ${en}`, tags: sd,
       groups: ['sun-visor'],
-      object: rbox([0.17, 0.02, 0.36], [0.12, 1.37, sg * 0.36], 'fabric', { r: 0.008, rot: [0, 0, 0.55] }),
+      object: rbox([0.17, 0.02, 0.34], [0.07, 1.318, sg * 0.35], 'fabric', { r: 0.008, rot: [0, 0, 0.55] }),
     });
   }
 
@@ -344,13 +351,19 @@ export function buildInterior(reg) {
   reg.add({
     id: 'driver-airbag', ko: '운전석 에어백(스티어링 휠)', en: 'Driver airbag (steering wheel)', tags: 'L',
     groups: ['front-air-bags'], match: /DRIVER AIRBAG|DAB|STEERING CONTROL|CONNECTOR/,
-    object: (() => {
-      const m = mesh(new THREE.CylinderGeometry(0.07, 0.074, 0.03, 28), 'leather');
-      const tilt = 0.44;
-      m.rotation.set(0, 0, Math.PI / 2 - tilt);
-      m.position.set(0.385, 0.865, -0.37);
-      return m;
-    })(),
+    object: group(
+      (() => {
+        const m = mesh(new THREE.CylinderGeometry(0.07, 0.074, 0.03, 28), 'leather');
+        const tilt = 0.44;
+        m.rotation.set(0, 0, Math.PI / 2 - tilt);
+        m.position.set(0.385, 0.865, -0.37);
+        return m;
+      })(),
+      // steering control switch harness (front airbags #2 = switches #1): from the module
+      // connector behind the cover out to the left and right spoke switches
+      ...[-1, 1].map((k) => named(`switchLead${k < 0 ? 'L' : 'R'}`, tube([[0.39, 0.862, -0.37 + k * 0.05], [0.38, 0.866, -0.37 + k * 0.075],
+        [0.372, 0.869, -0.37 + k * 0.09]], 0.004, 'blackPlastic'))),
+    ),
   });
   reg.add({
     id: 'passenger-airbag', ko: '조수석 에어백', en: 'Passenger airbag', tags: 'R',
@@ -405,5 +418,5 @@ export function buildInterior(reg) {
       cyl(0.02, 0.1, 'y', [1.0, 0.86, 0.58], 'darkMetal'),
     ),
   });
-  void skinPath; void bar; void beam;
+  void bar; void beam;
 }

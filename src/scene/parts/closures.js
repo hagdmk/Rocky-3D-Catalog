@@ -6,7 +6,7 @@ import { skinAt, skinPath, findOnFace } from '../body.js';
 import { region, SV } from './exterior.js';
 import { xOf } from '../profile.js';
 import {
-  V, group, rbox, box, cyl, beam, tube, faceTo, mesh, quadPlate,
+  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, faceTo, mesh, quadPlate,
 } from '../geom.js';
 
 const SIDES = [
@@ -57,9 +57,9 @@ export function buildClosures(reg) {
       id: `liftgate-hinge-${sd}`, ko: `리프트게이트 힌지·스트럿 (${ko})`, en: `Liftgate hinge & strut ${en}`, tags: sd,
       groups: ['liftgate-hinges-and-fittings'], match: /HINGE|STRUT|BALL STUD|WEDGE|BUMPER|ANTI PINCH|push clip|SEALER|BLT|NUT/,
       object: group(
-        rbox([0.08, 0.04, 0.05], skinAt(3.26, 4.55, sd, -0.04).toArray(), 'steel', { r: 0.008 }),
+        rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.04).toArray(), 'steel', { r: 0.008 }),
         tube([skinAt(3.9, 4.05, sd, -0.05), skinAt(4.15, 3.6, sd, -0.08), skinAt(4.35, 3.0, sd, -0.1)], 0.012, 'steel'),
-        tube([skinAt(3.35, 4.06, sd, -0.025), skinAt(4.0, 4.06, sd, -0.025), skinAt(4.6, 4.0, sd, -0.025)], 0.005, 'rubber'),
+        tube([skinAt(3.35, 4.06, sd, -0.025), skinAt(4.0, 4.06, sd, -0.025), skinAt(4.5, 4.03, sd, -0.025)], 0.005, 'rubber'), // anti-pinch sensor
       ),
     });
   }
@@ -101,7 +101,7 @@ export function buildClosures(reg) {
         groups: latchGroups,
         object: group(
           rbox([0.05, 0.09, 0.05], skinAt(ls, 1.75, sd, -0.04).toArray(), 'darkMetal', { r: 0.008 }),
-          rbox([0.03, 0.03, 0.03], skinAt(range[1] + 0.03, 1.75, sd, -0.03).toArray(), 'steel', { r: 0.006 }),
+          rbox([0.03, 0.03, 0.03], skinAt(range[1] + (fr === 'F' ? 0.01 : 0.03), 1.75, sd, -0.03).toArray(), 'steel', { r: 0.006 }), // striker on the B / C pillar
           rbox([0.1, 0.03, 0.025], skinAt(range[1] - 0.25, 2.15, sd, -0.105).toArray(), 'chrome', { r: 0.008 }),
           tube([skinAt(ls, 1.75, sd, -0.05), skinAt(range[1] - 0.15, 2.0, sd, -0.08), skinAt(range[1] - 0.25, 2.15, sd, -0.1)], 0.003, 'steel'),
         ),
@@ -112,10 +112,15 @@ export function buildClosures(reg) {
     id: 'hood-latch', ko: '후드 래치·릴리스 케이블', en: 'Hood latch & release cable',
     groups: ['dual-hood-latch-and-release', 'single-hood-latch-and-release'],
     object: group(
-      rbox([0.06, 0.08, 0.16], [2.08, 0.72, 0], 'darkMetal', { r: 0.01 }),
-      rbox([0.04, 0.03, 0.05], [2.1, 0.78, 0], 'steel', { r: 0.006 }),
-      tube([[2.06, 0.7, -0.05], [1.8, 0.6, -0.4], [1.2, 0.55, -0.6], [0.9, 0.5, -0.66], [0.82, 0.46, -0.7]], 0.004, 'steel'),
-      rbox([0.06, 0.03, 0.04], [0.8, 0.46, -0.7], 'blackPlastic', { r: 0.006 }),
+      // latch (#5) bolted to the front face of the carrier upper beam, striker (#3) above it
+      named('latch', rbox([0.06, 0.08, 0.16], [2.155, 0.7, 0], 'darkMetal', { r: 0.01 })),
+      rbox([0.04, 0.025, 0.05], [2.155, 0.752, 0], 'steel', { r: 0.006 }),
+      // release cable (#2): over the carrier beam, outboard of the frunk tub and over the
+      // brake booster, through the firewall to the handle on the LH lower dash
+      named('cable', tube([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
+        [1.45, 0.7, -0.47], [1.22, 0.78, -0.47], [1.1, 0.8, -0.47], [0.985, 0.79, -0.52], [0.9, 0.72, -0.62], [0.78, 0.58, -0.7],
+        [0.715, 0.525, -0.71]], 0.004, 'steel')),
+      named('handle', rbox([0.06, 0.03, 0.04], [0.7, 0.52, -0.71], 'blackPlastic', { r: 0.006 })),
     ),
   });
   reg.add({
@@ -138,7 +143,10 @@ export function buildClosures(reg) {
     reg.add({
       id: `liftgate-drain-${sd}`, ko: `리프트게이트(램프 하우징) 배수관 (${ko})`, en: `Liftgate (lamp housing) drain tube ${en}`, tags: sd,
       groups: ['liftgate-drain'],
-      object: tube([skinAt(4.6, 2.9, sd, -0.06), skinAt(4.6, 2.0, sd, -0.08), skinAt(4.58, 0.9, sd, -0.06), skinAt(4.55, 0.0, sd, -0.04)], 0.006, 'rubber'),
+      // funnel (#1) in the lamp housing gutter under the liftgate seal, straight down behind
+      // the charge port inlet (LH) to the elbow (#2) at the lower body
+      object: pipe([skinAt(4.618, 2.74, sd, -0.03), [-2.126, 0.9, sg * 0.835], [-2.126, 0.8, sg * 0.83], [-2.132, 0.55, sg * 0.845],
+        skinAt(4.62, 0.0, sd, -0.04)], 0.006, 'rubber'),
     });
   }
 
@@ -157,21 +165,26 @@ export function buildClosures(reg) {
       object: loop([[r[0] + 0.01, 0.32], [r[1] - 0.01, 0.32], [r[1] - 0.01, 3.0], [r[1] - 0.06, 3.9], [r[0] + 0.01, 3.9], [r[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
     });
   }
+  // SEAL - HOOD (#1) is the closed loop on the frunk tub rim (frunk group #19); its rear
+  // corners are cut where the shock-tower braces cross the tub.
+  // SEAL - HOOD TO COWL (#2) runs across the cowl between the hood hinges.
+  const rim = (x, z) => [x, 0.748 + ((2.04 - x) / 0.84) * 0.116, z];
   reg.add({
-    id: 'hood-seal', ko: '후드 실', en: 'Hood seals', tags: 'F',
-    groups: ['hood-seals'],
-    object: group(
-      tube([[2.15, 0.775, -0.6], [2.15, 0.775, 0.6]], 0.008, 'rubber'),
-      tube([[1.0, 0.89, -0.62], [1.0, 0.89, 0.62]], 0.008, 'rubber'),
-      tube([[2.15, 0.775, -0.6], [1.6, 0.83, -0.66], [1.0, 0.89, -0.62]], 0.008, 'rubber'),
-      tube([[2.15, 0.775, 0.6], [1.6, 0.83, 0.66], [1.0, 0.89, 0.62]], 0.008, 'rubber'),
-    ),
+    id: 'hood-seal', ko: '후드 실(프렁크 림)', en: 'Hood seal (frunk rim)', tags: 'F',
+    groups: ['hood-seals', 'front-luggage-storage-compartment'], match: /SEAL - HOOD(?! TO COWL)/,
+    object: tube([rim(2.04, -0.44), rim(2.04, 0.44), rim(1.34, 0.44), rim(1.2, 0.368), rim(1.2, -0.368), rim(1.34, -0.44)], 0.008, 'rubber', { closed: true, tension: 0 }),
   });
-  const lgOutline = [[3.26, 5], [3.26, 3.93], [4.61, 3.93], [4.61, 2.76], [4.95, 2.76], [4.95, 5]];
+  reg.add({
+    id: 'hood-cowl-seal', ko: '후드-카울 실', en: 'Hood to cowl seal', tags: 'F',
+    groups: ['hood-seals'], match: /HOOD TO COWL/,
+    object: tube([[1.0, 0.89, -0.54], [1.0, 0.89, 0.54]], 0.008, 'rubber'),
+  });
+  // on the body opening flange, just inside the liftgate edge and above the rear door seals
+  const lgOutline = [[3.3, 5], [3.3, 3.97], [4.61, 3.97], [4.61, 2.76], [4.95, 2.76], [4.95, 5]];
   reg.add({
     id: 'liftgate-seal', ko: '리프트게이트(트렁크) 실', en: 'Liftgate (trunk lid) seal', tags: 'B',
     groups: ['trunk-lid-seal'],
-    object: group(loop(lgOutline, 'L', -0.03, 0.007, 'rubber'), loop(lgOutline, 'R', -0.03, 0.007, 'rubber')),
+    object: group(loop(lgOutline, 'L', -0.024, 0.007, 'rubber'), loop(lgOutline, 'R', -0.024, 0.007, 'rubber')),
   });
 
   // --- Exterior mirrors -----------------------------------------------------------------
@@ -285,10 +298,17 @@ export function buildClosures(reg) {
     id: 'pano-drive', ko: '루프 구동 모터·케이블·트랙', en: 'Roof drive motors, cables & tracks',
     groups: ['drive-motor-and-cable-mechanism'], object: group(tracks),
   });
+  // Drain tubes from the cassette corner spouts, between the outer skin and the
+  // pillar trims (outboard of the curtain airbags and the liftgate harness): the front
+  // ones down the A-pillar ahead of the door hinges, the rear ones down the C-pillar.
   const drains = [];
   for (const { sd } of SIDES) {
-    drains.push(tube([skinAt(R0, 4.12, sd, -0.04), skinAt(2.0, 3.97, sd, -0.05), skinAt(1.66, 3.6, sd, -0.07), skinAt(1.6, 2.4, sd, -0.1)], 0.005, 'rubber'));
-    drains.push(tube([skinAt(R1, 4.12, sd, -0.04), skinAt(3.55, 3.97, sd, -0.05), skinAt(3.62, 3.2, sd, -0.07), skinAt(3.62, 2.2, sd, -0.12)], 0.005, 'rubber'));
+    drains.push(named(`drainF${sd}`, tube([skinAt(R0 - 0.02, 4.17, sd, -0.022), skinAt(2.2, 4.08, sd, -0.016), skinAt(1.95, 3.97, sd, -0.015),
+      skinAt(1.72, 3.8, sd, -0.015), skinAt(1.6, 3.3, sd, -0.015), skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02),
+      skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
+    drains.push(named(`drainR${sd}`, tube([skinAt(R1 + 0.02, 4.17, sd, -0.022), skinAt(3.35, 4.1, sd, -0.016), skinAt(3.55, 3.95, sd, -0.015),
+      skinAt(3.62, 3.5, sd, -0.015), skinAt(3.64, 3.0, sd, -0.015), skinAt(3.64, 2.4, sd, -0.02), skinAt(3.64, 1.5, sd, -0.02),
+      skinAt(3.64, 0.8, sd, -0.02)], 0.005, 'rubber')));
   }
   reg.add({
     id: 'pano-frame', ko: '루프 프레임·배수관', en: 'Roof frame & drain tubes',
