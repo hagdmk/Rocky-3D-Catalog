@@ -169,7 +169,7 @@ if (want('joints')) {
 
 // ---------------------------------------------------------------- shared parts
 if (want('shared')) {
-  const HW = /\b(BOLTS?|BLT|NUTS?|SCREWS?|SCR|WASHERS?|WSHR|CLIPS?|RIVETS?|RIVITS?|RVT|RIVNUT|NUTSERT|STUDS?|GROMMETS?|TAPE|SEALANT|SEALER|PRIMER|CABLE TIES?|TIE STRAPS?|TIE-STRAP|ZIP TIE|LABELS?|STICKER|ADHESIVE|GLUE|GREASE|LUBRICANT|BETASEAL|INSTAPACK|BUTYL|URETHANE|FASTENER|PUSH ?PIN|SHIM|CLAMP|HOSE RING)\b/i;
+  const HW = /\b(BOLTS?|BLT|NUTS?|SCREWS?|SCR|WASHERS?|WSHR|CLIPS?|RIVETS?|RIVITS?|RVT|RIVNUT|NUTSERT|STUDS?|GROMMETS?|TAPE|SEALANT|SEALER|PRIMER|CABLE TIES?|TIE STRAPS?|TIE-STRAP|ZIP TIE|LABELS?|STICKER|ADHESIVE|GLUE|COMPOUND|GREASE|LUBRICANT|BETASEAL|INSTAPACK|BUTYL|URETHANE|FASTENER|PUSH ?PIN|SHIM|CLAMP|HOSE RING)\b/i;
   const BLANK = /^(NA|N\/A|-|NO LONGER AVAILABLE|DISCONTINUED|TBA|)$/i;
   const keyOf = (p) => (!p.pn || BLANK.test(p.pn.trim())
     ? `NAME:${p.name.trim().toUpperCase().replace(/\s*[,-]\s*/g, ', ').replace(/\s+/g, ' ')}`
@@ -200,8 +200,14 @@ if (want('shared')) {
         const rb = ps.filter((p) => p.group.id === gids[j]);
         let worst = null;
         let shown = false;
+        // a row whose matching part is not fitted in a configuration (e.g. vacuum-booster rows with an
+        // iBooster) does not apply there
+        const matchers = (rows) => rows.flatMap((p) => (catalog.componentsByGroup.get(p.group.id) || []).filter((c) => catalog.partMatches(c, p)));
+        const ma = matchers(ra);
+        const mb = matchers(rb);
         for (const cfg of CONFIGS) {
           const vis = (c) => visibleIn(c, cfg);
+          if (!ma.some(vis) || !mb.some(vis)) continue;
           const ca = [...new Set(ra.flatMap((p) => catalog.componentsForPart(p, vis)))];
           const cb = [...new Set(rb.flatMap((p) => catalog.componentsForPart(p, vis)))];
           if (!ca.length || !cb.length) continue;

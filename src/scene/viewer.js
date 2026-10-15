@@ -37,6 +37,8 @@ export class Viewer {
     this.explode = 0;
     this.hiddenSystems = new Set();
     this.variant = { drive: 'dm', susp: 'air' };
+    this.mounts = new Map(); // component id -> ids of the parts it is fastened to (tools/joints.mjs)
+    this.mountContext = true; // show hidden mounting partners of visible parts as faint ghosts
     this.needsRender = true;
     this.inset = { tx: 0, ty: 0, x: 0, y: 0 };
 
@@ -157,6 +159,7 @@ export class Viewer {
     const box = new THREE.Box3();
     for (const it of items) {
       it.system = groupSystem(it.groups[0]);
+      it.systems = [...new Set(it.groups.map(groupSystem))]; // a part listed in groups of several systems
       this.carRoot.add(it.root);
       it.root.updateMatrixWorld(true);
       box.setFromObject(it.root);
@@ -208,8 +211,8 @@ export class Viewer {
     this.applyMaterials();
   }
 
-  isVisible(it) {
-    if (this.hiddenSystems.has(it.system)) return false;
+  /** Shown in the current vehicle configuration (ignores system visibility). */
+  inConfig(it) {
     if (it.variant) {
       for (const [k, v] of Object.entries(it.variant)) {
         const allowed = Array.isArray(v) ? v : [v];
@@ -219,9 +222,46 @@ export class Viewer {
     return true;
   }
 
+  isVisible(it) {
+    if ((it.systems || [it.system]).every((s) => this.hiddenSystems.has(s))) return false;
+    return this.inConfig(it);
+  }
+
+  /** pairs = [[idA, idB], ...] of parts fastened together. */
+  setMounts(pairs) {
+    this.mounts = new Map();
+    for (const [a, b] of pairs) {
+      if (a === b || !this.byId.has(a) || !this.byId.has(b)) continue;
+      if (!this.mounts.has(a)) this.mounts.set(a, new Set());
+      if (!this.mounts.has(b)) this.mounts.set(b, new Set());
+      this.mounts.get(a).add(b);
+      this.mounts.get(b).add(a);
+    }
+    this.applyVisibility();
+  }
+
+  setMountContext(on) {
+    this.mountContext = on;
+    this.applyVisibility();
+  }
+
   applyVisibility() {
-    for (const it of this.items) it.root.visible = this.isVisible(it);
-    this.pickables = this.items.filter((it) => it.root.visible).flatMap((it) => it.meshes);
+    const shown = new Set(this.items.filter((it) => this.isVisible(it)).map((it) => it.id));
+    // Parts that a shown part is fastened to, hidden only because their system is
+    // hidden: draw them as faint, non-pickable context so joints do not float.
+    const ghosts = new Set();
+    if (this.mountContext && this.hiddenSystems.size) {
+      for (const id of shown) {
+        for (const p of this.mounts.get(id) || []) {
+          if (!shown.has(p) && this.inConfig(this.byId.get(p))) ghosts.add(p);
+        }
+      }
+    }
+    for (const it of this.items) {
+      it.ghost = ghosts.has(it.id);
+      it.root.visible = shown.has(it.id) || it.ghost;
+    }
+    this.pickables = this.items.filter((it) => shown.has(it.id)).flatMap((it) => it.meshes);
     this.applyState();
   }
 
@@ -239,7 +279,7 @@ export class Viewer {
     const focus = this.focusSet();
     const anyFocus = focus.size > 0;
     for (const it of this.items) {
-      const isFocus = focus.has(it.id);
+      const isFocus = focus.has(it.id) && !it.ghost;
       const strong = this.selected.has(it.id) || this.emphasis.has(it.id);
       for (const m of it.materials) {
         let op = m.userData.baseOpacity;
@@ -248,7 +288,9 @@ export class Viewer {
           else if (it.trim) op = Math.min(op, 0.4);
         }
         let boost = 0;
-        if (anyFocus) {
+        if (it.ghost) {
+          op = Math.min(op, anyFocus ? 0.06 : 0.12);
+        } else if (anyFocus) {
           if (isFocus) {
             op = m.userData.glass ? Math.max(op, 0.6) : 1;
             boost = strong ? 0.42 : 0.26;
@@ -262,13 +304,13 @@ export class Viewer {
         // they stay crisp even when they sit deep inside the car.
         m.userData.onTop = anyFocus && isFocus;
       }
-      const eo = anyFocus ? (isFocus ? 0.75 : 0.05) : (it.shell && this.xray ? 0.25 : 0.5);
+      const eo = it.ghost ? 0.06 : anyFocus ? (isFocus ? 0.75 : 0.05) : (it.shell && this.xray ? 0.25 : 0.5);
       it.edgeMaterial.userData.targetOpacity = eo;
-      const order = anyFocus && isFocus ? 10 : (it.shell ? 2 : it.trim ? 1 : 0);
+      const order = anyFocus && isFocus ? 10 : (it.shell || it.ghost ? 2 : it.trim ? 1 : 0);
       for (const mesh of it.meshes) mesh.renderOrder = order;
       for (const e of it.edges) e.renderOrder = order + 1;
     }
-    const objs = (ids) => [...ids].map((id) => this.byId.get(id)).filter((it) => it && it.root.visible).map((it) => it.root);
+    const objs = (ids) => [...ids].map((id) => this.byId.get(id)).filter((it) => it && it.root.visible && !it.ghost).map((it) => it.root);
     this.selOutline.selectedObjects = objs(new Set([...this.selected, ...this.emphasis]));
     const hov = new Set(this.preview);
     if (this.hovered) hov.add(this.hovered);
@@ -454,7 +496,7 @@ export class Viewer {
     const box = new THREE.Box3();
     for (const id of ids) {
       const it = this.byId.get(id);
-      if (it && it.root.visible) box.expandByObject(it.root);
+      if (it && it.root.visible && !it.ghost) box.expandByObject(it.root);
     }
     if (box.isEmpty()) return;
     const center = box.getCenter(new THREE.Vector3());

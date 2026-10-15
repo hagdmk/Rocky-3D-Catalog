@@ -2,6 +2,7 @@ import { Viewer } from './scene/viewer.js';
 import { buildScene } from './scene/build.js';
 import { Catalog } from './catalog.js';
 import { App } from './ui/app.js';
+import { JOINTS } from '../tools/joints.mjs';
 
 async function main() {
   const res = await fetch('data/catalog.json');
@@ -16,6 +17,8 @@ async function main() {
   const viewer = new Viewer(document.getElementById('viewport'));
   viewer.setComponents(reg.items, (gid) => catalog.systemOfGroup(gid));
   catalog.linkComponents(reg.items);
+  // parts fastened together, so hidden mounting partners can be drawn as context
+  viewer.setMounts(JOINTS.map((j) => [j.a.split(/[#@]/)[0], j.b.split(/[#@]/)[0]]));
   const unmapped = [...catalog.groups.keys()].filter((g) => !catalog.componentsByGroup.has(g));
   if (unmapped.length) console.warn('Catalog groups without a 3D location:', unmapped);
 

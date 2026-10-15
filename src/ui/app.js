@@ -65,7 +65,7 @@ export class App {
     if (comps.some((c) => this.visible(c))) return;
     const c = comps[0];
     if (!c) return;
-    if (this.viewer.hiddenSystems.has(c.system)) this.setSystemHidden(c.system, false);
+    if (c.systems.every((s) => this.viewer.hiddenSystems.has(s))) this.setSystemHidden(c.system, false);
     if (c.variant) {
       for (const [k, v] of Object.entries(c.variant)) {
         const val = Array.isArray(v) ? v[0] : v;
@@ -109,7 +109,7 @@ export class App {
         subs.hidden = !node.classList.contains('open');
       });
       $('.sys-row', node).addEventListener('mouseenter', () => {
-        const ids = this.cat.components.filter((c) => c.system === s.id && this.visible(c)).map((c) => c.id);
+        const ids = this.cat.components.filter((c) => c.systems.includes(s.id) && this.visible(c)).map((c) => c.id);
         this.viewer.setPreview(ids);
       });
       $('.sys-row', node).addEventListener('mouseleave', () => this.viewer.setPreview([]));
@@ -291,6 +291,7 @@ export class App {
       }
     }
     if (comp.shell) chips.push('<span class="chip">외판</span>');
+    if (comp.groups.length > 1) chips.push(`<span class="chip" title="같은 부품이 카탈로그의 여러 그룹에 실려 있어 한 위치로 표시합니다">${comp.groups.length}개 그룹 공유</span>`);
     const head = el(`<div class="info-head">
       <div class="kicker"><span class="dot" style="background:${this.sysColor(sys.id)}"></span>${esc(sys.nameKo)} · ${esc(sys.name)}</div>
       <h2>${esc(comp.ko)}</h2>
@@ -579,6 +580,7 @@ export class App {
       $('#tab-config').hidden = b.dataset.tab !== 'config';
     }));
     $('#cfg-xray').addEventListener('change', (e) => this.setXray(e.target.checked));
+    $('#cfg-mounts').addEventListener('change', (e) => this.viewer.setMountContext(e.target.checked));
     this.bindSeg('#cfg-color', (v) => this.viewer.setColorMode(v));
     this.bindSeg('#cfg-drive', (v) => this.setVariant('drive', v, false));
     this.bindSeg('#cfg-susp', (v) => this.setVariant('susp', v, false));
