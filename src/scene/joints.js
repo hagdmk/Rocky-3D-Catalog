@@ -410,11 +410,6 @@ export const JOINTS = [
 export const PASS_OK = [
   { a: 'brake-rotor-*#disc', b: 'brake-caliper-*', reason: 'the caliper is drawn as a solid block: the disc runs in the slot between its pads' },
   { a: 'brake-rotor-*#disc', b: 'park-brake-*', reason: 'the parking brake caliper is drawn as a solid block: the disc runs in the slot between its pads' },
-  { a: 'front-inner-*#tower', b: 'front-*-spring-*', reason: 'the shock tower is drawn as a closed hollow box; the casting is open below, where the strut enters it' },
-  { a: 'front-inner-*#tower', b: 'knuckle-*F', reason: 'the shock tower is drawn as a closed hollow box; the casting is open toward the wheel, where the knuckle neck reaches the upper arm ball joint inside it' },
-  { a: 'rear-quarter-inner-*#tower', b: 'rear-*-spring-*', reason: 'the shock tower is drawn as a closed hollow box; the tower is open below, where the strut enters it' },
-  { a: 'rear-*-spring-*#damper', b: 'rear-quarter-inner-*', reason: 'the wheelhouse is drawn as a closed half-cylinder; on the car the strut rises through the shock tower opening in the wheelhouse' },
-  { a: 'rear-*-spring-*#damper', b: 'arch-liner-*B', reason: 'the rear arch liner is drawn as a closed half-cylinder; on the car the strut passes through its cut-out below the shock tower' },
   { a: 'steering-wheel#column', b: 'dash-panel', reason: 'the instrument panel is drawn as one closed shell; the steering column enters it through the column opening' },
   { a: 'steering-ishaft#lowerLink', b: 'sound-insulation', reason: 'the dash insulation is drawn without its I-shaft opening; the lower link passes through the dash seal (#8) there' },
   { a: 'brake-pedal#pushrod', b: 'sound-insulation', reason: 'the dash insulation is drawn without the booster opening; the pushrod passes through it to the booster' },

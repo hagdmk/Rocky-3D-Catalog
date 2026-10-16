@@ -35,17 +35,38 @@ const NODE_TOP = 0.55;
 const NODE_A = Math.asin((NODE_TOP - WY) / (ARCH_RADIUS + 0.035));
 const NODE_A_LINER = Math.asin((NODE_TOP - WY) / (ARCH_RADIUS + 0.012));
 
+// The rear shock tower (x XR-0.16 .. XR+0.04, |z| 0.56 .. 0.68) stands in an opening of the
+// wheelhouse and of the arch liner, through which the strut rises into it.
+const TOWER_Z1 = 0.68;
+const towerA = (r) => [Math.acos(0.04 / r), Math.acos(-0.16 / r)];
+
 /**
- * Wheelhouse strip a0..a1 that starts at aStart instead of a0: the facets past aStart stay on the
- * 36-segment grid of the full strip (one short facet from aStart to the next grid angle).
+ * Wheelhouse strip made of the angle ranges [[aS, aE], ...] of the full strip a0..a1: the facets
+ * stay on the 36-segment grid of the full strip (short facets at the cut ends).
  */
-function trimmedWheelhouse(x, sg, rIn, z0, z1, mat, aStart, a0, a1) {
+function archStrip(x, sg, rIn, z0, z1, mat, a0, a1, ranges) {
   const d = (a1 - a0) / 36;
-  const k = Math.ceil((aStart - a0) / d - 1e-9);
-  const ag = a0 + k * d;
+  const out = [];
+  for (const [aS, aE] of ranges) {
+    const ks = Math.ceil((aS - a0) / d - 1e-9);
+    const ke = Math.floor((aE - a0) / d + 1e-9);
+    if (ke <= ks) { out.push(wheelhouse(x, sg, rIn, z0, z1, mat, aS, aE, 1)); continue; }
+    const gs = a0 + ks * d;
+    const ge = a0 + ke * d;
+    if (gs - aS > 1e-3) out.push(wheelhouse(x, sg, rIn, z0, z1, mat, aS, gs, 1));
+    out.push(wheelhouse(x, sg, rIn, z0, z1, mat, gs, ge, ke - ks));
+    if (aE - ge > 1e-3) out.push(wheelhouse(x, sg, rIn, z0, z1, mat, ge, aE, 1));
+  }
+  return out;
+}
+
+/** Rear wheelhouse or arch liner: inboard strips trimmed at the node and open under the tower. */
+function rearArch(sg, rIn, zIn, zOut, mat, a0, a1, aNode) {
+  const [aF, aR] = towerA(rIn);
   return [
-    ag - aStart > 1e-3 ? wheelhouse(x, sg, rIn, z0, z1, mat, aStart, ag, 1) : null,
-    wheelhouse(x, sg, rIn, z0, z1, mat, ag, a1, 36 - k),
+    ...archStrip(XR, sg, rIn, zIn, TOWER_Z1, mat, a0, a1, [[aNode, aF], [aR, a1]]),
+    ...archStrip(XR, sg, rIn, TOWER_Z1, NODE_Z1, mat, a0, a1, [[aNode, a1]]),
+    wheelhouse(XR, sg, rIn, NODE_Z1, zOut, mat, a0, a1),
   ];
 }
 
@@ -65,7 +86,13 @@ export function buildStructure(reg) {
       // extension pass above the wheel arch liner.
       object: group(
         named('rail', bar([2.26, 0.47, sg * 0.5], [1.02, 0.42, sg * 0.5], 0.08, 0.12, 'aluminum')),
-        named('tower', hollow(rbox([0.26, 0.3, 0.2], [XF - 0.05, 0.7, sg * 0.6], 'aluminum', { r: 0.03 }))),
+        // shock tower casting: top, inboard, front and rear walls; open below and toward the wheel,
+        // where the strut and the knuckle neck enter it (hollow: lines and the strut run inside)
+        named('tower', hollow(group(
+          box([0.26, 0.006, 0.2], [XF - 0.05, 0.847, sg * 0.6], 'aluminum'),
+          box([0.26, 0.3, 0.006], [XF - 0.05, 0.7, sg * 0.503], 'aluminum'),
+          ...[XF + 0.077, XF - 0.177].map((x) => box([0.006, 0.3, 0.2], [x, 0.7, sg * 0.6], 'aluminum')),
+        ))),
         // shotgun upper #3/#4: from the front of the wheelhouse up to the hinge pillar front face
         bar([1.85, 0.758, sg * 0.72], [0.98, 0.863, sg * 0.785], 0.04, 0.07, 'aluminum'),
         // shock tower extension #7/#8: from the front face of the tower to the front of the shotgun
@@ -156,10 +183,15 @@ export function buildStructure(reg) {
       groups: ['rear-quarter-inner-panels'], match: /^(?!.*EXTENSION RR TRUNK FLOOR)/,
       object: group(
         // wheelhouse: inboard of the closeout its front lower corner is the rear rail node
-        // (rear-rail-*#node), so that strip of the arch starts on top of the node
-        ...trimmedWheelhouse(XR, sg, ARCH_RADIUS + 0.035, 0.6, NODE_Z1, 'aluminum', NODE_A, -0.15, Math.PI + 0.15),
-        wheelhouse(XR, sg, ARCH_RADIUS + 0.035, NODE_Z1, 0.95, 'aluminum'),
-        named('tower', hollow(rbox([0.2, 0.32, 0.12], [XR - 0.06, 0.82, sg * 0.62], 'aluminum', { r: 0.02 }))),
+        // (rear-rail-*#node), so that strip of the arch starts on top of the node; the shock
+        // tower stands in its opening
+        ...rearArch(sg, ARCH_RADIUS + 0.035, 0.6, 0.95, 'aluminum', -0.15, Math.PI + 0.15, NODE_A),
+        // shock tower: top and four walls, open below where the strut rises into it (hollow)
+        named('tower', hollow(group(
+          box([0.2, 0.006, 0.12], [XR - 0.06, 0.977, sg * 0.62], 'aluminum'),
+          ...[0.563, 0.677].map((z) => box([0.2, 0.32, 0.006], [XR - 0.06, 0.82, sg * z], 'aluminum')),
+          ...[XR + 0.037, XR - 0.157].map((x) => box([0.006, 0.32, 0.12], [x, 0.82, sg * 0.62], 'aluminum')),
+        ))),
         // C-pillar reinforcement (#23/#24): from the wheelhouse up behind the rear door opening to the roof rail
         named('cPillar', bar([XR + 0.02, 0.8, sg * 0.71], [-1.21, 1.19, sg * 0.653], 0.04, 0.03, 'aluminum')),
         // rear lamp housing reinforcement (#15/#16 = body side #4): bonded behind the body side
@@ -276,11 +308,10 @@ export function buildStructure(reg) {
         tags: `${sd}${fr}`, groups: ['wheel-arch-liners'], match: /LINER|LOUVRE|LOUVER|FLANGE|USP|COVER/,
         object: fr === 'F'
           ? wheelhouse(x, sg, ARCH_RADIUS + 0.012, 0.64, 0.965, 'blackPlastic', -0.25, Math.PI + 0.25)
-          // rear: inboard strip trimmed above the rear rail node, as the wheelhouse (the group keeps
-          // the component's name, so the liner reads as one part)
+          // rear: inboard strip trimmed above the rear rail node and cut out under the shock tower,
+          // as the wheelhouse (the group keeps the component's name, so the liner reads as one part)
           : named(`arch-liner-${sd}${fr}`, group(
-            ...trimmedWheelhouse(x, sg, ARCH_RADIUS + 0.012, 0.64, NODE_Z1, 'blackPlastic', NODE_A_LINER, -0.25, Math.PI + 0.25),
-            wheelhouse(x, sg, ARCH_RADIUS + 0.012, NODE_Z1, 0.965, 'blackPlastic', -0.25, Math.PI + 0.25),
+            ...rearArch(sg, ARCH_RADIUS + 0.012, 0.64, 0.965, 'blackPlastic', -0.25, Math.PI + 0.25, NODE_A_LINER),
           )),
       });
     }
