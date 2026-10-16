@@ -294,7 +294,10 @@ export const JOINTS = [
     J('rear-bumper-beam#beam', `rear-rail-${s}#rail`, 'rear bumper beam #1 bolted to the rail ends (NUT M10 #2)'),
     J('rear-bumper-beam#crossmember', `rear-rail-${s}#rail`, 'rear crossmember #3 bolted under the rail ends'),
   ]),
-  ...each((s) => [J(`rear-quarter-inner-${s}#cPillar`, `body-side-${s}`, 'quarter inner C-pillar reinforcement bonded to the body side outer (REINF - RR LAMP HOUSING, body side #4 = quarter inner #15/#16)')]),
+  ...each((s) => [
+    J(`rear-quarter-inner-${s}#cPillar`, `body-side-${s}`, 'ASY REINF C-PILLAR (quarter inner #23/#24, 1014652/1014648) bonded to the body side outer C-pillar (#9)'),
+    J(`rear-quarter-inner-${s}#lampHousing`, `body-side-${s}`, 'REINF - RR LAMP HOUSING (quarter inner #15/#16 = body side #4, 1003096/1003097) bonded behind the body side outer at the tail lamp pocket'),
+  ]),
   // pillars and floor
   ...each((s) => [
     J(`hinge-pillar-${s}`, `sill-${s}`, 'hinge pillar #5 joined to the front of the side sill'),
@@ -379,6 +382,7 @@ export const JOINTS = [
 export const PASS_OK = [
   { a: 'front-air-spring-*#damper', b: 'front-halfshaft-*', reason: 'known limit of the simplified model: the catalog shows a plain clevis on the aft link, so the strut crosses the halfshaft' },
   { a: 'front-coil-spring-*#damper', b: 'front-halfshaft-*', reason: 'known limit of the simplified model: the catalog shows a plain clevis on the aft link, so the strut crosses the halfshaft' },
+  { a: 'wall-connector#cable', b: 'charge-port-door', reason: 'the charge port door is drawn closed; with the connector plugged in it stands open and the connector handle passes through its opening into the inlet' },
 ];
 
 export const SHARED_OK = [

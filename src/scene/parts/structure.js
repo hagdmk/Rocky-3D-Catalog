@@ -16,15 +16,37 @@ const SIDES = [
 ];
 
 /** Half-cylinder wheelhouse shell around an axle. */
-function wheelhouse(x, sg, rIn, z0, z1, mat, a0 = -0.15, a1 = Math.PI + 0.15) {
+function wheelhouse(x, sg, rIn, z0, z1, mat, a0 = -0.15, a1 = Math.PI + 0.15, seg = 36) {
   // Angles a0..a1 are measured in the side view from +x (forward), CCW.
   // CylinderGeometry places theta=0 on +z; after rotateX(90deg) that maps to
   // the angle a = theta - 90deg in the x/y plane.
-  const g = new THREE.CylinderGeometry(rIn, rIn, Math.abs(z1 - z0), 36, 1, true, a0 + Math.PI / 2, a1 - a0);
+  const g = new THREE.CylinderGeometry(rIn, rIn, Math.abs(z1 - z0), seg, 1, true, a0 + Math.PI / 2, a1 - a0);
   g.rotateX(Math.PI / 2);
   const m = mesh(g, mat);
   m.position.set(x, WY, sg * (Math.abs(z0) + Math.abs(z1)) / 2);
   return m;
+}
+
+// The rear rail node (rear-rail-*#node) fills the front lower corner of the rear wheelhouse
+// inboard of z = NODE_Z1; the arch there starts on the node top (y 0.55), angle NODE_A at the
+// wheelhouse radius and NODE_A_LINER at the arch liner radius.
+const NODE_Z1 = 0.72;
+const NODE_TOP = 0.55;
+const NODE_A = Math.asin((NODE_TOP - WY) / (ARCH_RADIUS + 0.035));
+const NODE_A_LINER = Math.asin((NODE_TOP - WY) / (ARCH_RADIUS + 0.012));
+
+/**
+ * Wheelhouse strip a0..a1 that starts at aStart instead of a0: the facets past aStart stay on the
+ * 36-segment grid of the full strip (one short facet from aStart to the next grid angle).
+ */
+function trimmedWheelhouse(x, sg, rIn, z0, z1, mat, aStart, a0, a1) {
+  const d = (a1 - a0) / 36;
+  const k = Math.ceil((aStart - a0) / d - 1e-9);
+  const ag = a0 + k * d;
+  return [
+    ag - aStart > 1e-3 ? wheelhouse(x, sg, rIn, z0, z1, mat, aStart, ag, 1) : null,
+    wheelhouse(x, sg, rIn, z0, z1, mat, ag, a1, 36 - k),
+  ];
 }
 
 function hoodY(x, inset = 0.04) {
@@ -38,12 +60,18 @@ export function buildStructure(reg) {
       id: `front-inner-${sd}`, ko: `프론트 레일·쇼크타워 (${ko})`, en: `Front rail & shock tower ${en}`, tags: sd,
       groups: ['front-inner-panels-dual-motor', 'front-inner-panels-rear-wheel-drive'],
       match: /SHOCK TOWER|SHOTGUN|RAIL|EXTN|EXTENSION|TORQUE BOX|REINF/,
+      // The shotgun, the tower extension and the tower brace all run under the side and rear
+      // underhood aprons (the shock tower cover sits on top); the shotgun and the extension
+      // pass above the wheel arch liner, the extension outboard of the strut top mount.
       object: group(
         named('rail', bar([2.26, 0.47, sg * 0.5], [1.02, 0.42, sg * 0.5], 0.08, 0.12, 'aluminum')),
         named('tower', hollow(rbox([0.26, 0.3, 0.2], [XF - 0.05, 0.7, sg * 0.6], 'aluminum', { r: 0.03 }))),
-        bar([1.85, 0.8, sg * 0.72], [0.95, 0.86, sg * 0.76], 0.06, 0.07, 'aluminum'),
-        bar([XF - 0.05, 0.8, sg * 0.62], [1.85, 0.8, sg * 0.72], 0.05, 0.05, 'aluminum'),
-        named('towerBrace', bar([XF - 0.05, 0.84, sg * 0.56], [1.02, 0.86, sg * 0.32], 0.05, 0.04, 'aluminum')),
+        // shotgun upper #3/#4: from the front of the wheelhouse up to the hinge pillar front face
+        bar([1.85, 0.758, sg * 0.72], [0.98, 0.863, sg * 0.785], 0.04, 0.07, 'aluminum'),
+        // shock tower extension #7/#8: tower top (outboard) to the front of the shotgun
+        bar([1.49, 0.8, sg * 0.68], [1.85, 0.758, sg * 0.72], 0.04, 0.05, 'aluminum'),
+        // tower brace member #9/#10: from the rear of the tower top to the shock tower crossmember
+        named('towerBrace', bar([1.4, 0.81, sg * 0.53], [1.02, 0.835, sg * 0.32], 0.05, 0.04, 'aluminum')),
       ),
     });
   }
@@ -62,7 +90,8 @@ export function buildStructure(reg) {
     reg.add({
       id: `sill-${sd}`, ko: `사이드 실 (${ko})`, en: `Side sill ${en}`, tags: sd,
       groups: ['sill-components'],
-      object: bar([1.12, 0.3, sg * 0.86], [-1.06, 0.3, sg * 0.86], 0.12, 0.17, 'aluminum'),
+      // ends at the front face of the rear wheelhouse (the node closeout ties it to the rear rail)
+      object: bar([1.12, 0.3, sg * 0.86], [-0.985, 0.3, sg * 0.86], 0.12, 0.17, 'aluminum'),
     });
   }
 
@@ -74,8 +103,13 @@ export function buildStructure(reg) {
     reg.add({
       id: `hinge-pillar-${sd}`, ko: `힌지 필러·카울 사이드 (${ko})`, en: `Hinge pillar & cowl side ${en}`, tags: sd,
       groups: ['body-side-panels'], match: /HINGE PILLAR|COWL SIDE/,
-      // closed section: the door harness and the roof drain run inside it
-      object: hollow(rbox([0.11, 0.626, 0.16], [0.93, 0.643, sg * 0.87], 'aluminum', { r: 0.015 })),
+      // closed section: the door harness and the roof drain run inside it.  Its top stays under
+      // the fender / cowl skin; at the rear inboard corner it rises into the A-pillar root,
+      // under the body side outer A-pillar (#7).
+      object: hollow(group(
+        rbox([0.11, 0.598, 0.16], [0.93, 0.629, sg * 0.87], 'aluminum', { r: 0.015 }),
+        rbox([0.025, 0.04, 0.07], [0.8875, 0.935, sg * 0.83], 'aluminum', { r: 0.006 }),
+      )),
     });
     reg.add({
       id: `b-pillar-${sd}`, ko: `B필러 (${ko})`, en: `B-pillar ${en}`, tags: sd,
@@ -112,17 +146,29 @@ export function buildStructure(reg) {
         named('railFront', bar([-1.0, 0.36, sg * 0.55], [-1.25, 0.425, sg * 0.55], 0.09, 0.11, 'aluminum')),
         named('rail', bar([-1.25, 0.425, sg * 0.55], [-2.3, 0.45, sg * 0.55], 0.09, 0.11, 'aluminum')),
         named('node', rbox([0.3, 0.26, 0.14], [XR + 0.3, 0.42, sg * 0.65], 'aluminum', { r: 0.03 })),
-        named('closeout', rbox([0.085, 0.1, 0.07], [-1.0175, 0.32, sg * 0.755], 'aluminum', { r: 0.01 })), // node to sill
+        // node closeout panel (#8/#11): node to the sill end, in front of the wheelhouse and behind
+        // the coolant hose that turns inboard there
+        named('closeout', rbox([0.022, 0.08, 0.07], [-0.979, 0.33, sg * 0.755], 'aluminum', { r: 0.006 })),
       ),
     });
     reg.add({
       id: `rear-quarter-inner-${sd}`, ko: `리어 휠하우스·쿼터 인너 (${ko})`, en: `Rear wheelhouse & quarter inner ${en}`, tags: sd,
       groups: ['rear-quarter-inner-panels'], match: /^(?!.*EXTENSION RR TRUNK FLOOR)/,
       object: group(
-        wheelhouse(XR, sg, ARCH_RADIUS + 0.035, 0.6, 0.95, 'aluminum'),
+        // wheelhouse: inboard of the closeout its front lower corner is the rear rail node
+        // (rear-rail-*#node), so that strip of the arch starts on top of the node
+        ...trimmedWheelhouse(XR, sg, ARCH_RADIUS + 0.035, 0.6, NODE_Z1, 'aluminum', NODE_A, -0.15, Math.PI + 0.15),
+        wheelhouse(XR, sg, ARCH_RADIUS + 0.035, NODE_Z1, 0.95, 'aluminum'),
         named('tower', hollow(rbox([0.2, 0.32, 0.12], [XR - 0.06, 0.82, sg * 0.62], 'aluminum', { r: 0.02 }))),
-        // C-pillar reinforcement: from the wheelhouse up behind the rear door opening to the roof rail
+        // C-pillar reinforcement (#23/#24): from the wheelhouse up behind the rear door opening to the roof rail
         named('cPillar', bar([XR + 0.02, 0.8, sg * 0.71], [-1.21, 1.19, sg * 0.653], 0.04, 0.03, 'aluminum')),
+        // rear lamp housing reinforcement (#15/#16 = body side #4): bonded behind the body side
+        // outer along the lower edge of the tail lamp pocket
+        named('lampHousing', (() => {
+          const n = skinNormal(4.45, 1.6);
+          if (sd === 'R') n.z = -n.z;
+          return faceTo(rbox([0.01, 0.03, 0.12], [0, 0, 0], 'aluminum', { r: 0.003 }), skinAt(4.45, 1.6, sd, -0.0065), n, 'x');
+        })()),
         // lock pillar behind the rear door: carries the rear door striker
         named('lockPillar', rbox([0.06, 0.38, 0.043], [-1.095, 0.81, sg * 0.9335], 'aluminum', { r: 0.008 })),
       ),
@@ -183,7 +229,8 @@ export function buildStructure(reg) {
     groups: ['front-energy-absorber', 'front-bumper-fascia', 'front-bumper-fascia-carrier-dual-motor', 'front-bumper-fascia-carrier-single-motor'],
     match: /ANKLE|FOAM|NIFCO|Push/i,
     object: group(
-      named('catcher', tube([[2.29, 0.25, -0.55], [2.36, 0.24, -0.25], [2.38, 0.24, 0], [2.36, 0.24, 0.25], [2.29, 0.25, 0.55]], 0.035, 'foam', { radial: 6 })),
+      // behind the lower lip of the fascia, which curls back under the nose at the centre
+      named('catcher', tube([[2.29, 0.25, -0.55], [2.355, 0.25, -0.25], [2.34, 0.25, 0], [2.355, 0.25, 0.25], [2.29, 0.25, 0.55]], 0.025, 'foam', { radial: 6 })),
       // mounting arms bolted to the carrier lower rail (#3/#4 M6x30)
       ...SIDES.map(({ sd, sg }) => named(`arm${sd}`, bar([2.135, 0.235, sg * 0.5], [2.31, 0.24, sg * 0.5], 0.04, 0.05, 'blackPlastic'))),
     ),
@@ -227,7 +274,14 @@ export function buildStructure(reg) {
       reg.add({
         id: `arch-liner-${sd}${fr}`, ko: `휠 아치 라이너 (${frKo} ${ko})`, en: `Wheel arch liner ${fr === 'F' ? 'front' : 'rear'} ${en}`,
         tags: `${sd}${fr}`, groups: ['wheel-arch-liners'], match: /LINER|LOUVRE|LOUVER|FLANGE|USP|COVER/,
-        object: wheelhouse(x, sg, ARCH_RADIUS + 0.012, 0.64, 0.965, 'blackPlastic', -0.25, Math.PI + 0.25),
+        object: fr === 'F'
+          ? wheelhouse(x, sg, ARCH_RADIUS + 0.012, 0.64, 0.965, 'blackPlastic', -0.25, Math.PI + 0.25)
+          // rear: inboard strip trimmed above the rear rail node, as the wheelhouse (the group keeps
+          // the component's name, so the liner reads as one part)
+          : named(`arch-liner-${sd}${fr}`, group(
+            ...trimmedWheelhouse(x, sg, ARCH_RADIUS + 0.012, 0.64, NODE_Z1, 'blackPlastic', NODE_A_LINER, -0.25, Math.PI + 0.25),
+            wheelhouse(x, sg, ARCH_RADIUS + 0.012, NODE_Z1, 0.965, 'blackPlastic', -0.25, Math.PI + 0.25),
+          )),
       });
     }
   }
@@ -244,24 +298,46 @@ export function buildStructure(reg) {
   const fz = 0.44;
   const top0 = hoodY(fx0, 0.05);
   const top1 = hoodY(fx1, 0.05);
+  const topAt = (x) => top0 + ((fx0 - x) / (fx0 - fx1)) * (top1 - top0);
+  // The rear corners of the tub are chamfered (x 1.34 -> 1.2, half width 0.44 -> 0.368, as the
+  // hood seal on its rim): the shock tower braces pass outboard of the chamfers.
+  const fxc = 1.34;
+  const fzr = 0.368;
+  const tub = [];
+  for (const sg of [-1, 1]) {
+    tub.push(quadPlate([[fx0, fy, sg * fz], [fx0, top0, sg * fz], [fxc, topAt(fxc), sg * fz], [fxc, fy, sg * fz]], 0.006, 'blackPlastic'));
+    tub.push(quadPlate([[fxc, fy, sg * fz], [fxc, topAt(fxc), sg * fz], [fx1, top1, sg * fzr], [fx1, fy, sg * fzr]], 0.006, 'blackPlastic'));
+  }
   reg.add({
     id: 'frunk', ko: '프렁크(앞 적재함)', en: 'Front trunk (frunk) tub',
     groups: ['front-luggage-storage-compartment'], match: /^(?!.*SEAL - HOOD)/, // the hood seal on the rim is hood-seal
     object: group(
-      quadPlate([[fx0, fy, -fz], [fx0, fy, fz], [fx1, fy, fz], [fx1, fy, -fz]], 0.006, 'blackPlastic'),
-      quadPlate([[fx0, fy, -fz], [fx0, top0, -fz], [fx1, top1, -fz], [fx1, fy, -fz]], 0.006, 'blackPlastic'),
-      quadPlate([[fx0, fy, fz], [fx0, top0, fz], [fx1, top1, fz], [fx1, fy, fz]], 0.006, 'blackPlastic'),
+      quadPlate([[fx0, fy, -fz], [fx0, fy, fz], [fxc, fy, fz], [fxc, fy, -fz]], 0.006, 'blackPlastic'),
+      quadPlate([[fxc, fy, -fz], [fxc, fy, fz], [fx1, fy, fzr], [fx1, fy, -fzr]], 0.006, 'blackPlastic'),
+      ...tub,
       quadPlate([[fx0, fy, -fz], [fx0, fy, fz], [fx0, top0, fz], [fx0, top0, -fz]], 0.006, 'blackPlastic'),
-      quadPlate([[fx1, fy, -fz], [fx1, fy, fz], [fx1, top1, fz], [fx1, top1, -fz]], 0.006, 'blackPlastic'),
+      quadPlate([[fx1, fy, -fzr], [fx1, fy, fzr], [fx1, top1, fzr], [fx1, top1, -fzr]], 0.006, 'blackPlastic'),
     ),
   });
+  // carpet: 8 mm inside the side walls and chamfers, 20 mm short of the tub corners on the floor
+  const cA = [fxc + 0.0037, fz - 0.0071]; // chamfer line offset 8 mm into the tub
+  const cB = [fx1 + 0.0037, fzr - 0.0071];
+  const cX = fx1 + 0.02;
+  const cZ = cA[1] + ((cA[0] - cX) / (cA[0] - cB[0])) * (cB[1] - cA[1]);
+  const carpet = [];
+  for (const sg of [-1, 1]) {
+    carpet.push(quadPlate([[fx0 - 0.02, fy + 0.02, sg * (fz - 0.008)], [fx0 - 0.02, top0 - 0.02, sg * (fz - 0.008)],
+      [cA[0], topAt(cA[0]) - 0.02, sg * (fz - 0.008)], [cA[0], fy + 0.02, sg * (fz - 0.008)]], 0.008, 'carpet'));
+    carpet.push(quadPlate([[cA[0], fy + 0.02, sg * cA[1]], [cA[0], topAt(cA[0]) - 0.02, sg * cA[1]],
+      [cX, topAt(cX) - 0.02, sg * cZ], [cX, fy + 0.02, sg * cZ]], 0.008, 'carpet'));
+  }
   reg.add({
     id: 'frunk-carpet', ko: '프렁크 카펫 라이닝', en: 'Frunk carpet lining',
     groups: ['front-luggage-storage-compartment-carpet-lining'],
     object: group(
-      quadPlate([[fx0 - 0.02, fy + 0.008, -fz + 0.02], [fx0 - 0.02, fy + 0.008, fz - 0.02], [fx1 + 0.02, fy + 0.008, fz - 0.02], [fx1 + 0.02, fy + 0.008, -fz + 0.02]], 0.01, 'carpet'),
-      quadPlate([[fx0 - 0.02, fy + 0.02, -fz + 0.008], [fx0 - 0.02, top0 - 0.02, -fz + 0.008], [fx1 + 0.02, top1 - 0.02, -fz + 0.008], [fx1 + 0.02, fy + 0.02, -fz + 0.008]], 0.008, 'carpet'),
-      quadPlate([[fx0 - 0.02, fy + 0.02, fz - 0.008], [fx0 - 0.02, top0 - 0.02, fz - 0.008], [fx1 + 0.02, top1 - 0.02, fz - 0.008], [fx1 + 0.02, fy + 0.02, fz - 0.008]], 0.008, 'carpet'),
+      quadPlate([[fx0 - 0.02, fy + 0.008, -fz + 0.02], [fx0 - 0.02, fy + 0.008, fz - 0.02], [fxc, fy + 0.008, fz - 0.02], [fxc, fy + 0.008, -fz + 0.02]], 0.01, 'carpet'),
+      quadPlate([[fxc, fy + 0.008, -fz + 0.02], [fxc, fy + 0.008, fz - 0.02], [cX, fy + 0.008, cZ - 0.012], [cX, fy + 0.008, -cZ + 0.012]], 0.01, 'carpet'),
+      ...carpet,
     ),
   });
 
