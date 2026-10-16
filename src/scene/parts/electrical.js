@@ -168,7 +168,7 @@ export function buildElectrical(reg) {
       // centre console harness: down behind the HVAC case past the main harness connector, under the
       // case and forward to the USB media hub on the front face of the console
       named('console', tube([[0.75, 0.88, -0.05], [0.875, 0.82, -0.05], [0.875, 0.56, -0.055], [0.882, 0.47, -0.05],
-        [0.79, 0.395, -0.055], [0.6, 0.372, -0.055], [0.47, 0.37, -0.05], [0.438, 0.37, -0.05]], W, 'wire')),
+        [0.79, 0.395, -0.055], [0.6, 0.372, -0.055], [0.47, 0.37, -0.05], [0.4115, 0.37, -0.05]], W, 'wire')),
     ),
   });
   // Door harnesses with grommet.  Front: from the IP harness near the A-pillar through the hinge
@@ -316,9 +316,9 @@ export function buildElectrical(reg) {
     id: 'switches', ko: '비상등·글로브박스 스위치, 스티어링 스위치', en: 'Hazard, glove box & steering switches',
     groups: ['switches'],
     object: group(
-      // hazard (#2) and glove box (#3) switches in the dash face just below the touchscreen
-      named('hazard', rbox([0.02, 0.025, 0.05], [0.505, 0.57, 0.0], 'blackPlastic', { r: 0.004 })),
-      named('gloveBox', rbox([0.02, 0.025, 0.05], [0.505, 0.57, 0.07], 'blackPlastic', { r: 0.004 })),
+      // hazard (#2) and glove box (#3) switches in the touchscreen surround, under its bottom edge
+      named('hazard', rbox([0.02, 0.025, 0.05], [0.468, 0.581, 0.0], 'blackPlastic', { r: 0.004 })),
+      named('gloveBox', rbox([0.02, 0.025, 0.05], [0.468, 0.581, 0.07], 'blackPlastic', { r: 0.004 })),
       // steering control switch harness (#1 = front air bags #2): scroll wheels clipped into the
       // spokes against the edge of the driver airbag, wired inside the spokes to the hub behind it
       named('scrollL', disc(0.015, 0.01, 'x', [0.381, 0.87, -0.456], 'chrome')),
