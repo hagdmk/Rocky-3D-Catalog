@@ -232,7 +232,7 @@ export const JOINTS = [
   J('lower-dash-harness#trunk@end', 'fusebox-cabin', 'LOWER DASH harness (#1A) to the cabin fuse box'),
   ...each((s) => [
     J(`cabin-harness-${s}#lead@start`, 'lower-dash-harness#trunk', 'LEFT/RIGHT BODY HARNESS (cabin #1/#2A) plugs into the lower dash harness'),
-    J(`motor-bay-harness-${s}#lead@start`, 'lower-dash-harness#trunk', 'FRONT LEFT/RIGHT BODY HARNESS (#2/#3) through the bulkhead grommet to the lower dash harness'),
+    J(`motor-bay-harness-${s}#dashLead@start`, 'lower-dash-harness#trunk', 'FRONT LEFT/RIGHT BODY HARNESS (#2/#3) through the bulkhead grommet to the lower dash harness'),
     J(`motor-bay-harness-${s}#lead@end`, 'front-end-harness#module', 'front body harness to the FRONT END MODULE HARNESS (#2)'),
     J(`front-end-harness#module@${s === 'L' ? 'start' : 'end'}`, `headlamp-${s}`, 'FRONT END MODULE HARNESS (#2) at the headlamp connector'),
     J(`horn-${s}#horn`, 'front-end-harness#bumper', 'FRONT BUMPER HARNESS (#1) at the horn connector'),
@@ -275,7 +275,6 @@ export const JOINTS = [
   J('radar#bracket', 'cooling-duct', 'BRKT, RADAR STRUCTURE (radar #3 = ducting #1) on the front ducting'),
   J('switches#scrollL', 'steering-wheel#wheel', 'steering control switch (#1) clipped into the LH spoke'),
   J('switches#scrollR', 'steering-wheel#wheel', 'steering control switch (#1) clipped into the RH spoke'),
-  J('switches#scrollL', 'driver-airbag', 'STEERING CONTROL SWITCH HARNESS (switches #1 = front air bags #2) beside the airbag'),
   J('switches#steeringHarness@end', 'driver-airbag', 'STEERING CONTROL SWITCH HARNESS (#1/#2) at the hub behind the driver airbag'),
   J('washer-bottle#bottle', 'front-inner-R#rail', 'WASHER BOTTLE ASY (#1) bolted to the RH front rail (M6 nut washers #9)'),
   J('washer-bottle#pump', 'washer-bottle#bottle', 'WASHER PUMP (#2) in its grommet (#3) on the bottle'),
@@ -285,9 +284,17 @@ export const JOINTS = [
     J(`liftgate-harness-${s}#lead`, `amfm-amp-${s}`, 'liftgate harness at the AM/FM antenna amplifier'),
   ]),
   J('forward-camera', 'windshield', 'forward camera on its windshield bracket'),
+  J('rear-camera', 'liftgate-applique', 'ASSY - CAMERA - REAR VIEW (#1) set in the centre of the liftgate applique, bolted (TORX M5 *)'),
   J('subwoofer#mount', 'trunk-floor', 'subwoofer enclosure bolted (BLT HEX M6x25 #10) to the trunk floor'),
   J('subwoofer#mount', 'subwoofer#enclosure', 'subwoofer enclosure on its mount'),
-  ...each((s) => ['F', 'B'].map((fr) => J(`speaker-door-${s}${fr}`, `door-trim-${s}${fr}`, 'door woofer behind the door trim pad grille'))),
+  ...each((s) => ['F', 'B'].map((fr) => J(`speaker-door-${s}${fr}#basket`, `door-${s}${fr}#inner`, 'MID WOOFER (base #1 / premium #1-#4) screwed (SCR M5x16 into GROM) to the door inner panel, behind the trim pad grille'))),
+  ...each((s) => [J(`door-controller-${s}`, `door-${s}F#inner`, 'DOOR CONTROLLER (#1) screwed (BOLT TPG TORXPLUS #2) to the front door inner panel, behind the trim pad')]),
+  J('wipers#frame@start', 'hinge-pillar-L', 'WIPER MODULE (#1) frame end bolted (BOLT M6x25 #2) at the LH cowl side (body side panels #6)'),
+  J('wipers#frame@end', 'hinge-pillar-R', 'WIPER MODULE (#1) frame end bolted (BOLT M6x25 #2) at the RH cowl side (body side panels #6)'),
+  J('wipers#motor', 'wipers#frame', 'wiper motor on the module frame with the WIPER MOTOR BRACKET (#3)'),
+  ...each((s) => [J(`washer-nozzles#nozzle${s}`, 'hood', 'WASHER NOZZLE (#1) clipped into the hood from below')]),
+  J('radio-tuner', 'dash-support-frame', 'RADIO (#1, TORX M5 #2) on the AMP AND TUNER bracket (dash support frame #5) under the cross-car beam'),
+  J('audio-amplifier', 'dash-support-frame', 'AUDIO, AMPLIFIER, EXTERNAL, PREMIUM on the AMP AND TUNER bracket (dash support frame #5)'),
 
   // --- interior ducts: HVAC case outlets to the vents
   ...['faceL', 'faceR', 'centreL', 'centreR', 'floorL', 'floorR', 'console'].map((d) => J(`interior-ducts#${d}@start`, 'hvac-unit', 'duct on the HVAC case outlet')),
@@ -415,6 +422,8 @@ export const PASS_OK = [
   { a: 'steering-wheel#column', b: 'dash-panel', reason: 'the instrument panel is drawn as one closed shell; the steering column enters it through the column opening' },
   { a: 'steering-ishaft#lowerLink', b: 'sound-insulation', reason: 'the dash insulation is drawn without its I-shaft opening; the lower link passes through the dash seal (#8) there' },
   { a: 'brake-pedal#pushrod', b: 'sound-insulation', reason: 'the dash insulation is drawn without the booster opening; the pushrod passes through it to the booster' },
+  { a: 'switches#steeringHarness', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the LH spoke trim to the hub cavity behind the driver airbag' },
+  { a: 'switches#steeringHarnessR', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the RH spoke trim to the hub cavity behind the driver airbag' },
 ];
 
 export const SHARED_OK = [
