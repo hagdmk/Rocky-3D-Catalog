@@ -139,6 +139,7 @@ button { cursor: pointer; }
 .chip { font-size: 11.5px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--line-2); color: var(--muted); background: rgba(255, 255, 255, 0.03); }
 .chip.loc { border-color: rgba(127, 232, 255, 0.4); color: var(--accent-2); }
 .chip.var { border-color: rgba(255, 179, 64, 0.4); color: var(--accent); }
+.chip.off { border-style: dashed; color: var(--faint); }
 button.chip { cursor: pointer; }
 button.chip:hover { border-color: var(--accent); color: var(--text); }
 .info-actions { display: flex; gap: 6px; margin-top: 10px; }
