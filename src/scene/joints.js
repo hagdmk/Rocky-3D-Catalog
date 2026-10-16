@@ -29,9 +29,11 @@ const J = (a, b, note, opts = {}) => ({ a, b, note, ...opts });
 
 export const JOINTS = [
   // --- steering: column -> upper I-shaft link -> lower link (shared by both groups) -> gear -> knuckles
-  J('steering-wheel#column', 'dash-support-frame', 'column bolted to the dash support frame (upper #2/#3)'),
+  J('steering-wheel#columnBracket', 'dash-support-frame#beam', 'column mounting bracket bolted under the cross-car beam (upper #2 M8x40 / #3 M8x65)'),
+  J('steering-wheel#columnBracket', 'steering-wheel#column', 'mounting bracket on the column tube (STEERING COLUMN ASSY #1)'),
   J('steering-ishaft-upper#yoke', 'steering-wheel#column@end', 'upper link #6 U-joint on the column spline, bolt #7'),
   J('steering-ishaft-upper#sleeve', 'steering-ishaft#lowerLink@start', 'upper link sleeve on the lower link (upper #8/#9)'),
+  J('steering-ishaft#couplingBolt', 'steering-ishaft-upper#sleeve', 'BOLT H M10x35 (lower #7 = upper #8) through the sleeve pinch, NUT HF M10 #9'),
   J('steering-ishaft#dashSeal', 'sound-insulation', 'I-shaft dash seal in the firewall (lower #8 = upper #10)'),
   J('steering-ishaft#ujLower', 'steering-gear#inputShaft@end', 'lower U-joint on the pinion input shaft (lower #7 = upper #8)'),
   ...each((s) => [
@@ -50,6 +52,8 @@ export const JOINTS = [
     J(`front-arms-${k}#aftBJ`, `knuckle-${k}#upright`, 'aft link ball joint, nut #10'),
     J(`front-air-spring-${k}#clevisBolt`, `front-arms-${k}#damperBush`, 'strut clevis on the aft link (#3 M14x94)'),
     J(`front-coil-spring-${k}#clevisBolt`, `front-arms-${k}#damperBush`, 'strut clevis on the aft link (#3 M14x94)'),
+    J(`front-air-spring-${k}#clevisBolt`, `front-arms-${k}#aftLink`, 'clevis bolt #3 M14x94 through the damper eye of the aft link #11'),
+    J(`front-coil-spring-${k}#clevisBolt`, `front-arms-${k}#aftLink`, 'clevis bolt #3 M14x94 through the damper eye of the aft link #11'),
     J(`front-air-spring-${k}#topMount`, `front-inner-${s}#tower`, 'strut top in the shock tower (3 studs, nuts #2)'),
     J(`front-coil-spring-${k}#topMount`, `front-inner-${s}#tower`, 'strut top in the shock tower (3 studs, nuts #2)'),
     J(`front-stabilizer#link${s}@end`, `front-arms-${k}#foreLink`, 'stabilizer link #5/#6 to the fore link, nuts #7'),
@@ -57,7 +61,7 @@ export const JOINTS = [
     J(`front-stabilizer#clamp${s}`, 'front-stabilizer#bar', 'bar held in the bushing clamp'),
     J(`front-height-sensor-${k}#body`, `front-subframe#rail${s}`, 'ride height sensor on the subframe'),
     J(`front-height-sensor-${k}#link@end`, `front-arms-${k}#aftLink`, 'height sensor link to the aft link'),
-    J(`front-halfshaft-${s}#stub@end`, `knuckle-${k}#hub`, 'halfshaft stub through the hub, nut #5 M24'),
+    J(`front-halfshaft-${s}#stub@end`, `knuckle-${k}`, 'outer CV stub splined through the hub bearing in the knuckle, nut #5 M24'),
   ]),
   J('front-halfshaft-L#shaft@start', 'front-drive-unit', 'LH halfshaft #1 into the front drive unit'),
   J('front-halfshaft-R#jackshaft@start', 'front-drive-unit', 'jackshaft #3 flange on the front drive unit (#6 M10x25)'),
@@ -85,24 +89,30 @@ export const JOINTS = [
     J(`rear-air-spring-${k}#damper@start`, `rear-arms-${k}#lca`, 'strut bottom eye on the lower arm (#3 M14x84)'),
     J(`rear-coil-spring-${k}#damper@start`, `rear-arms-${k}#lca`, 'strut bottom eye on the lower arm (#3 M14x84)'),
     J(`rear-air-spring-${k}#topMount`, `rear-quarter-inner-${s}#tower`, 'strut top in the body shock tower (studs #5, nuts #2)'),
-    J(`rear-coil-spring-${k}#damper@end`, `rear-quarter-inner-${s}#tower`, 'strut top in the body shock tower (studs #5, nuts #2)'),
+    J(`rear-coil-spring-${k}#topMount`, `rear-quarter-inner-${s}#tower`, 'strut top in the body shock tower (studs #5, nuts #2)'),
+    J(`rear-coil-spring-${k}#seat`, `rear-coil-spring-${k}#damper`, 'lower spring seat on the damper body (coil spring module #1)'),
+    J(`rear-coil-spring-${k}#seat`, `rear-coil-spring-${k}#spring`, 'coil spring on its lower seat'),
+    J(`rear-coil-spring-${k}#upperSeat`, `rear-coil-spring-${k}#spring`, 'coil spring under its upper seat'),
     J(`rear-stabilizer#link${s}@end`, `rear-arms-${k}#lca`, 'stabilizer link #5 to the lower arm'),
     J(`rear-height-sensor-${k}#body`, `rear-subframe#side${s}`, 'ride height sensor on the subframe (M5 1003397)'),
     J(`rear-height-sensor-${k}#link@end`, `rear-arms-${k}#lca`, 'height sensor link to the lower arm'),
-    J(`rear-halfshaft-${s}#stub@end`, `knuckle-${k}#hub`, 'halfshaft stub through the hub, nut #2 M24'),
+    J(`rear-halfshaft-${s}#stub@end`, `knuckle-${k}`, 'outer CV stub splined through the hub bearing in the knuckle, nut #2 M24'),
     J(`rear-halfshaft-${s}#shaft@start`, 'rear-drive-unit-small', 'inner spline in the drive unit side gear'),
     J(`rear-halfshaft-${s}#shaft@start`, 'rear-drive-unit-large', 'inner spline in the drive unit side gear'),
-    J(`rear-subframe#postF${s}@end`, `rear-rail-${s}#railFront`, 'front isolator stud #2 into the rail'),
+    J(`rear-subframe#studF${s}`, `rear-rail-${s}#railFront`, 'front isolator stud #2 M14-M10x100 into the rail'),
+    J(`rear-subframe#isoF${s}`, `rear-rail-${s}#railFront`, 'front isolator clamped under the rail by stud #2'),
+    J(`rear-subframe#shearPlate${s}`, `rear-subframe#studF${s}`, 'shear plate #4 LH / #5 RH on the front isolator stud #2, nut #6'),
+    J(`rear-subframe#shearPlate${s}`, 'hv-battery', 'shear plate #4/#5 screwed to the battery pack rear flange (BOLT M5x15 #7 1003397, also listed in the HV battery assembly; plate PN per pack version 1.5 / 2.0)'),
+    J(`rear-stabilizer#clamp${s}`, `rear-subframe#side${s}`, 'stabilizer bar bushing clamp under the side member, BOLT HF M10x25 #4'),
+    J(`rear-stabilizer#clamp${s}`, 'rear-stabilizer#bar', 'bar held in the bushing clamp'),
     J(`rear-subframe#postB${s}@end`, `rear-rail-${s}#rail`, 'rear isolator bolt #3 into the rail'),
     J(`rear-rail-${s}#closeout`, `sill-${s}`, 'rear rail node tied to the sill'),
   ]),
-  J('rear-stabilizer#bar', 'rear-subframe', 'stabilizer bar clamped to the subframe (#4)'),
   ...['rear-drive-unit-small', 'rear-drive-unit-large'].flatMap((du) => [
     J('rear-subframe#sideMount', du, 'side motor mount (subframe #8)'),
     J('rear-subframe#frontMount', du, 'front transmission mount (LDU group #20)'),
     J('rear-subframe#rearMount', du, 'rear transmission mount (LDU group #21)'),
   ]),
-  J('rear-subframe#frontCross', 'hv-battery', 'shear plates #4/#5 tie the subframe to the pack (M5 1003397)'),
 
   // --- wheels and brakes
   ...corners((k) => [
@@ -142,6 +152,14 @@ export const JOINTS = [
   J('air-lines-rear#toRB@start', 'air-lines-rear#main', 'RH branch off the primary bundle'),
   J('vacuum-booster#hose@start', 'vacuum-booster#booster', 'vacuum hose on the booster'),
   J('vacuum-booster#hose@end', 'vacuum-pump', 'vacuum hose to the vacuum pump'),
+  J('vacuum-pump#bracket', 'front-inner-L#rail', 'BRKT - BRAKE VACUUM PUMP (#2) bolted under the LH front rail (BLT HF M6x18 #4)'),
+  J('vacuum-pump#bracket', 'vacuum-pump#pump', 'pump and isolators (#1) on the bracket (BLT M6x16 #3)'),
+  J('air-compressor#bracket', 'front-inner-L#rail', 'AIR SUSP COMPRESSOR BRKT (#8) bolted under the LH front rail (BLT M6x50 #9)'),
+  J('air-compressor#isolators', 'air-compressor#bracket', 'compressor isolators (spring washers #10, spring seats #11, springs #12) on the bracket'),
+  J('air-compressor#isolators', 'air-compressor#compressor', 'compressor (#7) hung on its three isolators'),
+  J('air-reservoir', 'front-subframe#frontCross', 'reservoir mount assemblies #2 (base #28, strap #29, cradle #30) on the subframe front cross member'),
+  J('air-suspension-ecu#bracket', 'body-side-L', 'BRACKET - ECU - AIR SUSPENSION (#1) bolted (BLT HF M6x20 #2) to the LH body side behind the trunk side trim'),
+  J('air-suspension-ecu#bracket', 'air-suspension-ecu#ecu', 'ACTIVE SUSP ECU PROCESSOR (#3) screwed to its bracket (SCR M6x16 #4)'),
 
   // --- coolant loops (battery-cooling*, motor-cooling*)
   J('battery-coolant-loop#heaterToBattery@start', 'battery-coolant-loop#heater', 'HOSE (BATT) - HEATER TO BATTERY'),
@@ -387,8 +405,16 @@ export const JOINTS = [
 ];
 
 export const PASS_OK = [
-  { a: 'front-air-spring-*#damper', b: 'front-halfshaft-*', reason: 'known limit of the simplified model: the catalog shows a plain clevis on the aft link, so the strut crosses the halfshaft' },
-  { a: 'front-coil-spring-*#damper', b: 'front-halfshaft-*', reason: 'known limit of the simplified model: the catalog shows a plain clevis on the aft link, so the strut crosses the halfshaft' },
+  { a: 'brake-rotor-*#disc', b: 'brake-caliper-*', reason: 'the caliper is drawn as a solid block: the disc runs in the slot between its pads' },
+  { a: 'brake-rotor-*#disc', b: 'park-brake-*', reason: 'the parking brake caliper is drawn as a solid block: the disc runs in the slot between its pads' },
+  { a: 'front-inner-*#tower', b: 'front-*-spring-*', reason: 'the shock tower is drawn as a closed hollow box; the casting is open below, where the strut enters it' },
+  { a: 'front-inner-*#tower', b: 'knuckle-*F', reason: 'the shock tower is drawn as a closed hollow box; the casting is open toward the wheel, where the knuckle neck reaches the upper arm ball joint inside it' },
+  { a: 'rear-quarter-inner-*#tower', b: 'rear-*-spring-*', reason: 'the shock tower is drawn as a closed hollow box; the tower is open below, where the strut enters it' },
+  { a: 'rear-*-spring-*#damper', b: 'rear-quarter-inner-*', reason: 'the wheelhouse is drawn as a closed half-cylinder; on the car the strut rises through the shock tower opening in the wheelhouse' },
+  { a: 'rear-*-spring-*#damper', b: 'arch-liner-*B', reason: 'the rear arch liner is drawn as a closed half-cylinder; on the car the strut passes through its cut-out below the shock tower' },
+  { a: 'steering-wheel#column', b: 'dash-panel', reason: 'the instrument panel is drawn as one closed shell; the steering column enters it through the column opening' },
+  { a: 'steering-ishaft#lowerLink', b: 'sound-insulation', reason: 'the dash insulation is drawn without its I-shaft opening; the lower link passes through the dash seal (#8) there' },
+  { a: 'brake-pedal#pushrod', b: 'sound-insulation', reason: 'the dash insulation is drawn without the booster opening; the pushrod passes through it to the booster' },
 ];
 
 export const SHARED_OK = [
