@@ -61,17 +61,17 @@ export function buildStructure(reg) {
       groups: ['front-inner-panels-dual-motor', 'front-inner-panels-rear-wheel-drive'],
       match: /SHOCK TOWER|SHOTGUN|RAIL|EXTN|EXTENSION|TORQUE BOX|REINF/,
       // The shotgun, the tower extension and the tower brace all run under the side and rear
-      // underhood aprons (the shock tower cover sits on top); the shotgun and the extension
-      // pass above the wheel arch liner, the extension outboard of the strut top mount.
+      // underhood aprons (the shock tower cover sits on the tower top); the shotgun and the
+      // extension pass above the wheel arch liner.
       object: group(
         named('rail', bar([2.26, 0.47, sg * 0.5], [1.02, 0.42, sg * 0.5], 0.08, 0.12, 'aluminum')),
         named('tower', hollow(rbox([0.26, 0.3, 0.2], [XF - 0.05, 0.7, sg * 0.6], 'aluminum', { r: 0.03 }))),
         // shotgun upper #3/#4: from the front of the wheelhouse up to the hinge pillar front face
         bar([1.85, 0.758, sg * 0.72], [0.98, 0.863, sg * 0.785], 0.04, 0.07, 'aluminum'),
-        // shock tower extension #7/#8: tower top (outboard) to the front of the shotgun
-        bar([1.49, 0.8, sg * 0.68], [1.85, 0.758, sg * 0.72], 0.04, 0.05, 'aluminum'),
-        // tower brace member #9/#10: from the rear of the tower top to the shock tower crossmember
-        named('towerBrace', bar([1.4, 0.81, sg * 0.53], [1.02, 0.835, sg * 0.32], 0.05, 0.04, 'aluminum')),
+        // shock tower extension #7/#8: from the front face of the tower to the front of the shotgun
+        bar([XF + 0.08, 0.79, sg * 0.69], [1.85, 0.758, sg * 0.72], 0.04, 0.05, 'aluminum'),
+        // tower brace member #9/#10: from the rear face of the tower top to the shock tower crossmember
+        named('towerBrace', bar([XF - 0.18, 0.812, sg * 0.51], [1.02, 0.835, sg * 0.32], 0.05, 0.04, 'aluminum')),
       ),
     });
   }
@@ -343,6 +343,27 @@ export function buildStructure(reg) {
 
   // --- Under-hood aprons -----------------------------------------------------------
   const ay = (x) => hoodY(x, 0.035);
+  // Side apron: a plate from the frunk tub to the fender with an opening over the shock tower,
+  // closed by the shock tower cover (#4/#5), a raised cap that sits on the tower top (y 0.85)
+  // over the strut top mount, under the hood.
+  const sideApron = (sg) => {
+    const zi = fz + 0.005; // inboard edge (frunk tub side)
+    const zo = (x) => 0.76 + ((2.1 - x) / 0.95) * 0.04; // outboard edge (fender side)
+    const [hx0, hx1, hz0, hz1] = [1.35, 1.62, 0.495, 0.705]; // opening = tower footprint + 5 mm
+    const cy = 0.855;
+    const P = (x, z, y = ay(x)) => [x, y, sg * z];
+    const t = 0.008;
+    return group(
+      quadPlate([P(2.1, zi), P(2.1, zo(2.1)), P(hx1, zo(hx1)), P(hx1, zi)], t, 'blackPlastic'),
+      quadPlate([P(hx0, zi), P(hx0, zo(hx0)), P(1.15, zo(1.15)), P(1.15, zi)], t, 'blackPlastic'),
+      quadPlate([P(hx1, zi), P(hx1, hz0), P(hx0, hz0), P(hx0, zi)], t, 'blackPlastic'),
+      quadPlate([P(hx1, hz1), P(hx1, zo(hx1)), P(hx0, zo(hx0)), P(hx0, hz1)], t, 'blackPlastic'),
+      // shock tower cover: cap and its front / side walls down to the apron opening
+      quadPlate([P(hx1 + 0.005, hz0 - 0.005, cy), P(hx1 + 0.005, hz1 + 0.005, cy), P(hx0 - 0.005, hz1 + 0.005, cy), P(hx0 - 0.005, hz0 - 0.005, cy)], 0.006, 'blackPlastic'),
+      quadPlate([P(hx1, hz0), P(hx1, hz1), P(hx1, hz1, cy), P(hx1, hz0, cy)], 0.004, 'blackPlastic'),
+      ...[hz0, hz1].map((z) => quadPlate([P(hx1, z), P(hx1, z, cy), P(hx0, z, cy), P(hx0, z)], 0.004, 'blackPlastic')),
+    );
+  };
   reg.add({
     id: 'underhood-apron-front', ko: '프론트 언더후드 에이프런', en: 'Front underhood apron',
     groups: ['underhood-trim'], match: /APRON FR|FRONT UNDERHOOD|SCUFF|TAPE, DBL/,
@@ -352,7 +373,7 @@ export function buildStructure(reg) {
     reg.add({
       id: `underhood-apron-${sd}`, ko: `사이드 언더후드 에이프런·쇼크타워 커버 (${ko})`, en: `Side underhood apron & shock tower cover ${en}`,
       tags: sd, groups: ['underhood-trim'], match: /APRON, (LH|RH)|SUB ASY, UNDERHOOD|Shock Tower Cover|SPACER, FRUNK|CLIP, UNDERHOOD/i,
-      object: quadPlate([[2.1, ay(2.1), sg * (fz + 0.005)], [2.1, ay(2.1), sg * 0.76], [1.15, ay(1.15), sg * 0.8], [1.15, ay(1.15), sg * (fz + 0.005)]], 0.008, 'blackPlastic'),
+      object: sideApron(sg),
     });
   }
   reg.add({
