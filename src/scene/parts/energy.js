@@ -96,7 +96,7 @@ export function buildEnergy(reg) {
   reg.add({
     id: 'hv-cable-inverter', ko: '고전압 케이블: HVJB → 리어 인버터', en: 'HV cable: HVJB to rear drive inverter',
     groups: hvGroups, match: /DRV INV|RR SDU|REAR HVJB TO SDU|INVERTER/,
-    object: named('cable', pipe([[-0.99, 0.415, -0.075], [-1.17, 0.4, -0.2], [-1.215, 0.4, -0.2]], 0.016, 'hv')),
+    object: named('cable', pipe([[-0.99, 0.415, -0.075], [-1.17, 0.4, -0.2], [-1.245, 0.4, -0.2]], 0.016, 'hv')),
   });
   reg.add({
     id: 'hv-cable-front', ko: '고전압 케이블: HVJB → 프론트(DC-DC/FJB, 사이드 실 경유)', en: 'HV cable: HVJB to front (DC-DC / FJB, along sill)',
