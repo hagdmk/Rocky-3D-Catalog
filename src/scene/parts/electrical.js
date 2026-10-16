@@ -40,8 +40,9 @@ export function buildElectrical(reg) {
     id: 'fusebox-front', ko: '프론트(프렁크) 12V 퓨즈박스', en: 'Front (frunk) 12 V fuse box',
     groups: ['relays-and-fuses', '12v-battery-and-fittings'], match: /FUSE|RELAY|FUSEBOX|LUG|NUT/,
     object: group(
-      rbox([0.16, 0.08, 0.2], [1.07, 0.72, 0.08], 'blackPlastic', { r: 0.012 }),
-      box([0.14, 0.01, 0.18], [1.07, 0.765, 0.08], 'greyPlastic'),
+      // beside the 12 V battery (not overlapping its case)
+      rbox([0.16, 0.08, 0.2], [1.07, 0.72, 0.092], 'blackPlastic', { r: 0.012 }),
+      box([0.14, 0.01, 0.18], [1.07, 0.765, 0.092], 'greyPlastic'),
     ),
   });
   reg.add({
@@ -52,9 +53,16 @@ export function buildElectrical(reg) {
   reg.add({
     id: 'accelerator-pedal', ko: '가속 페달', en: 'Accelerator pedal', tags: 'L',
     groups: ['accelerator-pedal'],
+    // hanging pedal: the module (#1, sensor housing on its mounting plate) on two studs / M6 nuts
+    // (#3) low on the bulkhead below the HVAC case, the arm down under the main harness and back to
+    // the pad (#2) above the toe board
     object: group(
-      rbox([0.02, 0.2, 0.07], [0.72, 0.42, -0.24], 'blackPlastic', { r: 0.008, rot: [0, 0, -0.5] }),
-      rbox([0.04, 0.06, 0.06], [0.8, 0.52, -0.24], 'darkMetal', { r: 0.008 }),
+      named('module', group(
+        box([0.008, 0.11, 0.07], [0.971, 0.48, -0.24], 'steel'),
+        rbox([0.03, 0.07, 0.06], [0.952, 0.47, -0.24], 'blackPlastic', { r: 0.008 }),
+      )),
+      named('arm', pipe([[0.945, 0.445, -0.24], [0.93, 0.433, -0.24], [0.81, 0.432, -0.24]], 0.006, 'darkMetal', { bend: 0.02 })),
+      named('pad', rbox([0.015, 0.12, 0.07], [0.775, 0.385, -0.24], 'blackPlastic', { r: 0.006, rot: [0, 0, -0.5] })),
     ),
   });
   reg.add({
@@ -73,7 +81,8 @@ export function buildElectrical(reg) {
     reg.add({
       id: `door-controller-${sd}`, ko: `도어 컨트롤러 (${ko})`, en: `Door controller ${en}`, tags: sd,
       groups: ['door-controllers-and-sensors'], match: /DOOR CONTROLLER|BOLT,TPG,TORXPLUS/,
-      object: rbox([0.14, 0.1, 0.03], [0.3, 0.46, sg * 0.86], 'darkMetal', { r: 0.008 }),
+      // in the front door, screwed (#2) to the inner panel behind the trim pad
+      object: rbox([0.14, 0.1, 0.018], [0.3, 0.46, sg * 0.932], 'darkMetal', { r: 0.006 }),
     });
   }
   reg.add({
@@ -82,9 +91,9 @@ export function buildElectrical(reg) {
     // on the shared park brake / liftgate ECU bracket (#4) behind the RH trunk side trim, a plate
     // standing on the top of the wheelhouse
     object: group(
-      named('ecu', rbox([0.15, 0.1, 0.035], [-1.545, 0.855, 0.8735], 'darkMetal', { r: 0.008 })),
-      rbox([0.12, 0.08, 0.035], [-1.4, 0.86, 0.8735], 'darkMetal', { r: 0.008 }),
-      named('bracket', box([0.3, 0.13, 0.006], [-1.48, 0.835, 0.894], 'steel')),
+      named('ecu', rbox([0.15, 0.1, 0.035], [-1.545, 0.855, 0.8975], 'darkMetal', { r: 0.008 })),
+      rbox([0.12, 0.08, 0.035], [-1.4, 0.86, 0.8975], 'darkMetal', { r: 0.008 }),
+      named('bracket', box([0.3, 0.13, 0.006], [-1.48, 0.835, 0.918], 'steel')),
     ),
   });
   reg.add({
@@ -93,8 +102,8 @@ export function buildElectrical(reg) {
     // on its bracket (#3) next to the liftgate ECU, behind the RH trunk side trim, down to the
     // wheelhouse
     object: group(
-      named('ecu', rbox([0.13, 0.09, 0.035], [-1.7, 0.845, 0.8735], 'darkMetal', { r: 0.008 })),
-      named('bracket', box([0.1, 0.18, 0.006], [-1.7, 0.78, 0.894], 'steel')),
+      named('ecu', rbox([0.13, 0.09, 0.035], [-1.7, 0.845, 0.8975], 'darkMetal', { r: 0.008 })),
+      named('bracket', box([0.1, 0.18, 0.006], [-1.7, 0.78, 0.918], 'steel')),
     ),
   });
 
