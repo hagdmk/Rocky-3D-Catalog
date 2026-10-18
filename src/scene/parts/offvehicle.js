@@ -14,10 +14,10 @@ export function buildOffVehicle(reg) {
       box([0.3, 0.02, 0.3], [-3.35, 0.01, -1.95], 'steel'),
       rbox([0.09, 0.38, 0.26], [-3.3, 1.08, -1.95], 'paint', { r: 0.04 }),
       // cable to the connector handle, plugged into the charge port inlet: it enters through the
-      // charge port door opening in the LH tail lamp (the door is drawn closed) and turns down into
-      // the inlet socket behind the body side
-      named('cable', pipe([[-3.27, 0.95, -1.9], [-3.1, 0.3, -1.75], [-2.8, 0.04, -1.5], [-2.4, 0.05, -1.25], [-2.2, 0.55, -1.12], [-2.08, 0.9, -1.01],
-        [-2.07, 0.905, -0.95], [-2.07, 0.875, -0.925], [-2.07, 0.848, -0.913]], 0.012, 'rubber', { bend: 0.05 })),
+      // charge port door opening in the LH tail lamp (the door is drawn closed) straight into
+      // the inlet socket behind the door
+      named('cable', pipe([[-3.27, 0.95, -1.9], [-3.1, 0.3, -1.75], [-2.8, 0.04, -1.5], [-2.4, 0.05, -1.25], [-2.2, 0.55, -1.12], [-2.08, 0.9, -1.02],
+        [-2.07, 0.925, -0.96], [-2.07, 0.925, -0.9]], 0.012, 'rubber', { bend: 0.05 })),
       rbox([0.34, 0.12, 0.24], [-2.75, 0.06, -1.05], 'blackPlastic', { r: 0.03 }),
       rbox([0.08, 0.05, 0.05], [-2.55, 0.025, -1.32], 'darkMetal', { r: 0.01 }),
       rbox([0.08, 0.05, 0.05], [-2.45, 0.025, -1.4], 'darkMetal', { r: 0.01 }),

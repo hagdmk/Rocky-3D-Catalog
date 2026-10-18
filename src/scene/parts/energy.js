@@ -74,8 +74,9 @@ export function buildEnergy(reg) {
     id: 'charge-port-inlet', ko: '충전 인렛(차지 포트 어셈블리)', en: 'Charge port inlet assembly', tags: 'LB',
     groups: ['charge-port'], match: /CHARGE ?PORT|INLET|LATCH|SEAL|SHIM|GASKET|TRIM|COVER|LUG|FERRITE|CABLE TIE|TAPE|SCR|BLT|DRAIN|ELBOW|PLUG/,
     object: group(
-      rbox([0.1, 0.11, 0.09], [-2.07, 0.83, -0.82], 'blackPlastic', { r: 0.015 }),
-      cyl(0.03, 0.05, 'z', [-2.07, 0.83, -0.88], 'darkMetal'),
+      // behind the charge port door in the LH tail lamp
+      rbox([0.1, 0.11, 0.09], [-2.07, 0.91, -0.82], 'blackPlastic', { r: 0.015 }),
+      cyl(0.03, 0.05, 'z', [-2.07, 0.925, -0.88], 'darkMetal'),
     ),
   });
   const hvGroups = ['high-voltage-cables-1st-generation', 'high-voltage-cables-2nd-generation'];
@@ -91,7 +92,7 @@ export function buildEnergy(reg) {
     id: 'hv-cable-chargeport', ko: '고전압 케이블: HVJB → 충전 포트', en: 'HV cable: HVJB to charge port',
     groups: hvGroups, match: /CHRG PORT|CP|CHARGE|INLET|DATA-GND/,
     // from the master charger, under the trunk floor, up to the inlet in the LH quarter
-    object: named('cable', pipe([[-1.04, 0.41, -0.42], [-1.19, 0.43, -0.44], [-1.22, 0.46, -0.47], [-1.29, 0.48, -0.47], [-1.37, 0.5, -0.49], [-1.41, 0.52, -0.52], [-1.44, 0.53, -0.53], [-1.57, 0.53, -0.53], [-1.8, 0.59, -0.58], [-2.05, 0.83, -0.81]], 0.014, 'hv')),
+    object: named('cable', pipe([[-1.04, 0.41, -0.42], [-1.19, 0.43, -0.44], [-1.22, 0.46, -0.47], [-1.29, 0.48, -0.47], [-1.37, 0.5, -0.49], [-1.41, 0.52, -0.52], [-1.44, 0.53, -0.53], [-1.57, 0.53, -0.53], [-1.8, 0.59, -0.58], [-2.0, 0.8, -0.72], [-2.07, 0.91, -0.74], [-2.07, 0.91, -0.79]], 0.014, 'hv')),
   });
   reg.add({
     id: 'hv-cable-inverter', ko: '고전압 케이블: HVJB → 리어 인버터', en: 'HV cable: HVJB to rear drive inverter',
