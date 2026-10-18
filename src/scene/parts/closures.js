@@ -143,7 +143,7 @@ export function buildClosures(reg) {
       // its outboard edge (outboard of the dash insulation, below the shotgun rail) to the handle on
       // the LH lower dash
       named('cable', pipe([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
-        [1.45, 0.7, -0.47], [1.336, 0.69, -0.475], [1.333, 0.68, -0.585], [1.23, 0.65, -0.63], [1.11, 0.59, -0.69], [0.99, 0.55, -0.73],
+        [1.45, 0.7, -0.47], [1.336, 0.69, -0.475], [1.333, 0.68, -0.585], [1.23, 0.65, -0.63], [1.11, 0.582, -0.7], [0.99, 0.55, -0.73],
         [0.85, 0.54, -0.742], [0.72, 0.53, -0.75]], 0.004, 'steel', { bend: 0.04 })),
       // on the LH end face of the lower instrument panel shell (z -0.74), facing the door opening
       named('handle', rbox([0.06, 0.03, 0.02], [0.7, 0.52, -0.745], 'blackPlastic', { r: 0.006 })),

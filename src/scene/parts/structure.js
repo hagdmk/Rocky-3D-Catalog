@@ -470,7 +470,7 @@ export function buildStructure(reg) {
     object: quadPlate([[1.2, ay(1.2), -0.62], [1.2, ay(1.2), 0.62], [0.98, ay(0.98) - 0.005, 0.62], [0.98, ay(0.98) - 0.005, -0.62]], 0.008, 'blackPlastic'),
   });
 
-  // --- NVH plugs and patches (spread over the floor pan) -------------------------------
+  // --- NVH plugs and patches (floor pan plugs, door inner panel tapes) ----------------
   const plugs = [];
   for (const x of [0.6, 0.1, -0.4, -0.9]) {
     for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.3, z], 'rubber', { seg: 14 })); // in the floor pan
