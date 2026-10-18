@@ -17,8 +17,8 @@ async function main() {
   const viewer = new Viewer(document.getElementById('viewport'));
   viewer.setComponents(reg.items, (gid) => catalog.systemOfGroup(gid));
   catalog.linkComponents(reg.items);
-  // parts fastened together, so hidden mounting partners can be drawn as context
-  viewer.setMounts(JOINTS.map((j) => [j.a.split(/[#@]/)[0], j.b.split(/[#@]/)[0]]));
+  // parts fastened together, so the hidden sub-parts that visible parts mount on can be drawn as context
+  viewer.setMounts(JOINTS.map((j) => [j.a, j.b]));
   const unmapped = [...catalog.groups.keys()].filter((g) => !catalog.componentsByGroup.has(g));
   if (unmapped.length) console.warn('Catalog groups without a 3D location:', unmapped);
 

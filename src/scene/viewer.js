@@ -11,6 +11,48 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { makeMaterial } from './materials.js';
 
 const CAR_CENTER = new THREE.Vector3(0, 0.62, 0);
+// A ghost of a long linear member referenced only at one end (`id#name@end`) shows this
+// much of it from that end, so a hidden 2.8 m harness does not appear for one connector.
+const GHOST_STUB = 0.15;
+
+/** A joint reference 'id', 'id#name' or 'id#name@start|@end' (src/scene/joints.js). */
+function parseRef(ref) {
+  const m = String(ref).match(/^([^#@]+)(?:#([^@]+))?(?:@(start|end))?$/);
+  return m ? { key: m[0], id: m[1], name: m[2] || null, end: m[3] || null } : null;
+}
+
+/**
+ * The first or last `GHOST_STUB` metres of a beam, bar or tube, in the member's own local
+ * frame, or null when the member is short enough to show whole.
+ */
+function stubGeometry(src, end) {
+  const g = src.geometry;
+  const p = g.parameters || {};
+  if (g.type === 'TubeGeometry') {
+    const len = p.path.getLength();
+    if (len < GHOST_STUB * 1.6) return null;
+    const f = GHOST_STUB / len;
+    const u0 = end === 'start' ? 0 : 1 - f;
+    const pts = [];
+    for (let i = 0; i <= 12; i++) pts.push(p.path.getPointAt(u0 + (f * i) / 12));
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 12, p.radius, p.radialSegments, false);
+  }
+  const h = p.height;
+  if (!(h >= GHOST_STUB * 1.6)) return null;
+  // beams and bars run along local y from -h/2 (start) to +h/2 (end)
+  const y0 = end === 'start' ? -h / 2 : h / 2 - GHOST_STUB;
+  let geo;
+  if (g.type === 'CylinderGeometry') {
+    const rAt = (y) => p.radiusBottom + (p.radiusTop - p.radiusBottom) * ((y + h / 2) / h);
+    geo = new THREE.CylinderGeometry(rAt(y0 + GHOST_STUB), rAt(y0), GHOST_STUB, p.radialSegments, 1, p.openEnded);
+  } else if (g.type === 'BoxGeometry' || g.type === 'RoundedBoxGeometry') {
+    geo = new THREE.BoxGeometry(p.width, GHOST_STUB, p.depth);
+  } else {
+    return null;
+  }
+  geo.translate(0, y0 + GHOST_STUB / 2, 0);
+  return geo;
+}
 
 // dist = distance for a wide viewport; halfW = half of the car's projected
 // width in that view, used to back off on narrow (portrait) screens.
@@ -37,7 +79,7 @@ export class Viewer {
     this.explode = 0;
     this.hiddenSystems = new Set();
     this.variant = { drive: 'dm', susp: 'air' };
-    this.mounts = new Map(); // component id -> ids of the parts it is fastened to (src/scene/joints.js)
+    this.mounts = new Map(); // component id -> Map(partner id -> partner refs it is fastened to (src/scene/joints.js))
     this.mountContext = true; // show hidden mounting partners of visible parts as faint ghosts
     this.needsRender = true;
     this.inset = { tx: 0, ty: 0, x: 0, y: 0 };
@@ -197,6 +239,7 @@ export class Viewer {
         }
         m.material = mat;
       }
+      for (const s of it.ghostStubs || []) s.material = s.ghostSource.material;
       if (!it.edgeMaterial) {
         it.edgeMaterial = new THREE.LineBasicMaterial({ color: '#0b0f14', transparent: true, opacity: 0.55, depthWrite: false });
       }
@@ -227,15 +270,24 @@ export class Viewer {
     return this.inConfig(it);
   }
 
-  /** pairs = [[idA, idB], ...] of parts fastened together. */
+  /**
+   * pairs = [[refA, refB], ...] of parts fastened together, as joint references
+   * ('id', 'id#name' or 'id#name@start|@end'; see src/scene/joints.js).
+   */
   setMounts(pairs) {
     this.mounts = new Map();
-    for (const [a, b] of pairs) {
-      if (a === b || !this.byId.has(a) || !this.byId.has(b)) continue;
-      if (!this.mounts.has(a)) this.mounts.set(a, new Set());
-      if (!this.mounts.has(b)) this.mounts.set(b, new Set());
-      this.mounts.get(a).add(b);
-      this.mounts.get(b).add(a);
+    const link = (from, to) => {
+      if (!this.mounts.has(from.id)) this.mounts.set(from.id, new Map());
+      const partners = this.mounts.get(from.id);
+      if (!partners.has(to.id)) partners.set(to.id, new Map());
+      partners.get(to.id).set(to.key, to);
+    };
+    for (const [ra, rb] of pairs) {
+      const a = parseRef(ra);
+      const b = parseRef(rb);
+      if (!a || !b || a.id === b.id || !this.byId.has(a.id) || !this.byId.has(b.id)) continue;
+      link(a, b);
+      link(b, a);
     }
     this.applyVisibility();
   }
@@ -248,21 +300,90 @@ export class Viewer {
   applyVisibility() {
     const shown = new Set(this.items.filter((it) => this.isVisible(it)).map((it) => it.id));
     // Parts that a shown part is fastened to, hidden only because their system is
-    // hidden: draw them as faint, non-pickable context so joints do not float.
-    const ghosts = new Set();
+    // hidden: draw the referenced sub-parts as faint, non-pickable context so joints
+    // do not float. ghosts: id -> the joint references naming it.
+    const ghosts = new Map();
     if (this.mountContext && this.hiddenSystems.size) {
       for (const id of shown) {
-        for (const p of this.mounts.get(id) || []) {
-          if (!shown.has(p) && this.inConfig(this.byId.get(p))) ghosts.add(p);
+        for (const [p, refs] of this.mounts.get(id) || []) {
+          if (shown.has(p) || !this.inConfig(this.byId.get(p))) continue;
+          if (!ghosts.has(p)) ghosts.set(p, new Map());
+          for (const [k, r] of refs) ghosts.get(p).set(k, r);
         }
       }
     }
     for (const it of this.items) {
       it.ghost = ghosts.has(it.id);
       it.root.visible = shown.has(it.id) || it.ghost;
+      this.showParts(it, it.ghost ? [...ghosts.get(it.id).values()] : null);
     }
     this.pickables = this.items.filter((it) => shown.has(it.id)).flatMap((it) => it.meshes);
     this.applyState();
+  }
+
+  /**
+   * What a joint reference shows of a ghost: null for the whole component, else
+   * { node } (a named sub-part, resolved among the descendants as tools/check.mjs does)
+   * or { stub } (the referenced end of a long beam, bar or tube).
+   */
+  ghostPart(it, ref) {
+    it.ghostParts ||= new Map();
+    if (it.ghostParts.has(ref.key)) return it.ghostParts.get(ref.key);
+    let part = null;
+    if (ref.name) {
+      const found = [];
+      it.root.traverse((o) => { if (o !== it.root && o.name === ref.name && !o.ghostSource) found.push(o); });
+      if (found.length === 1) {
+        const [node] = found;
+        part = { node };
+        const geo = ref.end && node.isMesh && node.userData.span ? stubGeometry(node, ref.end) : null;
+        if (geo) {
+          const stub = new THREE.Mesh(geo, node.material);
+          stub.position.copy(node.position);
+          stub.quaternion.copy(node.quaternion);
+          stub.scale.copy(node.scale);
+          stub.userData = { compId: it.id, mat: node.userData.mat };
+          stub.ghostSource = node;
+          stub.renderOrder = 2;
+          stub.visible = false;
+          node.parent.add(stub);
+          (it.ghostStubs ||= []).push(stub);
+          part = { stub };
+        }
+      }
+      // an unknown or ambiguous name (tools/check.mjs reports it) falls back to the whole part
+    }
+    it.ghostParts.set(ref.key, part);
+    return part;
+  }
+
+  /**
+   * refs = the joint references of a ghost: show only those sub-parts (and the groups
+   * holding them); null, or a reference to the whole component, shows all of it.
+   */
+  showParts(it, refs) {
+    const parts = refs ? refs.map((r) => this.ghostPart(it, r)) : [];
+    const all = (o) => o.traverse((x) => { x.visible = !x.ghostSource; });
+    if (!refs || parts.some((p) => !p)) {
+      if (it.partial) for (const c of it.root.children) all(c);
+      it.partial = false;
+      return;
+    }
+    const whole = new Set(parts.filter((p) => p.node).map((p) => p.node));
+    const inWhole = (o) => { for (let x = o; x && x !== it.root; x = x.parent) if (whole.has(x)) return true; return false; };
+    const stubs = new Set(parts.filter((p) => p.stub && !inWhole(p.stub.ghostSource)).map((p) => p.stub));
+    const path = new Set();
+    for (const o of [...whole, ...stubs]) for (let x = o.parent; x && x !== it.root; x = x.parent) path.add(x);
+    const walk = (o) => {
+      for (const c of o.children) {
+        if (whole.has(c)) all(c);
+        else if (stubs.has(c)) { c.material = c.ghostSource.material; c.visible = true; }
+        else if (path.has(c)) { c.visible = true; walk(c); }
+        else c.visible = false;
+      }
+    };
+    walk(it.root);
+    it.partial = true;
   }
 
   focusSet() {

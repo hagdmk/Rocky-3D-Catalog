@@ -15,6 +15,29 @@ const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 /** Point on segment a-b where coordinate `axis` (0 x, 1 y, 2 z) equals v. */
 const at = (a, b, axis, v) => lerp(a, b, (v - a[axis]) / (b[axis] - a[axis]));
 
+// Steering column (LHD, on the driver's centre line z -0.37): it drops forward at 33 deg (slope
+// COL_K) from the wheel to the upper I-shaft U-joint, under the cross-car beam (y 0.72) and below
+// the instrument cluster.
+const COL_K = 0.655;
+const COL_LINE = [0.4, 0.86, -0.37]; // a point on the column axis
+/**
+ * Steering wheel frame, shared with the driver airbag (interior.js) and the wheel-mounted switches
+ * (electrical.js). The wheel is splined square on the column shaft: its plane is tilted `tilt`
+ * from vertical (top forward), the same angle as the column from horizontal. `centre` is the hub
+ * centre on the column axis; at(u, v, w) gives the world point u across the wheel (+u toward the
+ * LH spoke, world -z), v up in the wheel plane and w along the column axis (+w forward, toward
+ * the column; the airbag and the driver are at -w).
+ */
+export const STEER = (() => {
+  const tilt = Math.atan(COL_K);
+  const s = Math.sin(tilt);
+  const c = Math.cos(tilt);
+  // 18 mm up the column (rearward) from COL_LINE, so the rim of the square wheel clears the dash
+  const centre = lerp(COL_LINE, [COL_LINE[0] - c, COL_LINE[1] + s, COL_LINE[2]], 0.018);
+  const at = (u, v, w) => [centre[0] + v * s + w * c, centre[1] + v * c - w * s, centre[2] - u];
+  return { tilt, centre, at };
+})();
+
 export const CORNERS = [
   { key: 'LF', x: XF, z: -ZF, sg: -1, front: true, ko: '앞 좌', en: 'front LH' },
   { key: 'RF', x: XF, z: ZF, sg: 1, front: true, ko: '앞 우', en: 'front RH' },
@@ -217,11 +240,12 @@ export function buildChassis(reg) {
       ),
     });
     // jounce (flexible brake) hose: from the caliper up to the body bracket on the shock tower,
-    // routed behind the spring
+    // routed behind the spring; at the front it passes under the lower edge of the tower's rear
+    // wall (y 0.55) and rises behind the wall to the bracket
     const calX = c.x + Math.cos(Math.PI * 0.82) * 0.15;
     const hb = hoseBodyEnd(c);
     const hosePath = c.front
-      ? [[calX, WY + 0.11, c.z - c.sg * 0.07], [calX - 0.03, WY + 0.2, c.z - c.sg * 0.15], [1.345, 0.64, c.sg * 0.63], hb]
+      ? [[calX, WY + 0.11, c.z - c.sg * 0.07], [calX - 0.03, WY + 0.16, c.z - c.sg * 0.15], [1.35, 0.53, c.sg * 0.64], [1.338, 0.62, c.sg * 0.62], hb]
       : [[calX, WY + 0.11, c.z - c.sg * 0.07], [-1.588, 0.55, c.sg * 0.712], [-1.598, 0.66, c.sg * 0.665], hb];
     reg.add({
       id: `jounce-hose-${c.key}`, ko: `브레이크 호스 (${c.ko})`, en: `Brake jounce hose ${c.en}`, tags: `${side}${fr}`,
@@ -246,10 +270,13 @@ export function buildChassis(reg) {
       BJF: [c.x + 0.025, WY - 0.137, sg * 0.716], // fore link: knuckle ball joint -> subframe bushing
       BF: [c.x + 0.265, WY - 0.13, sg * 0.395],
       BJA, BA, // aft link
-      E: at(BJA, BA, 2, sg * 0.66), // damper bushing in the aft link
+      // damper bushing in the aft link, far enough inboard (and so aft) that the damper body
+      // clears the outer CV joint boot of the halfshaft
+      E: at(BJA, BA, 2, sg * 0.64),
       // strut top mount under the shock tower top plate (y 0.85), forward of the tower brace
-      // member and inboard of the forward bar, both of which start at the tower centre
-      TOP: [c.x - 0.005, 0.845, sg * 0.575],
+      // member and inboard of the forward bar, both of which start at the tower centre; inboard
+      // enough that the air spring / coil spring seats clear the arch liner (inboard edge |z| 0.64)
+      TOP: [c.x - 0.005, 0.845, sg * 0.56],
     };
   };
   const KNUCKLE_IN = (c) => Math.abs(c.z) - 0.14; // |z| of the knuckle upright's inboard face
@@ -282,8 +309,9 @@ export function buildChassis(reg) {
           cyl(0.005, 0.057, 'x', [c.x - 0.02, WY + 0.246, P.BJU[2]], 'steel'),
           cyl(0.009, 0.008, 'x', [c.x - 0.053, WY + 0.246, P.BJU[2]], 'steel'),
         )),
-        // fore link #6: vertical cam bolt #7 in the subframe bushing
-        named('foreLink', beam(at(P.BJF, P.BF, 2, kin), P.BF, 0.02, 'aluminum')),
+        // fore link #6: vertical cam bolt #7 in the subframe bushing; it runs steeply forward, so it
+        // starts inside its ball joint housing (16 mm from the stud axis, housing radius 21 mm)
+        named('foreLink', beam(lerp(P.BJF, P.BF, 0.04), P.BF, 0.02, 'aluminum')),
         named('foreBush', cyl(0.032, 0.05, 'y', P.BF, 'rubber')),
         cyl(0.007, 0.114, 'y', P.BF, 'steel'),
         ballJoint('foreBJ', P.BJF),
@@ -456,10 +484,8 @@ export function buildChassis(reg) {
   const rackY = WY - 0.065;
   const pinion = [rackX - 0.02, rackY + 0.06, -0.2];
   const pinionShaft = [rackX - 0.02, rackY + 0.08, -0.22];
-  // column output spline: the column (wheel hub at y 0.86) drops at 33 deg so it passes under the
-  // cross-car beam (y 0.72) and below the instrument cluster
-  const COL_K = 0.655;
-  const colEnd = [0.82, 0.86 - COL_K * 0.42, -0.37];
+  // column output spline, on the column axis (COL_K, STEER above)
+  const colEnd = [0.82, COL_LINE[1] - COL_K * (0.82 - COL_LINE[0]), COL_LINE[2]];
   const ujLower = lerp(pinionShaft, [0.985, 0.548, -0.37], 0.4); // lower U-joint on the pinion input shaft
   const dashSeal = at(ujLower, colEnd, 0, 0.99); // the shaft is straight between its two U-joints
   const coupling = at(ujLower, colEnd, 0, 0.955); // upper-link sleeve on the lower-link spline, cabin side
@@ -517,9 +543,8 @@ export function buildChassis(reg) {
       cyl(0.009, 0.008, 'z', [coupling[0], coupling[1], coupling[2] + 0.024], 'steel'), // NUT HF M10 #9 on the sleeve face
     ),
   });
-  // Column and wheel (LHD: driver on the left, -z)
-  const swC = V(0.4, 0.86, -0.37);
-  const tilt = 0.42; // rad from vertical, top tilted rearward
+  // Column and wheel (LHD: driver on the left, -z); the wheel is square to the column (STEER)
+  const swC = V(...STEER.centre);
   const swGroup = new THREE.Group();
   const rim = mesh(new THREE.TorusGeometry(0.185, 0.019, 12, 48), 'leather');
   rim.scale.set(1, 0.92, 1);
@@ -531,9 +556,10 @@ export function buildChassis(reg) {
     bar([0, 0, 0], [0, -0.17, 0], 0.03, 0.02, 'leather'),
   ];
   swGroup.add(rim, hub, ...spokes);
-  // ring lies in local XY; rotate so its normal points rearward/up toward the driver
+  // ring lies in local XY (local x = world -z); rotate so its axis (local z) runs down the column
+  // (STEER.at maps these local coordinates to world)
   swGroup.rotation.set(0, Math.PI / 2, 0);
-  swGroup.rotateX(tilt);
+  swGroup.rotateX(STEER.tilt);
   swGroup.position.copy(swC);
   reg.add({
     id: 'steering-wheel', ko: '스티어링 휠·칼럼', en: 'Steering wheel & column',
@@ -541,7 +567,8 @@ export function buildChassis(reg) {
     object: group(
       named('wheel', swGroup),
       named('column', beam([swC.x, swC.y, swC.z], colEnd, 0.03, 'blackPlastic')),
-      named('shroud', rbox([0.12, 0.066, 0.1], [0.47, 0.86 - COL_K * 0.07, -0.37], 'blackPlastic', { r: 0.015, rot: [0, 0, -Math.atan(COL_K)] })),
+      // column shroud, its upper end just in front of the hub
+      named('shroud', rbox([0.12, 0.066, 0.1], STEER.at(0, 0, 0.092), 'blackPlastic', { r: 0.015, rot: [0, 0, -STEER.tilt] })),
       // column mounting bracket under the cross-car beam (bolts #2 / #3)
       named('columnBracket', rbox([0.06, 0.02, 0.08], [0.72, 0.683, -0.37], 'steel', { r: 0.004 })),
     ),
@@ -573,7 +600,10 @@ export function buildChassis(reg) {
   const xFI = -1.2; // front isolators, behind the powertrain coolant hose that runs outboard of the RH side member
   const yFI = railBot(xFI) - 0.025; // isolator centre, its top against the rail
   // shear plate #4 / #5 under the front isolator: stud #2 and nut #6 through its rear end, front end
-  // screwed to the top of the battery pack rear flange (BOLT M5x15 #7; the plates differ by pack version)
+  // screwed to the battery pack rear edge (BOLT M5x15 #7; the plates differ by pack version).
+  // Simplification: on the car the plate is the lowest layer and the three M5 bolts go up from
+  // below into the pack; the pack (energy.js) has no rear tab drawn under the isolator, so the
+  // plate's front end rests on the pack top edge here and the M5 bolts are drawn as plain pins.
   const shearPlate = (sg) => {
     const a = [xFI - 0.035, yFI - 0.0275, sg * 0.5425];
     const b = [-0.99, 0.2875, sg * 0.5425];
@@ -653,10 +683,15 @@ export function buildChassis(reg) {
   const shaft = (x, z0, kin, extra = []) => {
     const sd = Math.sign(z0);
     const z1 = sd * (kin + 0.004);
+    // CV boot tapering from its joint housing (radius 0.045) to the shaft (0.03); cyl's r2 is the +z end
+    const boot = (len, zc, wideOutboard) => {
+      const wideAtPlusZ = (sd > 0) === wideOutboard;
+      return cyl(wideAtPlusZ ? 0.03 : 0.045, len, 'z', [x, WY, zc], 'rubber', { r2: wideAtPlusZ ? 0.045 : 0.03 });
+    };
     return group(
       named('shaft', beam([x, WY, z0], [x, WY, z1], 0.017, 'steel')),
-      cyl(0.045, 0.06, 'z', [x, WY, z0 + sd * 0.035], 'rubber', { r2: 0.03 }), // inner CV boot at the drive unit face
-      cyl(0.045, 0.09, 'z', [x, WY, z1 - sd * 0.05], 'rubber', { r2: 0.03 }),
+      boot(0.06, z0 + sd * 0.035, false), // inner CV boot at the drive unit face
+      boot(0.09, z1 - sd * 0.05, true), // outer CV boot at the knuckle
       named('stub', beam([x, WY, sd * (kin + 0.017)], [x, WY, sd * (kin + 0.085)], 0.012, 'steel')),
       ...extra,
     );
@@ -704,8 +739,9 @@ export function buildChassisSystems(reg) {
     match: /BOOSTER|PIN|CLIP|NUT|Sensor - Vacuum|HOSE/i,
     object: group(
       named('booster', cyl(0.12, 0.15, 'x', [1.07, 0.66, bz], 'darkMetal', { seg: 32 })),
-      // to the vacuum pump under the LH rail, below the shock tower and inboard of the strut
-      named('hose', pipe([[1.07, 0.785, bz], [1.15, 0.71, -0.57], [1.55, 0.4, -0.58], [1.64, 0.36, -0.53], [1.672, 0.36, -0.52]], 0.008, 'rubber', { bend: 0.04 })),
+      // to the vacuum pump under the LH rail: down behind the shock tower, under the lower edge of
+      // its rear wall (y 0.55), then below the tower and inboard of the strut
+      named('hose', pipe([[1.07, 0.785, bz], [1.15, 0.71, -0.57], [1.33, 0.53, -0.576], [1.55, 0.4, -0.58], [1.64, 0.36, -0.53], [1.672, 0.36, -0.52]], 0.008, 'rubber', { bend: 0.04 })),
     ),
   });
   reg.add({
@@ -765,7 +801,7 @@ export function buildChassisSystems(reg) {
       named('toRear', pipe([[1.18, 0.57, 0.6], [1.15, 0.27, 0.76], [1.13, 0.228, 0.757], [-1.02, 0.228, 0.757], [-1.058, 0.228, 0.74], [-1.06, 0.228, 0.52], [-1.11, 0.28, 0.47], [-1.12, 0.31, 0.47], [-1.13, 0.32, 0.46], [-1.15, 0.322, 0.425]], 0.004, 'steel')),
       // from the junction under the drive unit to the LH wheelhouse, and outboard to the RH one, then up
       // behind the strut to the hose bracket
-      named('rearL', pipe([[-1.15, 0.325, 0.42], [-1.15, 0.31, 0.37], [-1.16, 0.235, 0.25], [-1.16, 0.235, -0.25], [-1.25, 0.25, -0.36], [-1.31, 0.31, -0.37], [-1.32, 0.32, -0.38], [-1.39, 0.32, -0.46], [-1.615, 0.34, -0.655], [-1.591, 0.72, -0.632]], 0.004, 'steel')),
+      named('rearL', pipe([[-1.15, 0.325, 0.42], [-1.15, 0.31, 0.37], [-1.16, 0.235, 0.25], [-1.16, 0.235, -0.25], [-1.24, 0.25, -0.372], [-1.31, 0.31, -0.372], [-1.32, 0.32, -0.38], [-1.39, 0.32, -0.46], [-1.615, 0.34, -0.655], [-1.591, 0.72, -0.632]], 0.004, 'steel')),
       named('rearR', pipe([[-1.15, 0.325, 0.42], [-1.48, 0.32, 0.6], [-1.615, 0.34, 0.655], [-1.591, 0.72, 0.632]], 0.004, 'steel')),
       named('junction', rbox([0.04, 0.02, 0.03], [-1.15, 0.322, 0.42], 'steel', { r: 0.003 })),
     ),
@@ -795,10 +831,11 @@ export function buildChassisSystems(reg) {
     id: 'air-lines-front', ko: '프론트 에어 라인', en: 'Front air suspension lines', tags: 'F',
     groups: ['front-air-suspension-pressure-lines'], variant: { susp: 'air' },
     object: group(
-      // up into the open underside of the shock tower, in front of the strut, to the bellows fitting
-      named('toLF', pipe([[1.82, 0.32, -0.59], [1.79, 0.33, -0.59], [1.6, 0.52, -0.6], [1.592, 0.6, -0.597], [1.58, 0.735, -0.594]], 0.004, 'blackPlastic')),
+      // up into the open underside of the shock tower, in front of the strut and of the upper arm
+      // front leg, to the bellows fitting
+      named('toLF', pipe([[1.82, 0.32, -0.59], [1.79, 0.33, -0.59], [1.6, 0.52, -0.6], [1.6, 0.66, -0.59], [1.578, 0.735, -0.578]], 0.004, 'blackPlastic')),
       named('toRF', pipe([[1.79, 0.33, -0.53], [1.74, 0.38, -0.26], [1.74, 0.38, 0.28], [1.72, 0.4, 0.56], [1.69, 0.43, 0.59], [1.6, 0.52, 0.6],
-        [1.592, 0.6, 0.597], [1.58, 0.735, 0.594]], 0.004, 'blackPlastic')),
+        [1.6, 0.66, 0.59], [1.578, 0.735, 0.578]], 0.004, 'blackPlastic')),
       named('toReservoir', pipe([[1.82, 0.3, -0.55], [1.81, 0.3, -0.28], [1.83, 0.3, 0.04], [1.88, 0.3, 0.09], [1.95, 0.318, 0.165]], 0.004, 'blackPlastic')),  // valve block to reservoir (#4)
     ),
   });
@@ -806,7 +843,7 @@ export function buildChassisSystems(reg) {
     id: 'air-lines-rear', ko: '리어 에어 라인(좌측 실 경유)', en: 'Rear air suspension lines (via LH sill)', tags: 'B',
     groups: ['rear-air-suspension-pressure-lines'], variant: { susp: 'air' },
     object: group(
-      named('main', pipe([[1.82, 0.316, -0.592], [1.58, 0.26, -0.62], [1.29, 0.25, -0.63], [1.14, 0.23, -0.76], [1.13, 0.232, -0.757], [-0.95, 0.232, -0.757], [-1.05, 0.23, -0.76], [-1.13, 0.28, -0.71], [-1.18, 0.28, -0.72], [-1.19, 0.29, -0.73], [-1.35, 0.45, -0.73], [-1.4, 0.53, -0.69], [-1.43, 0.56, -0.69], [-1.448, 0.6, -0.686]], 0.004, 'blackPlastic')),  // along the LH sill beside the battery pack
+      named('main', pipe([[1.82, 0.316, -0.592], [1.58, 0.26, -0.62], [1.5, 0.252, -0.6], [1.4, 0.25, -0.6], [1.29, 0.25, -0.63], [1.14, 0.23, -0.76], [1.13, 0.232, -0.757], [-0.95, 0.232, -0.757], [-1.05, 0.23, -0.76], [-1.13, 0.28, -0.71], [-1.18, 0.28, -0.72], [-1.19, 0.29, -0.73], [-1.35, 0.45, -0.73], [-1.4, 0.53, -0.69], [-1.43, 0.56, -0.69], [-1.448, 0.6, -0.686]], 0.004, 'blackPlastic')),  // along the LH sill beside the battery pack
       named('toRB', pipe([[-0.96, 0.232, -0.757], [-1.02, 0.23, -0.757], [-1.058, 0.23, -0.74], [-1.06, 0.22, -0.55], [-1.18, 0.21, -0.3], [-1.18, 0.21, 0.3], [-1.18, 0.28, 0.37], [-1.18, 0.31, 0.37], [-1.18, 0.39, 0.4], [-1.18, 0.4, 0.41],
         [-1.23, 0.46, 0.47], [-1.25, 0.48, 0.49], [-1.37, 0.54, 0.61], [-1.448, 0.6, 0.686]], 0.004, 'blackPlastic')),  // crosses under the drive unit
     ),
