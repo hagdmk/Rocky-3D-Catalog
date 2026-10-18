@@ -187,7 +187,7 @@ export function buildElectrical(reg) {
     reg.add({
       id: `door-harness-${sd}B`, ko: `뒤 도어 하네스 (${ko})`, en: `Rear door harness ${en}`, tags: `${sd}B`,
       groups: ['doors-and-liftgate-harnesses'], match: /DOOR|EDGE CLIP/,
-      object: named('lead', pipe([[-0.32, 0.347, sg * 0.766], [-0.31, 0.46, sg * 0.8], [-0.265, 0.492, sg * 0.86], [-0.262, 0.492, sg * 0.928],
+      object: named('lead', pipe([[-0.32, 0.347, sg * 0.766], [-0.31, 0.46, sg * 0.8], [-0.265, 0.468, sg * 0.86], [-0.262, 0.468, sg * 0.928],
         [-0.3, 0.5, sg * 0.928], [-0.4, 0.62, sg * 0.932], skinAt(r0 + 0.12, 1.45, sd, -0.05), skinAt((r0 + r1) / 2, 1.6, sd, -0.05),
         [-0.95, 0.89, sg * 0.946], [-0.99, 0.905, sg * 0.946]], 0.008, 'wire', { bend: 0.04 })),
     });
