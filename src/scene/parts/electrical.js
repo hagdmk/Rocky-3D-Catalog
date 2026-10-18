@@ -369,11 +369,11 @@ export function buildElectrical(reg) {
     id: 'washer-nozzles', ko: '워셔 노즐·튜브', en: 'Washer nozzles & tubing', tags: 'F',
     groups: ['windshield-washer-nozzle-and-tubing'],
     // hose from the pump up over the bottle, along the outboard side of the frunk to the RH hood
-    // hinge, up to the hood there (jumper hose #3) and across under the hood (hood section #2) to the
+    // hinge, up outboard of the hinge to the hood (jumper hose #3) and across under the hood (hood section #2) to the
     // two nozzles (#1), which clip into the hood from below with their jets in its surface
     object: group(
       named('hose', pipe([[2.03, 0.37, 0.735], [2.045, 0.56, 0.725], [2.02, 0.64, 0.6], [1.9, 0.7, 0.475], [1.3, 0.7, 0.47],
-        [1.1, 0.72, 0.5], [1.08, 0.85, 0.59], [1.04, 0.89, 0.63], [1.03, 0.925, 0.62], skinAt(1.46, 4.3, 'R', -0.02),
+        [1.1, 0.72, 0.5], [1.05, 0.82, 0.61], [1.04, 0.9, 0.63], [1.03, 0.925, 0.62], skinAt(1.46, 4.3, 'R', -0.02),
         skinAt(1.46, 4.75, 'R', -0.02), skinAt(1.46, 4.75, 'L', -0.02), skinAt(1.46, 4.3, 'L', -0.02)], 0.004, 'rubber', { bend: 0.04 })),
       ...SIDES.map(({ sd }) => named(`nozzle${sd}`, group(
         rbox([0.03, 0.015, 0.03], skinAt(1.46, 4.3, sd, -0.008).toArray(), 'blackPlastic', { r: 0.005 }),
