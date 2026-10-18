@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { skinPath, skinAt } from '../body.js';
 import { xOf, sOf } from '../profile.js';
 import { region, SV } from './exterior.js';
+import { STEER } from './chassis.js';
 import {
   V, group, named, hollow, rbox, box, cyl, beam, bar, tube, pipe, quadPlate, disc, mesh,
 } from '../geom.js';
@@ -509,11 +510,11 @@ export function buildInterior(reg) {
   reg.add({
     id: 'driver-airbag', ko: '운전석 에어백(스티어링 휠)', en: 'Driver airbag (steering wheel)', tags: 'L',
     groups: ['front-air-bags'], match: /DRIVER AIRBAG|DAB|STEERING CONTROL|CONNECTOR/,
+    // in the hub cavity on the driver's side, square to the wheel and its column (STEER, chassis.js)
     object: (() => {
       const m = mesh(new THREE.CylinderGeometry(0.07, 0.074, 0.03, 28), 'leather');
-      const tilt = 0.44;
-      m.rotation.set(0, 0, Math.PI / 2 - tilt);
-      m.position.set(0.385, 0.865, -0.37);
+      m.rotation.set(0, 0, Math.PI / 2 - STEER.tilt);
+      m.position.set(...STEER.at(0, 0, -0.016));
       return m;
     })(),
   });

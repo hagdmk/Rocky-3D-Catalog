@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { skinAt, findOnFace } from '../body.js';
 import { SV } from './exterior.js';
 import { SEAT } from './interior.js';
+import { STEER } from './chassis.js';
 import {
   V, group, named, rbox, box, cyl, beam, bar, tube, pipe, disc, faceTo, mesh,
 } from '../geom.js';
@@ -321,10 +322,12 @@ export function buildElectrical(reg) {
       named('gloveBox', rbox([0.02, 0.025, 0.05], [0.468, 0.581, 0.07], 'blackPlastic', { r: 0.004 })),
       // steering control switch harness (#1 = front air bags #2): scroll wheels clipped into the
       // spokes against the edge of the driver airbag, wired inside the spokes to the hub behind it
-      named('scrollL', disc(0.015, 0.01, 'x', [0.381, 0.87, -0.456], 'chrome')),
-      named('scrollR', disc(0.015, 0.01, 'x', [0.381, 0.87, -0.284], 'chrome')),
-      named('steeringHarness', tube([[0.385, 0.868, -0.456], [0.41, 0.857, -0.43], [0.402, 0.861, -0.395]], 0.004, 'wire')),
-      named('steeringHarnessR', tube([[0.385, 0.868, -0.284], [0.41, 0.857, -0.31], [0.402, 0.861, -0.345]], 0.004, 'wire')),
+      // (placed in the steering wheel frame, STEER in chassis.js: u across, w along the column)
+      ...[['L', 1], ['R', -1]].flatMap(([sd, u]) => [
+        named(`scroll${sd}`, cyl(0.015, 0.01, 'x', STEER.at(u * 0.086, 0.0014, -0.0214), 'chrome', { seg: 32, rot: [0, 0, Math.PI / 2 - STEER.tilt] })),
+        named(sd === 'L' ? 'steeringHarness' : 'steeringHarnessR', tube([STEER.at(u * 0.086, 0.0012, -0.017),
+          STEER.at(u * 0.06, 0.0013, 0.0104), STEER.at(u * 0.025, 0.0017, 0.0014)], 0.004, 'wire')),
+      ]),
     ),
   });
   reg.add({
