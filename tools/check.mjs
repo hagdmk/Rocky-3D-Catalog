@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Consistency check for the 3D map (no browser needed):
-//   node tools/check.mjs [--only=basic,joints,shared,pass,clash] [--verbose]
+//   node tools/check.mjs [--only=basic,joints,shared,pass,clash,float] [--verbose]
 // * every catalog group has at least one 3D location and vice versa,
 // * every component has geometry inside the scene bounds,
 // * every component's `match` rule selects at least one part row,
@@ -9,7 +9,8 @@
 //   the same component in both, or to components that touch,
 // * pass-through: beams, bars and tubes do not run through other parts' solids
 //   or cross their surfaces (plates, skins, trims),
-// * clash: no part sits deep inside another part's solid.
+// * clash: no part sits deep inside another part's solid,
+// * floating: every component touches another one in each configuration where it is shown.
 // A joint lets the two parts it names overlap only where they are fastened:
 // within the end region of an @start/@end reference, or for a bounded length / depth.
 import { register } from 'node:module';
@@ -20,7 +21,7 @@ const THREE = await import('three');
 const { buildScene } = await import('../src/scene/build.js');
 const { Catalog } = await import('../src/catalog.js');
 const M = await import('./measure.mjs');
-const { JOINTS, PASS_OK, SHARED_OK } = await import('../src/scene/joints.js');
+const { JOINTS, PASS_OK, SHARED_OK, FLOAT_OK } = await import('../src/scene/joints.js');
 
 const args = process.argv.slice(2);
 const only = (args.find((a) => a.startsWith('--only=')) || '').slice(7).split(',').filter(Boolean);
@@ -401,6 +402,44 @@ if (want('clash')) {
     }
   }
   info.push(`clash: ${pairsN} overlapping component pairs tested`);
+}
+if (want('float')) {
+  // A joint row already proves contact where both parts are shown (the joints section measures it),
+  // so only components without a shown joint partner are measured, smallest candidates first.
+  const okIds = new Set(FLOAT_OK.map((f) => f.id));
+  const partners = new Map(reg.items.map((it) => [it.id, new Set()]));
+  for (const j of JOINTS) {
+    const a = j.a.split(/[#@]/)[0];
+    const b = j.b.split(/[#@]/)[0];
+    if (a !== b && partners.has(a) && partners.has(b)) { partners.get(a).add(b); partners.get(b).add(a); }
+  }
+  const touchCache = new Map();
+  const touches = (a, b) => {
+    const k = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
+    if (!touchCache.has(k)) {
+      const A = shapeOfItem(a);
+      const B = shapeOfItem(b);
+      touchCache.set(k, M.boxGap(A.box, B.box) <= 0.002 && M.shapeDist(A, B, { coarse: 0.008 }).d <= 0.002);
+    }
+    return touchCache.get(k);
+  };
+  let measured = 0;
+  for (const a of reg.items) {
+    if (okIds.has(a.id)) continue;
+    const A = shapeOfItem(a);
+    const near = reg.items.filter((b) => b !== a && M.boxGap(A.box, shapeOfItem(b).box) <= 0.002)
+      .sort((x, y) => shapeOfItem(x).nt - shapeOfItem(y).nt);
+    for (const cfg of CONFIGS) {
+      if (!visibleIn(a, cfg)) continue;
+      if ([...partners.get(a.id)].some((id) => visibleIn(reg.byId.get(id), cfg))) continue;
+      measured++;
+      if (near.some((b) => visibleIn(b, cfg) && touches(a, b))) continue;
+      errors.push(`floating: ${a.id} touches no other part in ${cfgName(cfg)}`);
+      break;
+    }
+  }
+  for (const id of okIds) if (!reg.byId.has(id)) warnings.push(`FLOAT_OK entry ${id} is not a component`);
+  info.push(`floating: every component touches another part (${measured} component/configuration cases measured, ${okIds.size} allow-listed)`);
 }
 if (want('pass') && want('clash')) for (const r of PASS_OK) if (!usedPassOk.has(r)) warnings.push(`PASS_OK entry ${r.a} / ${r.b} is not needed any more`);
 

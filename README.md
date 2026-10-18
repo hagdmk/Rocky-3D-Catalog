@@ -9,7 +9,7 @@ It places the catalog's **system → subsystem → group → part** structure wh
 - 366 3D locations (components). **All 213 groups** are placed in at least one location.
 - Zoom, rotate and pan; on hover or click the target stays solid and everything else turns translucent
 - The info panel shows the clicked part's catalog data: group, part number, quantity, remarks, source page and exploded view
-- Parts that are fastened together really touch, and **505 fastening points** are checked automatically
+- Parts that are fastened together really touch, and **513 fastening points** are checked automatically
   (bolts, bushings, ball joints, brackets, and the ends of lines and harnesses).
   A part listed in several groups (e.g. the steering I-shaft lower link, the 4-way coolant valve) is drawn once,
   so every group that lists it points at the same part.
@@ -146,7 +146,7 @@ data/catalog.json          catalog data extracted from the PDF
 data/illustrations/*.webp  exploded view per group
 docs/images/               README screenshots and GIFs
 tools/build_catalog.py     PDF → catalog.json + exploded views
-tools/check.mjs            consistency and connection check (group placement, fastening points, shared parts, pass-through, clashes)
+tools/check.mjs            consistency and connection check (group placement, fastening points, shared parts, pass-through, clashes, floating parts)
 tools/measure.mjs          geometry measurement for the check (surface distance, inside tests, centre lines, penetration depth)
 ```
 
@@ -167,7 +167,7 @@ reg.add({
 ```bash
 pip install pdfplumber pypdf pillow
 python3 tools/build_catalog.py      # refreshes data/catalog.json and data/illustrations/ (about 1.5 min)
-node tools/check.mjs                # Node 18.19+ / 20.6+, about 2 min (--only=basic,joints,shared,pass,clash)
+node tools/check.mjs                # Node 18.19+ / 20.6+, about 5 min (--only=basic,joints,shared,pass,clash,float)
 ```
 
 `check.mjs` checks each of the 12 vehicle configurations (3 drive × 2 suspension × 2 brake booster):
@@ -184,6 +184,8 @@ node tools/check.mjs                # Node 18.19+ / 20.6+, about 2 min (--only=b
 - Clashes: no part sits more than 10 mm deep inside another part's solid (40 mm between fastened parts).
   Remaining simplifications (for example a brake disc running in the slot of a caliper drawn as a solid block) are
   listed with their reason in `src/scene/joints.js`.
+- Floating parts: every component touches another part in each configuration where it is shown (a joint row proves
+  contact; components without a shown joint partner are measured). Only off-vehicle items are exempt.
 
 In the source PDF the same part row repeats for every model-year column, so identical rows within a group are merged.
 A `*` in the No column means "not shown in the illustration", and a quantity of `**` means "as required" (catalog legend).

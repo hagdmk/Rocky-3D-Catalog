@@ -355,7 +355,7 @@ export function buildClosures(reg) {
   reg.add({
     id: 'roof-seals', ko: '루프 실·끼임 방지 센서', en: 'Roof seals & anti-pinch sensors',
     groups: ['roof-seals-and-anti-pinch-sensors'],
-    object: group(loop(sealPts, 'L', -0.009, 0.006, 'rubber'), loop(sealPts, 'R', -0.009, 0.006, 'rubber')),
+    object: group(loop(sealPts, 'L', -0.0075, 0.006, 'rubber'), loop(sealPts, 'R', -0.0075, 0.006, 'rubber')),
   });
   reg.add({
     id: 'wind-deflector', ko: '윈드 디플렉터', en: 'Wind deflector',

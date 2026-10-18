@@ -189,7 +189,11 @@ export function buildThermal(reg) {
     reg.add({
       id: `active-louvre-${sd}`, ko: `액티브 루버 (${ko})`, en: `Active grille louvre ${en}`, tags: sd,
       groups: ['cooling-system-air-ducting'], match: /LOUVRE|LOUVER/,
-      object: group(louvres, rbox([0.03, 0.11, 0.27], [2.335, 0.352, sg * 0.3], 'darkMetal', { r: 0.005 })),
+      object: group(
+        louvres, rbox([0.03, 0.11, 0.27], [2.335, 0.352, sg * 0.3], 'darkMetal', { r: 0.005 }),
+        // upper mounting tabs to the fascia (U NUT M6 LOUVER TO FASCIA), under the bumper beam
+        named('tabs', group(...[0.3, 0.42].map((z) => bar([2.345, 0.4, sg * z], [2.461, 0.379, sg * z], 0.02, 0.006, 'darkMetal')))),
+      ),
     });
   }
 
@@ -287,7 +291,7 @@ export function buildThermal(reg) {
   reg.add({
     id: 'hvac-filter', ko: '실내 공기 필터 하우징', en: 'Cabin air (pollen) filter housing',
     groups: ['heater-assembly-and-pollen-filter'], match: /FILTER|Carbon|BLT HF/,
-    object: rbox([0.16, 0.08, 0.26], [0.86, 0.79, 0.36], 'greyPlastic', { r: 0.015 }),
+    object: rbox([0.145, 0.04, 0.18], [0.6725, 0.636, 0.445], 'greyPlastic', { r: 0.01 }), // on the blower inlet, upstream of the fan
   });
   reg.add({
     id: 'hvac-blower', ko: '블로어 모터', en: 'Blower motor',

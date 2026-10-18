@@ -15,6 +15,7 @@
 //          joint or listed here with a reason.
 // SHARED_OK part numbers listed in several groups that are deliberately drawn at
 //          different places (class "same PN, different physical part").
+// FLOAT_OK components that may touch nothing (all others must touch another part).
 
 const SIDES = [['L', -1], ['R', 1]];
 const each = (fn) => SIDES.flatMap(([s, sg]) => fn(s, sg));
@@ -224,6 +225,8 @@ export const JOINTS = [
   J('four-way-valve#bracket', 'frunk', 'BRKT - 4 WAY VALVE (battery cooling #13 = motor cooling #24) bolted under the frunk tub (BLT M6x20 #14)'),
   J('four-way-valve#valve', 'four-way-valve#bracket', 'VALVE 4-WAY (battery cooling #12 = motor cooling #23) on its bracket'),
   J('ambient-temp-sensor', 'cooling-duct', 'SENSOR ASSEMBLY AMBIENT AIR TEMPERATURE (ducting #11 = radiator #2) clipped under the front ducting'),
+  ...each((s) => [J(`active-louvre-${s}#tabs`, 'front-fascia', 'ASY - ACTIVE LOUVRE #2/#3 bolted to the fascia (U NUT M6 LH LOUVER TO FASCIA)')]),
+  J('hvac-filter', 'hvac-blower', 'HVAC FILTER HOUSING #2 (BLT HF M6x18 #4) on the blower inlet of the HVAC unit'),
   J('ac-compressor#bracket', 'front-subframe#frontCross', 'BRKT - AC BRKT-TO-CHASSIS SUPPORT (compressor #3) bolted to the front subframe (NUT M8 #4A/#4B)'),
   J('ac-compressor#bracket', 'ac-compressor#body', 'BRKT AC COMP TO AC BRKT (compressor #2) with the diagonal isolators #5/#7 (BLT M8x100 #6)'),
 
@@ -385,6 +388,7 @@ export const JOINTS = [
   ]),
   J('chmsl', 'liftgate', 'CHMSL #8 on the liftgate top edge, under the glass'),
   ...each((s) => [J(`liftgate-hinge-${s}`, 'roof-panel', 'liftgate hinge bolted to the roof rear header')]),
+  J('roof-seals', 'roof-panel', 'SEAL-MAIN #10 and outer trim seals #2-#5 on the pano roof opening flange'),
   ...each((s) => [
     J(`trunk-side-trim-${s}#bracket`, `rear-quarter-inner-${s}`, 'trunk bracket #6 LH / #7 RH screwed to the wheelhouse'),
     J(`trunk-side-trim-${s}#bracket`, `trunk-side-trim-${s}#panel`, 'finisher lower edge clipped on the trunk bracket'),
@@ -406,6 +410,9 @@ export const JOINTS = [
   J('glove-box', 'dash-panel', 'ASY GLOVE BOX COMP (dash panel #24) hinged in the lower right IP'),
   J('dash-panel', 'dash-support-frame#beam', 'IP carrier (#10) bolted to the cross-car beam (BLT HEX FL M8x25, dash panel #45 = dash support frame #7)'),
   J('rearview-mirror', 'windshield', 'mirror base on its button bonded to the windshield'),
+  J('rear-seat-cushion#hooks', 'floor-pan', 'rear cushion frame wire hooks (cushion assy #4) clipped to the rear edge of the floor pan'),
+  J('rear-seat-cushion#hooks', 'rear-seat-cushion#cushion', 'hooks on the cushion frame'),
+  ...each((s) => [J(`pedestrian-protection#actuator${s}`, `hood-hinge-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 under the rear of the hood hinge it lifts')]),
   ...['bracket0', 'bracket1'].map((n) => J(`instrument-cluster#${n}`, 'dash-support-frame#beam', 'cluster bracket bolted to the cross-car beam')),
   ...['bracket0', 'bracket1'].map((n) => J(`passenger-airbag#${n}`, 'dash-support-frame#beam', 'passenger airbag module bracket bolted to the cross-car beam (BOLT HF)')),
   ...each((s) => [J(`knee-airbag-${s}#bracket`, 'dash-support-frame#beam', 'knee airbag bracket bolted to the cross-car beam')]),
@@ -431,6 +438,11 @@ export const PASS_OK = [
   { a: 'switches#steeringHarness', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the LH spoke trim to the hub cavity behind the driver airbag' },
   { a: 'switches#steeringHarnessR', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the RH spoke trim to the hub cavity behind the driver airbag' },
   { a: 'interior-ducts#console', b: 'center-console', reason: 'CENTER CONSOLE AIR DUCT (#13-#15) enters the console carrier through the opening in its front closeout (#14); the tunnel trim is drawn as a closed shell' },
+];
+
+// FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).
+export const FLOAT_OK = [
+  { id: 'repair-consumables', why: 'structural repair consumables (rivets, adhesive, weld wire) are not fitted to the car; drawn beside it' },
 ];
 
 export const SHARED_OK = [

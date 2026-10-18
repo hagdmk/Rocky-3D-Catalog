@@ -411,7 +411,11 @@ export function buildInterior(reg) {
   reg.add({
     id: 'rear-seat-cushion', ko: '2열 시트 쿠션', en: '2nd row seat cushion',
     groups: rearGroups, match: /CUSHION|BOLSTER|HEATER|SBR|REMINDER|PATCH HARNESS|ADAPTOR|RSC/,
-    object: rbox([0.48, 0.13, 1.14], [rx, 0.535, 0], 'leather', { r: 0.045, rot: [0, 0, 0.06] }), // between the rear rail nodes
+    object: group(
+      named('cushion', rbox([0.48, 0.13, 1.14], [rx, 0.535, 0], 'leather', { r: 0.045, rot: [0, 0, 0.06] })), // between the rear rail nodes
+      // cushion frame wire hooks (part of cushion assy #4) clipped to the rear edge of the floor pan
+      named('hooks', group(...[-0.5, 0.5].map((z) => bar([-0.735, 0.5, z], [-0.69, 0.3, z], 0.012, 0.012, 'steel')))),
+    ),
   });
   reg.add({
     id: 'rear-seat-back-60', ko: '2열 시트 등받이 60% (좌)', en: '2nd row seat back 60% (LH)', tags: 'L',
@@ -579,9 +583,9 @@ export function buildInterior(reg) {
     groups: ['impact-and-acceleration-sensors-eu-and-apac'], match: /PEDESTRIAN|PED-PRO|SCREW PF/,
     object: group(
       tube([[2.37, 0.53, -0.6], [2.42, 0.53, -0.3], [2.43, 0.53, 0], [2.42, 0.53, 0.3], [2.37, 0.53, 0.6]], 0.008, 'darkMetal'),
-      // hood actuators beside the rear of the hood hinges, under the rear underhood apron
-      cyl(0.02, 0.05, 'y', [1.02, 0.835, -0.53], 'darkMetal'),
-      cyl(0.02, 0.05, 'y', [1.02, 0.835, 0.53], 'darkMetal'),
+      // hood actuators (#7) under the rear of the hood hinges, which they lift
+      named('actuatorL', cyl(0.02, 0.05, 'y', [1.11, 0.797, -0.592], 'darkMetal')),
+      named('actuatorR', cyl(0.02, 0.05, 'y', [1.11, 0.797, 0.592], 'darkMetal')),
     ),
   });
   void bar; void beam; void V;
