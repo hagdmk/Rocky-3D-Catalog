@@ -96,9 +96,12 @@ export class App {
    * How the catalog groups of a location relate, for the chip in its info panel:
    * 'shared'   — a part (not a fastener) with the same part number is listed in groups of
    *              different assemblies, e.g. the lower I-shaft link in both steering groups;
-   * 'variants' — the groups are versions of one assembly for different configurations
+   * 'variants' — all groups are versions of one assembly for different configurations
    *              (drive, generation, trim, region), e.g. Front Subframe / - Dual Motor;
+   * 'mixed'    — groups of several assemblies, some of them in versions per configuration,
+   *              e.g. the front seat: seat assemblies and seat covers, each per trim;
    * 'split'    — the location's parts are spread over unrelated groups.
+   * `families` lists the assemblies: [{ name (Korean), gids }].
    */
   groupLink(comp) {
     let r = this.groupLinks.get(comp.id);
@@ -116,15 +119,23 @@ export class App {
         else if (family.get(first.group.id) !== family.get(gid)) same.push([first, p]);
       }
     }
-    const kind = same.length ? 'shared' : families.size < family.size ? 'variants' : 'split';
-    r = { kind, same };
+    const kind = same.length ? 'shared' : families.size === 1 ? 'variants' : families.size < family.size ? 'mixed' : 'split';
+    const list = [...families].map((f) => {
+      const gids = comp.groups.filter((gid) => family.get(gid) === f);
+      // the Korean name of an assembly: the name segments its groups share ("앞좌석 어셈블리 - 베이스 트림")
+      const segs = gids.map((gid) => this.cat.groups.get(gid).nameKo.split(' - '));
+      let k = 0;
+      while (k < segs[0].length && segs.every((s) => s[k] === segs[0][k])) k++;
+      return { name: segs[0].slice(0, Math.max(1, k)).join(' - '), gids };
+    });
+    r = { kind, same, families: list };
     this.groupLinks.set(comp.id, r);
     return r;
   }
 
   groupLinkChip(comp) {
     const n = comp.groups.length;
-    const { kind, same } = this.groupLink(comp);
+    const { kind, same, families } = this.groupLink(comp);
     if (kind === 'shared') {
       const where = (p) => `${p.group.nameKo}${p.no && p.no !== '*' ? ` #${p.no}` : ''}`;
       const examples = [...new Map(same.map(([a, b]) => [`${where(a)} = ${where(b)}`, a])).entries()]
@@ -133,6 +144,11 @@ export class App {
       return `<span class="chip" title="${esc(title)}">${n}개 그룹 공유</span>`;
     }
     if (kind === 'variants') return `<span class="chip" title="이 위치는 차량 구성·사양(구동 방식, 세대, 트림, 지역 등)별로 나뉜 카탈로그 그룹을 함께 다룹니다">${n}개 그룹(구성별)</span>`;
+    if (kind === 'mixed') {
+      const parts = families.map((f) => (f.gids.length > 1 ? `${f.name}(구성별 ${f.gids.length}개)` : f.name));
+      const title = `이 위치는 서로 다른 어셈블리의 카탈로그 그룹 ${n}개를 함께 다룹니다: ${parts.join(', ')}. 같은 어셈블리의 그룹은 차량 구성·사양(구동 방식, 세대, 트림, 지역 등)별로 나뉜 것입니다.`;
+      return `<span class="chip" title="${esc(title)}">${n}개 그룹(구성별 포함)</span>`;
+    }
     return `<span class="chip" title="이 위치의 부품이 카탈로그의 여러 그룹에 나뉘어 실려 있습니다">${n}개 그룹</span>`;
   }
 
@@ -363,7 +379,7 @@ export class App {
       note.hidden = !off;
       if (off) {
         const ghost = comps.some((c) => c.ghost);
-        const why = ghost ? '시스템이 숨겨져, 보이는 부품의 장착 상대로 흐린 윤곽만 그려지며 강조되지 않습니다.'
+        const why = ghost ? '시스템이 숨겨져, 보이는 부품이 장착되는 부위만 흐린 윤곽으로 그려지며 강조되지 않습니다.'
           : comps.some((c) => this.viewer.inConfig(c)) ? '시스템이 숨겨져 3D에 그려지지 않습니다.'
             : '현재 차량 구성에는 이 위치가 없습니다.';
         note.textContent = ghost ? '윤곽만 표시' : '3D 숨김';
@@ -545,7 +561,9 @@ export class App {
   }
 
   renderPartDetail(p) {
-    const inst = this.instancesForPart(p);
+    // where the part is fitted in this configuration, also while its system is hidden
+    const fitted = this.cat.componentsForPart(p, (c) => this.viewer.inConfig(c));
+    const inst = fitted.length ? fitted : this.cat.componentsForPart(p);
     const tr = el(`<tr class="detail"><td colspan="4"><dl class="pd">
       <dt>품번</dt><dd><b style="font-family:var(--mono)">${esc(p.pn || '—')}</b></dd>
       <dt>부품명</dt><dd>${esc(p.name)}</dd>
@@ -577,7 +595,14 @@ export class App {
         btn.textContent = '품번 선택됨 — 복사하세요';
       }
     });
-    $('[data-act=frame]', tr).addEventListener('click', (e) => { e.stopPropagation(); this.viewer.frame(inst.map((c) => c.id)); });
+    $('[data-act=frame]', tr).addEventListener('click', (e) => {
+      e.stopPropagation();
+      // like the header buttons: its system may have been hidden since the row was opened
+      this.ensureVisible(this.cat.componentsForPart(p), p.group.id);
+      const ids = this.instancesForPart(p).map((c) => c.id);
+      if (this.state.part === p) this.viewer.setEmphasis(ids);
+      this.viewer.frame(ids);
+    });
     return tr;
   }
 
@@ -684,7 +709,10 @@ export class App {
       $('#tab-config').hidden = b.dataset.tab !== 'config';
     }));
     $('#cfg-xray').addEventListener('change', (e) => this.setXray(e.target.checked));
-    $('#cfg-mounts').addEventListener('change', (e) => this.viewer.setMountContext(e.target.checked));
+    $('#cfg-mounts').addEventListener('change', (e) => {
+      this.viewer.setMountContext(e.target.checked);
+      this.syncInfoVisibility(); // a hidden selection may become, or stop being, a ghost
+    });
     this.bindSeg('#cfg-color', (v) => this.viewer.setColorMode(v));
     this.bindSeg('#cfg-drive', (v) => this.setVariant('drive', v, false));
     this.bindSeg('#cfg-susp', (v) => this.setVariant('susp', v, false));
@@ -697,6 +725,7 @@ export class App {
 
   bindSeg(sel, fn) {
     $$(`${sel} button`).forEach((b) => b.addEventListener('click', () => {
+      if (b.classList.contains('on')) return; // already the active value
       $$(`${sel} button`).forEach((x) => x.classList.toggle('on', x === b));
       fn(b.dataset.v);
     }));
@@ -705,8 +734,9 @@ export class App {
   setVariant(key, value, syncUi = true) {
     this.viewer.setVariant(key, value);
     if (syncUi) $$(`#cfg-${key} button`).forEach((x) => x.classList.toggle('on', x.dataset.v === value));
-    // keep the selection consistent with the new configuration
-    if (this.state.mode === 'comp' && !this.visible(this.state.comp)) this.clearSelection();
+    // keep the selection consistent with the new configuration: a location that is not fitted
+    // in it is deselected; one only hidden with its system keeps its panel (renderInfo notes it)
+    if (this.state.mode === 'comp' && !this.viewer.inConfig(this.state.comp)) this.clearSelection();
     else if (this.state.mode) this.renderInfo();
   }
 
