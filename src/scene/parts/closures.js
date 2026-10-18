@@ -2,7 +2,7 @@
 // panoramic roof.
 
 import * as THREE from 'three';
-import { skinAt, skinPath, findOnFace } from '../body.js';
+import { skinAt, skinNormal, skinPath, findOnFace } from '../body.js';
 import { region, SV } from './exterior.js';
 import { xOf } from '../profile.js';
 import {
@@ -51,8 +51,10 @@ export function buildClosures(reg) {
       id: `hood-hinge-${sd}`, ko: `후드 힌지·가스 스트럿 (${ko})`, en: `Hood hinge & gas strut ${en}`, tags: sd,
       groups: ['hood-hinges-and-fittings'],
       object: group(
-        rbox([0.12, 0.06, 0.03], [1.0, 0.86, sg * 0.58], 'steel', { r: 0.008, rot: [0, 0, 0.3] }),
-        beam([1.05, 0.88, sg * 0.56], [1.45, 0.82, sg * 0.62], 0.01, 'steel'),
+        // ahead of the firewall, under the rear underhood apron (the hinge arm reaches the hood
+        // through the apron slot); gas strut from the hinge to the shock tower top
+        rbox([0.12, 0.06, 0.03], [1.065, 0.85, sg * 0.58], 'steel', { r: 0.008 }),
+        beam([1.11, 0.86, sg * 0.565], [1.45, 0.82, sg * 0.62], 0.01, 'steel'),
       ),
     });
     reg.add({
@@ -93,17 +95,23 @@ export function buildClosures(reg) {
           named('motor', cyl(0.04, 0.03, 'z', skinAt(sm, 1.15, sd, -0.05).toArray(), 'darkMetal')),
         ),
       });
-      const hs = fr === 'F' ? 2.47 : 3.31;
-      const hp = skinAt(hs, 2.35, sd, 0.004);
+      // flush handle in the vertical side of the door just below the shoulder; its mechanism sits
+      // in the door cavity between the outer skin and the inner panel (offset -0.04), clear of the
+      // glass regulator rails
+      const hs = fr === 'F' ? 2.47 : 3.33;
+      const hv = 1.78;
+      const hn = skinNormal(hs, hv);
+      if (sd === 'R') hn.z = -hn.z;
       reg.add({
         id: `ext-handle-${sd}${fr}`, ko: `${frKo} 외부 도어 핸들(플러시) (${ko})`, en: `${frEn} exterior door handle (flush) ${en}`, tags: `${sd}${fr}`,
         groups: [fr === 'F' ? 'front-exterior-door-handle' : 'rear-exterior-door-handle'],
         object: group(
-          rbox([0.2, 0.034, 0.012], hp.toArray(), 'chrome', { r: 0.005 }),
-          rbox([0.17, 0.05, 0.04], skinAt(hs, 2.35, sd, -0.03).toArray(), 'darkMetal', { r: 0.008 }),
+          faceTo(rbox([0.2, 0.03, 0.01], [0, 0, 0], 'chrome', { r: 0.004 }), skinAt(hs, hv, sd, 0.002), hn, 'z'),
+          faceTo(rbox([0.17, 0.045, 0.024], [0, 0, 0], 'darkMetal', { r: 0.006 }), skinAt(hs, hv, sd, -0.018), hn, 'z'),
         ),
       });
-      const ls = range[1] - 0.04;
+      // latch on the inner panel at the rear edge of the door, ahead of the B-pillar / lock pillar
+      const ls = range[1] - (fr === 'F' ? 0.05 : 0.04);
       const latchGroups = fr === 'F'
         ? ['front-door-latch-and-striker', 'front-door-latch-and-interior-release']
         : ['rear-door-latch-and-striker', 'rear-door-latch-and-interior-release'];
@@ -126,20 +134,24 @@ export function buildClosures(reg) {
       // latch (#5) bolted to the front face of the carrier upper beam, striker (#3) above it
       named('latch', rbox([0.06, 0.08, 0.16], [2.155, 0.7, 0], 'darkMetal', { r: 0.01 })),
       rbox([0.04, 0.025, 0.05], [2.155, 0.752, 0], 'steel', { r: 0.006 }),
-      // release cable (#2): over the carrier beam, outboard of the frunk tub and over the
-      // brake booster, through the firewall to the handle on the LH lower dash
+      // release cable (#2): over the carrier beam, outboard of the frunk tub, behind the LH shock
+      // tower and over the rear of the wheelhouse, through the firewall at its outboard edge
+      // (outboard of the dash insulation, below the shotgun rail) to the handle on the LH lower dash
       named('cable', tube([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
-        [1.45, 0.7, -0.47], [1.22, 0.78, -0.47], [1.1, 0.8, -0.47], [0.985, 0.79, -0.52], [0.92, 0.74, -0.7], [0.8, 0.6, -0.72],
-        [0.715, 0.525, -0.71]], 0.004, 'steel')), // outboard of the body controller
-      named('handle', rbox([0.06, 0.03, 0.04], [0.7, 0.52, -0.71], 'blackPlastic', { r: 0.006 })),
+        [1.45, 0.7, -0.47], [1.23, 0.65, -0.63], [1.11, 0.59, -0.69], [0.99, 0.55, -0.73], [0.85, 0.54, -0.742],
+        [0.72, 0.53, -0.75]], 0.004, 'steel')),
+      // on the LH end face of the lower instrument panel shell (z -0.74), facing the door opening
+      named('handle', rbox([0.06, 0.03, 0.02], [0.7, 0.52, -0.745], 'blackPlastic', { r: 0.006 })),
     ),
   });
   reg.add({
     id: 'liftgate-latch', ko: '리프트게이트 래치·스트라이커', en: 'Liftgate latch & striker', tags: 'B',
     groups: ['liftgate-latch'],
+    // latch inside the lower edge of the liftgate (between the outer panel and the trim); the
+    // striker on the rear body panel reaches back into its jaw through the trim opening
     object: group(
-      onFace('rear', 0.79, 0, [0.06, 0.06, 0.12], 'darkMetal', -0.035),
-      onFace('rear', 0.76, 0, [0.03, 0.03, 0.06], 'steel', -0.04),
+      onFace('rear', 0.755, 0, [0.028, 0.09, 0.13], 'darkMetal', -0.025),
+      onFace('rear', 0.745, 0, [0.04, 0.018, 0.05], 'steel', -0.055),
     ),
   });
   reg.add({
@@ -224,7 +236,8 @@ export function buildClosures(reg) {
     ),
   });
   {
-    const pts = [-0.46, -0.3, -0.15, 0, 0.15, 0.3, 0.46].map((z) => findOnFace('rear', 0.88, z, 0.004).p);
+    // chrome strip across the liftgate between the inner ends of the liftgate tail lamps (|z| 0.3)
+    const pts = [-0.285, -0.2, -0.1, 0, 0.1, 0.2, 0.285].map((z) => findOnFace('rear', 0.88, z, 0.004).p);
     reg.add({
       id: 'liftgate-applique', ko: '리프트게이트 크롬 아플리케', en: 'Liftgate chrome applique', tags: 'B',
       groups: ['exterior-trim-fittings'], match: /LIFTGATE APPLIQUE|Bracket for Applique|CLIP, (BRKT, )?LIFTGATE|APPLIQUE TAPE|LOCTITE/,
@@ -336,11 +349,13 @@ export function buildClosures(reg) {
       region([[R0, R1, SV.vRoof, VS]], { offset: 0.004, mat: 'blackPlastic', side: 'R' }),
     ),
   });
-  const sealPts = [[R0, 5], [R0, VS], [R1, VS], [R1, 5]];
+  // on the turned-down flange of the roof opening, under the glass edge and just below the roof
+  // skin; the side runs sit inside the opening edge, inboard of the drive tracks
+  const sealPts = [[R0, 5], [R0, VS + 0.025], [R1, VS + 0.025], [R1, 5]];
   reg.add({
     id: 'roof-seals', ko: '루프 실·끼임 방지 센서', en: 'Roof seals & anti-pinch sensors',
     groups: ['roof-seals-and-anti-pinch-sensors'],
-    object: group(loop(sealPts, 'L', 0.0, 0.006, 'rubber'), loop(sealPts, 'R', 0.0, 0.006, 'rubber')),
+    object: group(loop(sealPts, 'L', -0.009, 0.006, 'rubber'), loop(sealPts, 'R', -0.009, 0.006, 'rubber')),
   });
   reg.add({
     id: 'wind-deflector', ko: '윈드 디플렉터', en: 'Wind deflector',

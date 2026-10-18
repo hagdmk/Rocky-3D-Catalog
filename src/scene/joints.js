@@ -329,7 +329,10 @@ export const JOINTS = [
     J('rear-bumper-beam#beam', `rear-rail-${s}#rail`, 'rear bumper beam #1 bolted to the rail ends (NUT M10 #2)'),
     J('rear-bumper-beam#crossmember', `rear-rail-${s}#rail`, 'rear crossmember #3 bolted under the rail ends'),
   ]),
-  ...each((s) => [J(`rear-quarter-inner-${s}#cPillar`, `body-side-${s}`, 'quarter inner C-pillar reinforcement bonded to the body side outer (REINF - RR LAMP HOUSING, body side #4 = quarter inner #15/#16)')]),
+  ...each((s) => [
+    J(`rear-quarter-inner-${s}#cPillar`, `body-side-${s}`, 'ASY REINF C-PILLAR (quarter inner #23/#24, 1014652/1014648) bonded to the body side outer C-pillar (#9)'),
+    J(`rear-quarter-inner-${s}#lampHousing`, `body-side-${s}`, 'REINF - RR LAMP HOUSING (quarter inner #15/#16 = body side #4, 1003096/1003097) bonded behind the body side outer at the tail lamp pocket'),
+  ]),
   // pillars and floor
   ...each((s) => [
     J(`hinge-pillar-${s}`, `sill-${s}`, 'hinge pillar #5 joined to the front of the side sill'),
@@ -414,14 +417,10 @@ export const JOINTS = [
 export const PASS_OK = [
   { a: 'brake-rotor-*#disc', b: 'brake-caliper-*', reason: 'the caliper is drawn as a solid block: the disc runs in the slot between its pads' },
   { a: 'brake-rotor-*#disc', b: 'park-brake-*', reason: 'the parking brake caliper is drawn as a solid block: the disc runs in the slot between its pads' },
-  { a: 'front-inner-*#tower', b: 'front-*-spring-*', reason: 'the shock tower is drawn as a closed hollow box; the casting is open below, where the strut enters it' },
-  { a: 'front-inner-*#tower', b: 'knuckle-*F', reason: 'the shock tower is drawn as a closed hollow box; the casting is open toward the wheel, where the knuckle neck reaches the upper arm ball joint inside it' },
-  { a: 'rear-quarter-inner-*#tower', b: 'rear-*-spring-*', reason: 'the shock tower is drawn as a closed hollow box; the tower is open below, where the strut enters it' },
-  { a: 'rear-*-spring-*#damper', b: 'rear-quarter-inner-*', reason: 'the wheelhouse is drawn as a closed half-cylinder; on the car the strut rises through the shock tower opening in the wheelhouse' },
-  { a: 'rear-*-spring-*#damper', b: 'arch-liner-*B', reason: 'the rear arch liner is drawn as a closed half-cylinder; on the car the strut passes through its cut-out below the shock tower' },
   { a: 'steering-wheel#column', b: 'dash-panel', reason: 'the instrument panel is drawn as one closed shell; the steering column enters it through the column opening' },
   { a: 'steering-ishaft#lowerLink', b: 'sound-insulation', reason: 'the dash insulation is drawn without its I-shaft opening; the lower link passes through the dash seal (#8) there' },
   { a: 'brake-pedal#pushrod', b: 'sound-insulation', reason: 'the dash insulation is drawn without the booster opening; the pushrod passes through it to the booster' },
+  { a: 'wall-connector#cable', b: 'charge-port-door', reason: 'the charge port door is drawn closed; with the connector plugged in it stands open and the connector handle passes through its opening into the inlet' },
   { a: 'switches#steeringHarness', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the LH spoke trim to the hub cavity behind the driver airbag' },
   { a: 'switches#steeringHarnessR', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the RH spoke trim to the hub cavity behind the driver airbag' },
 ];
