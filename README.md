@@ -9,7 +9,7 @@ It places the catalog's **system → subsystem → group → part** structure wh
 - 366 3D locations (components). **All 213 groups** are placed in at least one location.
 - Zoom, rotate and pan; on hover or click the target stays solid and everything else turns translucent
 - The info panel shows the clicked part's catalog data: group, part number, quantity, remarks, source page and exploded view
-- Parts that are fastened together really touch, and **448 fastening points** are checked automatically
+- Parts that are fastened together really touch, and **505 fastening points** are checked automatically
   (bolts, bushings, ball joints, brackets, and the ends of lines and harnesses).
   A part listed in several groups (e.g. the steering I-shaft lower link, the 4-way coolant valve) is drawn once,
   so every group that lists it points at the same part.
