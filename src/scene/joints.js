@@ -397,16 +397,24 @@ export const JOINTS = [
     J(`front-seat-track-${s}#feet`, 'floor-pan', 'seat tracks bolted to the floor (BLT M10x28.4 / M8x27)'),
     J(`pretensioner-${s}#anchor`, `sill-${s}`, 'outboard lap pretensioner anchor bolted to the sill'),
     J(`front-seat-switch-${s}`, `front-seat-${s}`, 'seat switch bezel on the cushion side shield'),
+    J(`side-airbag-${s}`, `front-seat-${s}#back`, 'SIDE AIRBAG ASSY (side air bags #3/#4) bolted to the seat back frame in the outboard bolster'),
   ]),
+  J('rear-belts#centreRetractor', 'rear-seat-back-60', '2nd row centre seatbelt retractor (#3) bolted in the 60% seat back frame (#9 BOLT, 2ND ROW CENTER RETRACTOR)'),
+  J('third-row-belts', 'third-row-seats', '3rd row seatbelt assembly (#1) anchored on the seat back frame (ASY - THIRD ROW SEAT #8)'),
+  J('touchscreen', 'dash-panel', 'MCU in the CENTER SCREEN FRAME (touchscreen #2 = dash panel #35), BLT M5x25 (#3)'),
+  J('instrument-cluster', 'dash-panel', 'cluster in the IP cluster frame and bezel (ASY FRAME INSTRUMENT CLUSTER / CLUSTER BEZEL, dash panel #28)'),
+  J('glove-box', 'dash-panel', 'ASY GLOVE BOX COMP (dash panel #24) hinged in the lower right IP'),
+  J('dash-panel', 'dash-support-frame#beam', 'IP carrier (#10) bolted to the cross-car beam (BLT HEX FL M8x25, dash panel #45 = dash support frame #7)'),
+  J('rearview-mirror', 'windshield', 'mirror base on its button bonded to the windshield'),
   ...['bracket0', 'bracket1'].map((n) => J(`instrument-cluster#${n}`, 'dash-support-frame#beam', 'cluster bracket bolted to the cross-car beam')),
   ...['bracket0', 'bracket1'].map((n) => J(`passenger-airbag#${n}`, 'dash-support-frame#beam', 'passenger airbag module bracket bolted to the cross-car beam (BOLT HF)')),
   ...each((s) => [J(`knee-airbag-${s}#bracket`, 'dash-support-frame#beam', 'knee airbag bracket bolted to the cross-car beam')]),
-  J('restraint-controller', 'floor-pan', 'PSRCM bolted to the floor tunnel under the console'),
+  J('restraint-controller#feet', 'floor-pan', 'PSRCM bolted through the carpet to the floor tunnel under the console'),
   J('wall-connector#cable@end', 'charge-port-inlet', 'connector handle plugged into the charge port inlet'),
   ...each((s) => [
     J(`dash-support-frame#end${s}`, `hinge-pillar-${s}`, 'cross-car beam end bracket bolted to the hinge pillar'),
-    J(`dash-support-frame#brace${s}`, 'floor-pan#toeBoard', 'cross-car beam tunnel brace bolted to the floor'),
   ]),
+  J('dash-support-frame#downChannel', 'floor-pan#toeBoard', 'ASY - BRKT - DOWN CHANNEL BOTTOM (dash support frame #6) bolted to the toe board (BLT HEX FL M8x25 #7)'),
   // panoramic roof
   ...each((s) => [
     J(`pano-frame#drainF${s}@start`, 'pano-cassette', 'front drain tube on the cassette drain spout'),
@@ -417,12 +425,12 @@ export const JOINTS = [
 export const PASS_OK = [
   { a: 'brake-rotor-*#disc', b: 'brake-caliper-*', reason: 'the caliper is drawn as a solid block: the disc runs in the slot between its pads' },
   { a: 'brake-rotor-*#disc', b: 'park-brake-*', reason: 'the parking brake caliper is drawn as a solid block: the disc runs in the slot between its pads' },
-  { a: 'steering-wheel#column', b: 'dash-panel', reason: 'the instrument panel is drawn as one closed shell; the steering column enters it through the column opening' },
   { a: 'steering-ishaft#lowerLink', b: 'sound-insulation', reason: 'the dash insulation is drawn without its I-shaft opening; the lower link passes through the dash seal (#8) there' },
   { a: 'brake-pedal#pushrod', b: 'sound-insulation', reason: 'the dash insulation is drawn without the booster opening; the pushrod passes through it to the booster' },
   { a: 'wall-connector#cable', b: 'charge-port-door', reason: 'the charge port door is drawn closed; with the connector plugged in it stands open and the connector handle passes through its opening into the inlet' },
   { a: 'switches#steeringHarness', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the LH spoke trim to the hub cavity behind the driver airbag' },
   { a: 'switches#steeringHarnessR', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the RH spoke trim to the hub cavity behind the driver airbag' },
+  { a: 'interior-ducts#console', b: 'center-console', reason: 'CENTER CONSOLE AIR DUCT (#13-#15) enters the console carrier through the opening in its front closeout (#14); the tunnel trim is drawn as a closed shell' },
 ];
 
 export const SHARED_OK = [
