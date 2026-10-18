@@ -160,20 +160,24 @@ if (want('pass') || want('clash')) {
 }
 // Is the overlap of mesh `ma` of a (at point p) with mesh `mb` of b covered by a joint?
 // 'end' = within the end region of an @start/@end reference (any depth there),
+// 'inset' = a row with `inset: '<reason>'` (one part set into the other, e.g. a heater core in its slot),
 // 'part' = both meshes belong to the referenced parts (bounded overlap), '' = not covered.
 const END_ZONE = 0.05;
+const RANK = { '': 0, part: 1, inset: 2, end: 3 };
 function cover(a, ma, b, mb, p) {
   const rows = pairRows.get(`${a.id}|${b.id}`);
   if (!rows) return '';
   let best = '';
-  for (const { ra, rb } of rows) {
+  for (const { ra, rb, j } of rows) {
     if (!within(ma, ra.obj) || !within(mb, rb.obj)) continue;
     const ends = [ra.end, rb.end].filter(Boolean);
-    if (!ends.length) { best = 'part'; continue; }
-    if (ends.some((e) => p.distanceTo(e.p) <= e.r + END_ZONE)) return 'end';
+    const kind = !ends.length ? (j.inset ? 'inset' : 'part') : ends.some((e) => p.distanceTo(e.p) <= e.r + END_ZONE) ? 'end' : '';
+    if (RANK[kind] > RANK[best]) best = kind;
   }
   return best;
 }
+// The weakest cover over several solids that contain a point: one uncovered solid makes the point free.
+const weakest = (kinds) => kinds.reduce((w, k) => (RANK[k] < RANK[w] ? k : w), 'end');
 
 if (want('joints')) {
   let ok = 0;
@@ -293,6 +297,11 @@ const allowed = (a, b, aName) => PASS_OK.find((r) => {
 });
 const boxes = new Map(reg.items.map((it) => [it.id, new THREE.Box3().setFromObject(it.root)]));
 const together = (a, b) => CONFIGS.some((c) => visibleIn(a, c) && visibleIn(b, c));
+// hollow() marks a closed placeholder block whose contents may run inside it. A thin plate (under 20 mm)
+// or a surface-only mesh marked hollow is still tested like any other part.
+const BLOCK_MIN = 0.02;
+const isBlock = (s) => s.kind !== 'box' || 2 * Math.min(s.hx, s.hy, s.hz) * (s.scale || 1) >= BLOCK_MIN;
+const tested = (s) => !(s.hollow && isBlock(s));
 
 if (want('pass')) {
   const STEP = 0.004;
@@ -309,24 +318,28 @@ if (want('pass')) {
       for (const b of reg.items) {
         if (b === a || !mbox.intersectsBox(boxes.get(b.id)) || !together(a, b)) continue;
         const S = shapeOfItem(b);
-        const solids = S.solids.filter((x) => !x.hollow);
+        const solids = S.solids.filter(tested);
         let free = 0;
         let part = 0;
         let first = null;
         for (const p of pts) {
-          const s = solids.find((x) => M.insideSolid(x, p.x, p.y, p.z));
-          if (!s) continue;
-          const c = cover(a, m, b, s.mesh, p);
+          const kinds = solids.filter((x) => M.insideSolid(x, p.x, p.y, p.z)).map((x) => cover(a, m, b, x.mesh, p));
+          if (!kinds.length) continue;
+          const c = weakest(kinds);
           if (c === 'end') continue;
-          if (c === 'part') part++; else free++;
+          if (c) part++; else free++;
           if (!first) first = p;
         }
-        // centre line crossing a surface-only mesh (plate, skin, trim, open shell)
+        // centre line crossing another part's surface: any crossing of a surface-only mesh (plate, skin,
+        // trim, open shell); entering and leaving a solid (2 or more crossings) however thin it is
         let cross = 0;
         let crossAt = null;
         const TB = S.TB;
         for (const r of S.ranges) {
-          if (r.mesh.userData.hollow || S.solids.some((x) => x.mesh === r.mesh)) continue;
+          const sol = S.solids.find((x) => x.mesh === r.mesh);
+          if (sol && !tested(sol)) continue;
+          let n = 0;
+          let at = null;
           for (let i = 0; i + 1 < pts.length; i++) {
             const p = pts[i];
             const q = pts[i + 1];
@@ -336,11 +349,12 @@ if (want('pass')) {
                 || Math.min(p.y, q.y) > TB[o + 4] || Math.max(p.z, q.z) < TB[o + 2] || Math.min(p.z, q.z) > TB[o + 5]) continue;
               if (!M.segmentHitsTri(p, q, S.T, t * 9)) continue;
               if (cover(a, m, b, r.mesh, p)) continue;
-              cross++;
-              if (!crossAt) crossAt = p;
+              n++;
+              if (!at) at = p;
               break;
             }
           }
+          if (n && (!sol || n >= 2)) { cross += n; if (!crossAt) crossAt = at; }
         }
         const msgs = [];
         if (free * STEP > LIMIT) msgs.push(`runs ${Math.round(free * STEP * 1000)} mm through ${b.id} from ${M.fmt(first)}`);
@@ -371,7 +385,7 @@ if (want('clash')) {
     for (const b of reg.items) {
       if (b === a || !A.box.intersectsBox(boxes.get(b.id)) || !together(a, b)) continue;
       const B = shapeOfItem(b);
-      const solids = B.solids.filter((x) => !x.hollow);
+      const solids = B.solids.filter(tested);
       if (!solids.length) continue;
       pairsN++;
       for (const r of A.ranges) {
@@ -379,25 +393,45 @@ if (want('clash')) {
         const region = new THREE.Box3().setFromObject(r.mesh).intersect(B.box);
         if (region.isEmpty()) continue;
         const P = M.sample(A, region, STEP, r.t0, r.t1);
+        const aName = partName(r.mesh);
         let worst = null;
+        const partArea = new Map(); // b solid -> box of the points deeper than DEPTH under a 'part' cover
         for (let i = 0; i < P.length; i += 3) {
           for (const s of solids) {
             const d = M.insideDepth(s, P[i], P[i + 1], P[i + 2]);
-            if (d <= DEPTH || (worst && d <= worst.d)) continue;
+            if (d <= DEPTH) continue;
             const p = new THREE.Vector3(P[i], P[i + 1], P[i + 2]);
             const c = cover(a, r.mesh, b, s.mesh, p);
-            if (c === 'end' || (c === 'part' && d <= PART_DEPTH)) continue;
-            worst = { d, p, part: partName(r.mesh), into: partName(s.mesh), c };
+            if (c === 'end' || c === 'inset') continue;
+            if (c === 'part' && d <= PART_DEPTH) {
+              if (!partArea.has(s)) partArea.set(s, new THREE.Box3());
+              partArea.get(s).expandByPoint(p);
+              continue;
+            }
+            const bName = partName(s.mesh);
+            if (allowed(a, b, aName) || allowed(b, a, bName)) {
+              if (verbose && !worst) info.push(`clash allowed: ${a.id}${aName ? `#${aName}` : ''} inside ${b.id}${bName ? `#${bName}` : ''}`);
+              continue;
+            }
+            if (!worst || d > worst.d) worst = { d, p, into: bName, c };
           }
         }
+        // fastened parts may overlap only locally (a bushing in an eye, a bolt in a bracket); a deep overlap
+        // spread over a whole face (40 x 40 mm or more) needs an explicit inset reason on the joint row
+        for (const [s, bx] of partArea) {
+          const e = bx.getSize(new THREE.Vector3()).toArray().sort((u, v) => v - u);
+          if (e[1] < 0.04) continue;
+          const bName = partName(s.mesh);
+          if (allowed(a, b, aName) || allowed(b, a, bName)) continue;
+          errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} overlaps ${b.id}${bName ? `#${bName}` : ''}, which it is fastened to, more than ${DEPTH * 1000} mm deep over ${mm(e[0])} x ${mm(e[1])} mm `
+            + `(set inside it? give the joint row an inset reason)`);
+        }
         if (!worst) continue;
-        const key = `${a.id}#${worst.part}|${b.id}#${worst.into}`;
-        if (found.has(`${b.id}#${worst.into}|${a.id}#${worst.part}`) || found.has(key)) continue; // report each overlap once
+        const key = `${a.id}#${aName}|${b.id}#${worst.into}`;
+        if (found.has(`${b.id}#${worst.into}|${a.id}#${aName}`) || found.has(key)) continue; // report each overlap once
         found.add(key);
-        const msg = `${a.id}${worst.part ? `#${worst.part}` : ''} is ${mm(worst.d)} mm deep inside ${b.id}${worst.into ? `#${worst.into}` : ''} at ${M.fmt(worst.p)}`
-          + (worst.c === 'part' ? ` (fastened together; limit ${PART_DEPTH * 1000} mm)` : '');
-        if (allowed(a, b, worst.part) || allowed(b, a, worst.into)) { if (verbose) info.push(`clash allowed: ${msg}`); continue; }
-        errors.push(`clash: ${msg}`);
+        errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} is ${mm(worst.d)} mm deep inside ${b.id}${worst.into ? `#${worst.into}` : ''} at ${M.fmt(worst.p)}`
+          + (worst.c === 'part' ? ` (fastened together; limit ${PART_DEPTH * 1000} mm)` : ''));
       }
     }
   }

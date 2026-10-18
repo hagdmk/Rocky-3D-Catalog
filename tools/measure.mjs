@@ -126,14 +126,23 @@ function polyEdgeDist(poly, x, y) {
   return best;
 }
 
-/** How deep (m) a point lies inside a solid: distance to its surface, or -1 when outside. */
+/**
+ * How deep (m) a point lies inside a solid: distance to its surface, or -1 when outside.
+ * Exact for boxes; other kinds are scaled by the smallest axis scale (only the steering wheel rim is
+ * non-uniformly scaled, by 8 %).
+ */
 export function insideDepth(s, x, y, z) {
   if (!insideSolid(s, x, y, z)) return -1;
   _v.set(x, y, z).applyMatrix4(s.inv);
   const { x: lx, y: ly, z: lz } = _v;
   let d;
   switch (s.kind) {
-    case 'box': d = Math.min(s.hx - Math.abs(lx), s.hy - Math.abs(ly), s.hz - Math.abs(lz)); break;
+    case 'box': {
+      // exact world distance to each face pair, also under non-uniform scale: divide by |row i of inv|
+      const e = s.inv.elements;
+      const r0 = Math.hypot(e[0], e[4], e[8]); const r1 = Math.hypot(e[1], e[5], e[9]); const r2 = Math.hypot(e[2], e[6], e[10]);
+      return Math.max(0, Math.min((s.hx - Math.abs(lx)) / r0, (s.hy - Math.abs(ly)) / r1, (s.hz - Math.abs(lz)) / r2));
+    }
     case 'cyl': {
       const r = s.rb + ((s.rt - s.rb) * (ly + s.h / 2)) / s.h;
       d = Math.min(s.h / 2 - Math.abs(ly), r - Math.hypot(lx, lz));

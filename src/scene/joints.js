@@ -9,7 +9,8 @@
 // JOINTS   parts that are physically fastened together: their surfaces must
 //          touch or overlap (gap <= max mm, default 2) in every vehicle
 //          configuration where both are shown.  `variant` limits a row to some
-//          configurations; `note` cites the catalog callout or part number.
+//          configurations; `note` cites the catalog callout or part number; `inset` gives the
+//          reason when one part is set into the other over a whole face (heater core in its slot).
 // PASS_OK  linear members (beams, bars, tubes) may not run more than 10 mm of
 //          their centre line through another part's solid unless the pair is a
 //          joint or listed here with a reason.
@@ -188,7 +189,7 @@ export const JOINTS = [
   J('hvac-drain-hose#hose@start', 'hvac-unit', 'HVAC DRAIN HOSE on the HVAC case'),
   J('hvac-drain-hose#hose', 'sound-insulation', 'drain tube through its GROMMET, HVAC DRAIN TUBE (heater assembly #6) in the dash insulator'),
   J('hvac-drain-hose#grommet', 'sound-insulation', 'GROMMET, HVAC DRAIN TUBE (heater assembly #6) in the dash insulator'),
-  J('ptc-heater', 'hvac-unit#case', 'CORE COMPLETE ASSY - PTC AIR HEATER (heater core #1) in the heater core slot of the HVAC UNIT - NO PTC HEATER (heater assembly #1)'),
+  J('ptc-heater', 'hvac-unit#case', 'CORE COMPLETE ASSY - PTC AIR HEATER (heater core #1) in the heater core slot of the HVAC UNIT - NO PTC HEATER (heater assembly #1)', { inset: 'the heater core slides into its slot in the HVAC case' }),
   J('hvac-blower#outlet', 'hvac-unit#case', 'blower scroll outlet bolted to the RH side of the HVAC case'),
 
   // --- refrigerant
@@ -338,11 +339,11 @@ export const JOINTS = [
   ]),
   // pillars and floor
   ...each((s) => [
-    J(`hinge-pillar-${s}`, `sill-${s}`, 'hinge pillar #5 joined to the front of the side sill'),
+    J(`hinge-pillar-${s}`, `sill-${s}`, 'hinge pillar #5 joined to the front of the side sill', { inset: 'the hinge pillar foot is welded into the front of the sill section' }),
     J(`hinge-pillar-${s}`, `front-inner-${s}`, 'cowl side #6 joined to the upper (shotgun) rail'),
     J(`hinge-pillar-${s}`, `body-side-${s}`, 'body side outer A-pillar #7 bonded over the hinge pillar'),
     J(`b-pillar-${s}#lower`, `sill-${s}`, 'A / B pillar comp #13 joined to the side sill'),
-    J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE)'),
+    J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE)', { inset: 'the floor pan and toe board flanges are welded into the sill section' }),
   ]),
   J('nvh-plugs', 'floor-pan', 'body plugs in the floor pan openings'),
   ...each((s) => [
@@ -358,7 +359,7 @@ export const JOINTS = [
   J('windshield-edge-seal', 'windshield', 'SEAL, WINDSHIELD EDGE (glass #2) along the windshield base'),
   J('windshield-edge-seal', 'dash-panel#topPad', 'SEAL, WINDSHIELD EDGE (dash panel #1) on the IP top pad'),
   J('dash-support-frame#beam', 'hvac-unit', 'HVAC case bolted to the cross-car beam (dash support frame #7 BLT M8x25)'),
-  J('driver-airbag', 'steering-wheel#wheel', 'driver airbag module clipped into the steering wheel hub'),
+  J('driver-airbag', 'steering-wheel#wheel', 'driver airbag module clipped into the steering wheel hub', { inset: 'the airbag module sits in the hub cavity of the wheel' }),
   ...each((s) => [J(`sun-visor-${s}`, 'headliner', 'sun visor pivot clipped through the headliner to the roof header')]),
   // closures
   ...each((s) => [J(`liftgate-drain-${s}@start`, 'liftgate-seal', 'drain tube funnel #1 in the lamp housing gutter under the liftgate seal flange')]),
@@ -401,9 +402,9 @@ export const JOINTS = [
     J(`front-seat-track-${s}#feet`, 'floor-pan', 'seat tracks bolted to the floor (BLT M10x28.4 / M8x27)'),
     J(`pretensioner-${s}#anchor`, `sill-${s}`, 'outboard lap pretensioner anchor bolted to the sill'),
     J(`front-seat-switch-${s}`, `front-seat-${s}`, 'seat switch bezel on the cushion side shield'),
-    J(`side-airbag-${s}`, `front-seat-${s}#back`, 'SIDE AIRBAG ASSY (side air bags #3/#4) bolted to the seat back frame in the outboard bolster'),
+    J(`side-airbag-${s}`, `front-seat-${s}#back`, 'SIDE AIRBAG ASSY (side air bags #3/#4) bolted to the seat back frame in the outboard bolster', { inset: 'the airbag module is inside the seat back bolster' }),
   ]),
-  J('rear-belts#centreRetractor', 'rear-seat-back-60', '2nd row centre seatbelt retractor (#3) bolted in the 60% seat back frame (#9 BOLT, 2ND ROW CENTER RETRACTOR)'),
+  J('rear-belts#centreRetractor', 'rear-seat-back-60', '2nd row centre seatbelt retractor (#3) bolted in the 60% seat back frame (#9 BOLT, 2ND ROW CENTER RETRACTOR)', { inset: 'the retractor is inside the seat back' }),
   J('third-row-belts', 'third-row-seats', '3rd row seatbelt assembly (#1) anchored on the seat back frame (ASY - THIRD ROW SEAT #8)'),
   J('touchscreen', 'dash-panel', 'MCU in the CENTER SCREEN FRAME (touchscreen #2 = dash panel #35), BLT M5x25 (#3)'),
   J('instrument-cluster', 'dash-panel', 'cluster in the IP cluster frame and bezel (ASY FRAME INSTRUMENT CLUSTER / CLUSTER BEZEL, dash panel #28)'),
@@ -438,6 +439,9 @@ export const PASS_OK = [
   { a: 'switches#steeringHarness', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the LH spoke trim to the hub cavity behind the driver airbag' },
   { a: 'switches#steeringHarnessR', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the RH spoke trim to the hub cavity behind the driver airbag' },
   { a: 'interior-ducts#console', b: 'center-console', reason: 'CENTER CONSOLE AIR DUCT (#13-#15) enters the console carrier through the opening in its front closeout (#14); the tunnel trim is drawn as a closed shell' },
+  { a: 'brake-pedal#arm', b: 'dash-panel', reason: 'the pedal arm passes the cut-out in the LH footwell cover of the instrument panel' },
+  { a: 'dash-harness#ip', b: 'dash-panel', reason: 'the IP harness leaves the instrument panel through the side cover openings at the A-pillars' },
+  { a: 'roof-harness#header', b: 'dash-panel', reason: 'the headliner harness drops behind the IP side cover at the A-pillar' },
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).

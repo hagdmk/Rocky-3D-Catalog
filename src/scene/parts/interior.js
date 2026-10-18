@@ -106,9 +106,9 @@ export function buildInterior(reg) {
     object: group(
       // moulded shell, drawn as its surfaces (open towards the bulkhead and over the tunnel, with the column
       // opening in the face): the cross-car beam, the face ducts, the airbag modules and the IP harness lie
-      // inside it; the brake pedal arm (footwell cover cut-out), the hood release cable (to the handle on the
-      // LH kick cover) and the IP and headliner harnesses (at the A-pillar side covers) pass through it
-      hollow(dashShell()),
+      // inside it; the brake pedal arm (footwell cover cut-out) and the IP and headliner harnesses (at the
+      // A-pillar side covers) pass through it (PASS_OK in src/scene/joints.js)
+      dashShell(),
       named('topPad', box([0.3, 0.004, 1.2], [0.75, 0.946, 0], 'blackPlastic')),
     ),
   });
