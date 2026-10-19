@@ -6,8 +6,9 @@
 
 import * as THREE from 'three';
 import { skinPatch, skinPoint } from '../body.js';
-import { skinMesh, group, named, rbox, box, cyl, faceTo } from '../geom.js';
+import { skinMesh, group, named, rbox, box, cyl, faceTo, quadPlate } from '../geom.js';
 import { skinAt, skinNormal } from '../body.js';
+import { ARCH_RADIUS, X_REAR_AXLE, WHEEL_Y } from '../profile.js';
 
 const inRect = (s, v, r) => s >= r[0] && s <= r[1] && v >= r[2] && v <= r[3];
 
@@ -213,20 +214,25 @@ export function buildExterior(reg) {
 
   // --- Doors, body side, rocker -------------------------------------------
   for (const [sd, en, ko] of sides) {
-    // outer panel and inner panel (hinges, latch, glass regulator and door modules mount on it)
-    const door = (r) => group(
+    // outer panel and inner panel (hinges, latch, glass regulator and door modules mount on it).  The
+    // inner panels stop at the B-pillar faces (front door s 2.69 = x -0.205, rear door s 2.76 =
+    // x -0.275); the rear door's lower rear corner is cut round the wheel arch, 12 mm off the
+    // wheelhouse.
+    const door = (r, [s0, s1], field = null) => group(
       region([[r[0], r[1], SV.vRockerTop, SV.vBelt]], { side: sd }),
-      named('inner', region([[r[0] + 0.005, r[1] - 0.005, 0.35, 2.8]], { side: sd, offset: -0.04, edges: false })),
+      named('inner', region([[s0, s1, 0.35, 2.8]], { side: sd, offset: -0.04, edges: false, field })),
     );
+    // rear wheelhouse band radius (structure.js) + 12 mm
+    const archCut = (q) => ARCH_RADIUS + 0.035 + 0.012 - Math.hypot(q.x - X_REAR_AXLE, q.y - WHEEL_Y);
     reg.add({
       id: `door-${sd}F`, ko: `앞 도어 (${ko})`, en: `Front door ${en}`, shell: true, tags: `${sd}F`, match: /DOOR/,
       groups: ['closure-panels'],
-      object: door(SV.frontDoor),
+      object: door(SV.frontDoor, [SV.frontDoor[0] + 0.005, 2.69]),
     });
     reg.add({
       id: `door-${sd}B`, ko: `뒤 도어 (${ko})`, en: `Rear door ${en}`, shell: true, tags: `${sd}B`, match: /DOOR/,
       groups: ['closure-panels'],
-      object: door(SV.rearDoor),
+      object: door(SV.rearDoor, [2.76, SV.rearDoor[1] - 0.005], archCut),
     });
     reg.add({
       id: `body-side-${sd}`, ko: `보디 사이드 아우터 (${ko})`, en: `Body side outer ${en}`, shell: true, tags: sd,
@@ -250,6 +256,16 @@ export function buildExterior(reg) {
         region([[SV.rocker[0], SV.rocker[1], -0.35, SV.vRockerTop]], { side: sd, mat: 'paintDark' }),
         // moulding brackets (#7 front, #8 rear support) from the trim to the sill
         named('brackets', group([0.75, 0, -0.75].map((x) => box([0.06, 0.04, 0.025], [x, 0.23, (sd === 'L' ? -1 : 1) * 0.9525], 'blackPlastic')))),
+        // scuff plate (#6, taped on with #16): the inner sill trim in the door openings, from the sill's
+        // inner top edge (y 0.37, |z| 0.80) down over the carpet edge (y 0.311, |z| 0.74); the cabin
+        // harness runs under it along the sill.  Notched at the B-pillar foot round the pillar
+        // impact sensor (top edge at |z| 0.784 there).
+        named('scuff', (() => {
+          const sg = sd === 'L' ? -1 : 1;
+          const P = (x, za) => [x, 0.311 + ((za - 0.74) / 0.06) * 0.059, sg * za];
+          return group([[0.75, -0.21, 0.8], [-0.21, -0.28, 0.784], [-0.28, -0.7, 0.8]].map(([x0, x1, top]) => (
+            quadPlate([P(x0, top), P(x1, top), P(x1, 0.74), P(x0, 0.74)], 0.003, 'blackPlastic'))));
+        })()),
       ),
     });
     reg.add({

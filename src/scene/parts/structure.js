@@ -40,6 +40,26 @@ const NODE_A_LINER = Math.asin((NODE_TOP - WY) / (ARCH_RADIUS + 0.012));
 const TOWER_Z1 = 0.68;
 const towerA = (r) => [Math.acos(0.04 / r), Math.acos(-0.16 / r)];
 
+// Rear wheelhouse arch (inside radius of the band) and the top of the rear rail beneath it.
+const RW = ARCH_RADIUS + 0.035;
+const archTop = (x) => WY + Math.sqrt(Math.max(0, RW * RW - (x - XR) ** 2));
+const arcPts = (x0, x1, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
+  const x = x0 + ((x1 - x0) * i) / n;
+  return [x, archTop(x)];
+});
+const railTop = (x) => 0.425 + ((x + 1.25) / -1.05) * 0.025 + 0.045;
+// Trunk floor extension: outboard edge on the wheelhouse inner wall (|z| 0.6) at this height, and
+// the shelf from there over the low rear part of the arch.
+const SHELF_Y = 0.676;
+const SHELF_X0 = XR - Math.sqrt(RW * RW - (SHELF_Y - WY) ** 2); // where the arch drops below the shelf
+
+/** Flat sheet in the plane z through the side-view outline pts [[x, y], ...]. */
+function zPlate(z, pts, mat) {
+  const g = new THREE.ShapeGeometry(new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y))));
+  g.translate(0, 0, z);
+  return mesh(g, mat);
+}
+
 /**
  * Wheelhouse strip made of the angle ranges [[aS, aE], ...] of the full strip a0..a1: the facets
  * stay on the 36-segment grid of the full strip (short facets at the cut ends).
@@ -86,13 +106,15 @@ export function buildStructure(reg) {
       // extension pass above the wheel arch liner.
       object: group(
         named('rail', bar([2.26, 0.47, sg * 0.5], [1.02, 0.42, sg * 0.5], 0.08, 0.12, 'aluminum')),
-        // shock tower casting: top, inboard, front and rear walls; open below and toward the wheel,
-        // where the strut and the knuckle neck enter it (hollow: lines and the strut run inside)
-        named('tower', hollow(group(
+        // shock tower casting: top, inboard, front and rear walls (6 mm plates); open below and toward
+        // the wheel, where the strut, the knuckle neck and the upper arm enter it.  The brake hose,
+        // the hood strut and the hood release cable stay outside the walls (hose and strut brackets
+        // on the rear face, cable inboard of and behind the tower).
+        named('tower', group(
           box([0.26, 0.006, 0.2], [XF - 0.05, 0.847, sg * 0.6], 'aluminum'),
           box([0.26, 0.3, 0.006], [XF - 0.05, 0.7, sg * 0.503], 'aluminum'),
           ...[XF + 0.077, XF - 0.177].map((x) => box([0.006, 0.3, 0.2], [x, 0.7, sg * 0.6], 'aluminum')),
-        ))),
+        )),
         // shotgun upper #3/#4: from the front of the wheelhouse up to the hinge pillar front face
         bar([1.85, 0.758, sg * 0.72], [0.98, 0.863, sg * 0.785], 0.04, 0.07, 'aluminum'),
         // shock tower extension #7/#8: from the front face of the tower to the front of the shotgun
@@ -142,7 +164,10 @@ export function buildStructure(reg) {
       id: `b-pillar-${sd}`, ko: `B필러 (${ko})`, en: `B-pillar ${en}`, tags: sd,
       groups: ['body-side-panels'], match: /A \/ B PILLAR|SEAT BELT ATTACH|CARRIER, BODY SIDE B-PILLAR/,
       object: group(
-        named('lower', hollow(rbox([0.07, 0.62, 0.042], [-0.24, 0.65, sg * 0.933], 'aluminum', { r: 0.008 }))), // closed section: belt and rear door harness inside
+        // closed section between the door shut faces (x -0.205 / -0.275): the front door inner panel
+        // ends at its front face, the rear door hinges are bolted to its rear face, and the rear door
+        // harness runs through it (PASS_OK in src/scene/joints.js)
+        named('lower', rbox([0.07, 0.62, 0.042], [-0.24, 0.65, sg * 0.933], 'aluminum', { r: 0.008 })),
         named('upper', region([[2.69, 2.76, 2.0, 3.75]], { side: sd, offset: -0.05, mat: 'aluminum', edges: false })),
         // applique carriers (#10 front upper, #11 rear upper), between the two door seals
         named('carriers', group([3.2, 3.5].map((v) => {
@@ -153,13 +178,27 @@ export function buildStructure(reg) {
       ),
     });
   }
-  // Floor pan between the sills (part of the body in white): the seat tracks bolt to it.
+  // Body in white between the sides: the floor pan between the sills (the seat tracks bolt to it)
+  // and the cowl plenum panel between the cowl sides, the cowl top ahead of the windshield base on
+  // top of the upper dash insulator, under the wiper module and the cowl screen (behind the hood
+  // hinges, its front edge under the rear underhood apron).
+  const plenumN = new THREE.Vector2(0.061, 0.09).normalize(); // upper dash insulator plane normal
+  const plenumAt = (x, z, off = 0.0085) => {
+    const t = (0.99 - x) / 0.09; // along the insulator from (0.99, 0.86) to (0.9, 0.921)
+    return [0.99 - 0.09 * t + plenumN.x * off, 0.86 + 0.061 * t + plenumN.y * off, z];
+  };
   reg.add({
-    id: 'floor-pan', ko: '플로어 팬(차체 바닥)', en: 'Floor pan (body floor)',
+    id: 'floor-pan', ko: '차체(BIW): 플로어 팬·카울 플레넘', en: 'Body in white: floor pan & cowl plenum',
     groups: ['body-side-panels'], match: /BODY IN WHITE/,
     object: group(
       quadPlate([[0.72, 0.296, -0.8], [0.72, 0.296, 0.8], [-0.7, 0.296, 0.8], [-0.7, 0.296, -0.8]], 0.004, 'aluminum'),
       named('toeBoard', quadPlate([[0.97, 0.41, -0.8], [0.97, 0.41, 0.8], [0.72, 0.296, 0.8], [0.72, 0.296, -0.8]], 0.004, 'aluminum')),
+      // between the hinge pillars (|z| 0.79); its outboard front corners stop short of the shotgun
+      // rail ends (x 0.975, |z| 0.75-0.82)
+      named('plenum', group(
+        quadPlate([plenumAt(0.99, -0.74), plenumAt(0.99, 0.74), plenumAt(0.905, 0.74), plenumAt(0.905, -0.74)], 0.003, 'aluminum'),
+        ...SIDES.map(({ sg }) => quadPlate([plenumAt(0.965, sg * 0.74), plenumAt(0.965, sg * 0.79), plenumAt(0.905, sg * 0.79), plenumAt(0.905, sg * 0.74)], 0.003, 'aluminum')),
+      )),
     ),
   });
 
@@ -186,12 +225,26 @@ export function buildStructure(reg) {
         // (rear-rail-*#node), so that strip of the arch starts on top of the node; the shock
         // tower stands in its opening
         ...rearArch(sg, ARCH_RADIUS + 0.035, 0.6, 0.95, 'aluminum', -0.15, Math.PI + 0.15, NODE_A),
-        // shock tower: top and four walls, open below where the strut rises into it (hollow)
-        named('tower', hollow(group(
+        // shock tower: top and four walls (6 mm plates), open below where the strut rises into it
+        named('tower', group(
           box([0.2, 0.006, 0.12], [XR - 0.06, 0.977, sg * 0.62], 'aluminum'),
           ...[0.563, 0.677].map((z) => box([0.2, 0.32, 0.006], [XR - 0.06, 0.82, sg * z], 'aluminum')),
           ...[XR + 0.037, XR - 0.157].map((x) => box([0.006, 0.32, 0.12], [x, 0.82, sg * 0.62], 'aluminum')),
-        ))),
+        )),
+        // wheelhouse inner wall (#1/#2 wheel arch panel, inboard side) under the arch band at |z| 0.6,
+        // ahead of and behind the shock tower: on the rail node in front (stepped up over the upper
+        // link and the air line behind the node) and on the rail behind; open only under the tower
+        named('innerWall', group(
+          zPlate(sg * 0.6, [...arcPts(-1.032, XR + 0.04), [XR + 0.04, 0.6], [-1.335, 0.6], [-1.29, 0.545], [-1.032, 0.545]], 'aluminum'),
+          zPlate(sg * 0.6, [...arcPts(XR - 0.16, -1.845), ...[-1.845, -1.7, XR - 0.16].map((x) => [x, railTop(x) - 0.003])], 'aluminum'),
+        )),
+        // rear quarter inner panel (#13/#14 ASSY - RR QTR INR) behind the trunk side trim, 30 mm inside
+        // the body side outer: from the wheelhouse arch (y 0.62 behind it) up to the C-pillar trim,
+        // below the tail lamp pocket at the rear
+        named('quarterInner', region([[4.04, 4.45, 0.2, 1.85]], {
+          side: sd, offset: -0.03, mat: 'aluminum', edges: false,
+          field: (q, s) => Math.max(archTop(q.x) + 0.004 - q.y, 0.62 - q.y, q.y - 0.955, Math.min(s - 4.39, q.y - 0.868)),
+        })),
         // C-pillar reinforcement (#23/#24): from the wheelhouse up behind the rear door opening to the roof rail
         named('cPillar', bar([XR + 0.02, 0.8, sg * 0.71], [-1.21, 1.19, sg * 0.653], 0.04, 0.03, 'aluminum')),
         // rear lamp housing reinforcement (#15/#16 = body side #4): bonded behind the body side
@@ -215,13 +268,17 @@ export function buildStructure(reg) {
       named('rearPanel', box([0.02, 0.225, 1.3], [-2.36, 0.6575, 0], 'aluminum')),
     ),
   });
-  // Trunk floor extension panels (#2/#3, also quarter inner #5/#6): the sloped side
-  // flanges that join the trunk floor to the wheelhouse and shock tower.
+  // Trunk floor extension panels (#2/#3, also quarter inner #5/#6): the sloped side flanges that
+  // join the trunk floor to the wheelhouse inner wall and the shock tower, and behind them the shelf
+  // that closes the trunk over the low rear part of the wheelhouse, out to the trunk side trim.
   for (const { sd, sg, ko, en } of SIDES) {
     reg.add({
       id: `trunk-floor-ext-${sd}`, ko: `트렁크 플로어 익스텐션 (${ko})`, en: `Trunk floor extension panel ${en}`, tags: sd,
       groups: ['rear-end-panels', 'rear-quarter-inner-panels'], match: /EXTENSION RR TRUNK FLOOR/,
-      object: quadPlate([[-1.95, 0.615, sg * 0.535], [-1.56, 0.615, sg * 0.535], [-1.56, 0.7, sg * 0.625], [-1.95, 0.7, sg * 0.625]], 0.006, 'aluminum'),
+      object: group(
+        quadPlate([[-1.95, 0.615, sg * 0.535], [-1.56, 0.615, sg * 0.535], [-1.56, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6]], 0.006, 'aluminum'),
+        named('shelf', quadPlate([[SHELF_X0, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.84], [SHELF_X0, SHELF_Y, sg * 0.84]], 0.004, 'aluminum')),
+      ),
     });
   }
 
@@ -413,14 +470,19 @@ export function buildStructure(reg) {
     object: quadPlate([[1.2, ay(1.2), -0.62], [1.2, ay(1.2), 0.62], [0.98, ay(0.98) - 0.005, 0.62], [0.98, ay(0.98) - 0.005, -0.62]], 0.008, 'blackPlastic'),
   });
 
-  // --- NVH plugs and patches (spread over the floor pan) -------------------------------
+  // --- NVH plugs and patches (floor pan plugs, door inner panel tapes) ----------------
   const plugs = [];
   for (const x of [0.6, 0.1, -0.4, -0.9]) {
     for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.3, z], 'rubber', { seg: 14 })); // in the floor pan
   }
-  for (const { sg } of SIDES) {
-    plugs.push(box([0.004, 0.06, 0.06], [0.45, 0.55, sg * 0.83], 'foam'));
-    plugs.push(box([0.004, 0.06, 0.06], [-0.55, 0.55, sg * 0.83], 'foam'));
+  // door tape patches (TAPE, DOOR, D44 #9) over access holes on the cabin side of each door inner
+  // panel, behind the trim pad
+  for (const { sd } of SIDES) {
+    for (const [fr, s, v] of [['F', 2.435, 1.0], ['B', 2.905, 0.9]]) {
+      const n = skinNormal(s, v);
+      if (sd === 'R') n.z = -n.z;
+      plugs.push(named(`doorTape${sd}${fr}`, faceTo(cyl(0.022, 0.002, 'y', [0, 0, 0], 'rubber', { seg: 20 }), skinAt(s, v, sd, -0.041), n, 'y')));
+    }
   }
   reg.add({
     id: 'nvh-plugs', ko: 'NVH 댐핑 패치·바디 플러그 (여러 위치)', en: 'NVH damping patches & body plugs (various)',

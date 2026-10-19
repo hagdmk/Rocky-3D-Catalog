@@ -851,11 +851,12 @@ export function buildChassisSystems(reg) {
   reg.add({
     id: 'air-suspension-ecu', ko: '에어 서스펜션 ECU', en: 'Air suspension ECU', tags: 'LB',
     groups: ['module-air-suspension'], variant: { susp: 'air' },
-    // ECU (#3) screwed (#4) to its bracket (#1), which is bolted (#2) to the LH body side behind
-    // (outboard of) the trunk side trim
+    // ECU (#3) screwed (#4) to its bracket (#1), which is bolted (#2) to the LH rear quarter inner
+    // panel (rear-quarter-inner-L#quarterInner, z about -0.946 here) behind (outboard of) the trunk
+    // side trim; the bracket stays clear of the body side outer and the lamp housing reinforcement
     object: group(
       named('ecu', rbox([0.13, 0.09, 0.035], [-1.9, 0.82, -0.915], 'darkMetal', { r: 0.008 })),
-      named('bracket', rbox([0.06, 0.07, 0.043], [-1.9, 0.82, -0.954], 'steel', { r: 0.004 })),
+      named('bracket', rbox([0.06, 0.05, 0.016], [-1.9, 0.805, -0.9395], 'steel', { r: 0.004 })),
     ),
   });
 }

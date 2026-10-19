@@ -161,7 +161,7 @@ export const JOINTS = [
   J('air-compressor#isolators', 'air-compressor#bracket', 'compressor isolators (spring washers #10, spring seats #11, springs #12) on the bracket'),
   J('air-compressor#isolators', 'air-compressor#compressor', 'compressor (#7) hung on its three isolators'),
   J('air-reservoir', 'front-subframe#frontCross', 'reservoir mount assemblies #2 (base #28, strap #29, cradle #30) on the subframe front cross member'),
-  J('air-suspension-ecu#bracket', 'body-side-L', 'BRACKET - ECU - AIR SUSPENSION (#1) bolted (BLT HF M6x20 #2) to the LH body side behind the trunk side trim'),
+  J('air-suspension-ecu#bracket', 'rear-quarter-inner-L#quarterInner', 'BRACKET - ECU - AIR SUSPENSION (#1) bolted (BLT HF M6x20 #2) to the LH rear quarter inner (ASSY - RR QTR INR, quarter inner #13) behind the trunk side trim'),
   J('air-suspension-ecu#bracket', 'air-suspension-ecu#ecu', 'ACTIVE SUSP ECU PROCESSOR (#3) screwed to its bracket (SCR M6x16 #4)'),
 
   // --- coolant loops (battery-cooling*, motor-cooling*)
@@ -327,10 +327,15 @@ export const JOINTS = [
   J('hood-latch#handle', 'dash-panel', 'release handle #1 on the LH lower instrument panel'),
   J('hood-seal', 'frunk', 'SEAL - HOOD on the frunk tub rim (frunk #19 = hood seals #1)'),
   J('hood-cowl-seal', 'underhood-apron-rear', 'SEAL - HOOD TO COWL #2 on the rear underhood apron'),
+  ...each((s) => [
+    J(`hood-hinge-${s}#strutBracket`, `hood-hinge-${s}#strut@end`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of its body bracket BRKT-GAS PROP BODY (#2)'),
+    J(`hood-hinge-${s}#strutBracket`, `front-inner-${s}#tower`, 'BRKT-GAS PROP LH/RH BODY (hood hinges #2) bolted (BLT HF M6x15 #3) to the rear face of the shock tower'),
+  ]),
   // rear structure and bumper
   ...each((s) => [
     J(`trunk-floor-ext-${s}`, 'trunk-floor#floor', 'trunk floor extension #2/#3 joined to the trunk floor #1'),
     J(`trunk-floor-ext-${s}`, `rear-quarter-inner-${s}#tower`, 'trunk floor extension (quarter inner #5/#6) joined to the shock tower'),
+    J(`trunk-floor-ext-${s}`, `rear-quarter-inner-${s}#innerWall`, 'trunk floor extension (quarter inner #5/#6) outboard flange joined to the wheelhouse inner wall'),
     J('rear-bumper-beam#beam', `rear-rail-${s}#rail`, 'rear bumper beam #1 bolted to the rail ends (NUT M10 #2)'),
     J('rear-bumper-beam#crossmember', `rear-rail-${s}#rail`, 'rear crossmember #3 bolted under the rail ends'),
   ]),
@@ -347,8 +352,10 @@ export const JOINTS = [
     J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE)', { inset: 'the floor pan and toe board flanges are welded into the sill section' }),
   ]),
   J('nvh-plugs', 'floor-pan', 'body plugs in the floor pan openings'),
+  ...corners((k) => [J(`nvh-plugs#doorTape${k}`, `door-${k}#inner`, 'TAPE, DOOR, D44 (NVH damping #9) over an access hole in the door inner panel, behind the trim pad')]),
   ...each((s) => [
     J(`rocker-${s}#brackets`, `sill-${s}`, 'rocker moulding brackets #7/#8 bolted to the sill (BLT HF M8x20 #11)'),
+    J(`rocker-${s}#scuff`, `sill-${s}`, 'SCUFF PLATE, PLASTIC (rocker panel trim #6) taped (TAPE, DBL SIDED ADHESIVE, SCUFF PLATE #16) on the sill inner top edge'),
     J(`b-pillar-applique-${s}`, `b-pillar-${s}#carriers`, 'B-pillar applique clipped on the body side carriers #10/#11'),
   ]),
   J('frunk-carpet', 'frunk', 'carpet lining laid in the frunk tub'),
@@ -419,7 +426,6 @@ export const JOINTS = [
   ...['bracket0', 'bracket1'].map((n) => J(`passenger-airbag#${n}`, 'dash-support-frame#beam', 'passenger airbag module bracket bolted to the cross-car beam (BOLT HF)')),
   ...each((s) => [J(`knee-airbag-${s}#bracket`, 'dash-support-frame#beam', 'knee airbag bracket bolted to the cross-car beam')]),
   J('restraint-controller#feet', 'floor-pan', 'PSRCM bolted through the carpet to the floor tunnel under the console'),
-  J('wall-connector#cable@end', 'charge-port-inlet', 'connector handle plugged into the charge port inlet'),
   ...each((s) => [
     J(`dash-support-frame#end${s}`, `hinge-pillar-${s}`, 'cross-car beam end bracket bolted to the hinge pillar'),
   ]),
@@ -436,18 +442,19 @@ export const PASS_OK = [
   { a: 'brake-rotor-*#disc', b: 'park-brake-*', reason: 'the parking brake caliper is drawn as a solid block: the disc runs in the slot between its pads' },
   { a: 'steering-ishaft#lowerLink', b: 'sound-insulation', reason: 'the dash insulation is drawn without its I-shaft opening; the lower link passes through the dash seal (#8) there' },
   { a: 'brake-pedal#pushrod', b: 'sound-insulation', reason: 'the dash insulation is drawn without the booster opening; the pushrod passes through it to the booster' },
-  { a: 'wall-connector#cable', b: 'charge-port-door', reason: 'the charge port door is drawn closed; with the connector plugged in it stands open and the connector handle passes through its opening into the inlet' },
   { a: 'switches#steeringHarness', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the LH spoke trim to the hub cavity behind the driver airbag' },
   { a: 'switches#steeringHarnessR', b: 'steering-wheel', reason: 'the steering wheel is drawn as solid spokes and hub; the switch harness (#1) runs inside the RH spoke trim to the hub cavity behind the driver airbag' },
   { a: 'interior-ducts#console', b: 'center-console', reason: 'CENTER CONSOLE AIR DUCT (#13-#15) enters the console carrier through the opening in its front closeout (#14); the tunnel trim is drawn as a closed shell' },
   { a: 'brake-pedal#arm', b: 'dash-panel', reason: 'the pedal arm passes the cut-out in the LH footwell cover of the instrument panel' },
   { a: 'dash-harness#ip', b: 'dash-panel', reason: 'the IP harness leaves the instrument panel through the side cover openings at the A-pillars' },
   { a: 'roof-harness#header', b: 'dash-panel', reason: 'the headliner harness drops behind the IP side cover at the A-pillar' },
+  { a: 'door-harness-*B#lead', b: 'b-pillar-*', reason: 'the lower B-pillar is a closed section drawn as a solid block: the rear door harness enters it through a grommeted hole in its inboard wall and leaves through the rear door harness grommet (#2/#4) in its rear face below the lower hinge' },
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).
 export const FLOAT_OK = [
   { id: 'repair-consumables', why: 'structural repair consumables (rivets, adhesive, weld wire) are not fitted to the car; drawn beside it' },
+  { id: 'wall-connector', why: 'charging equipment is not fitted to the car: the wall connector stands beside it with the connector handle hung in its holster (the charge port door is drawn closed)' },
 ];
 
 export const SHARED_OK = [

@@ -28,7 +28,7 @@ export function buildClosures(reg) {
   // --- Hinges ----------------------------------------------------------------------
   for (const { sd, sg, ko, en } of SIDES) {
     const xf = xOf(SV.frontDoor[0]) + 0.02;
-    const xr = xOf(SV.rearDoor[0]) + 0.02;
+    const xr = -0.295; // behind the B-pillar rear face (x -0.275), over the front of the rear door inner panel
     reg.add({
       id: `front-door-hinges-${sd}`, ko: `앞 도어 힌지 (${ko})`, en: `Front door hinges ${en}`, tags: `${sd}F`,
       groups: ['front-door-hinges-and-fittings'],
@@ -41,10 +41,11 @@ export function buildClosures(reg) {
     reg.add({
       id: `rear-door-hinges-${sd}`, ko: `뒤 도어 힌지 (${ko})`, en: `Rear door hinges ${en}`, tags: `${sd}B`,
       groups: ['rear-door-hinges-and-fittings'],
-      // from the B-pillar to the rear door inner panel, inboard of the door seals
+      // bolted to the B-pillar rear face and to the front of the rear door inner panel, inboard of
+      // the door seals
       object: group(
-        rbox([0.06, 0.05, 0.044], [xr - 0.01, 0.58, sg * 0.933], 'steel', { r: 0.008 }),
-        rbox([0.06, 0.05, 0.044], [xr - 0.01, 0.86, sg * 0.933], 'steel', { r: 0.008 }),
+        rbox([0.05, 0.05, 0.036], [xr, 0.58, sg * 0.935], 'steel', { r: 0.008 }),
+        rbox([0.05, 0.05, 0.036], [xr, 0.86, sg * 0.935], 'steel', { r: 0.008 }),
       ),
     });
     reg.add({
@@ -52,9 +53,11 @@ export function buildClosures(reg) {
       groups: ['hood-hinges-and-fittings'],
       object: group(
         // ahead of the firewall, under the rear underhood apron (the hinge arm reaches the hood
-        // through the apron slot); gas strut from the hinge to the shock tower top
+        // through the apron slot); gas strut (#1) from the hinge forward to its body bracket (#2,
+        // BLT HF M6x15 #3) on the rear face of the shock tower, below the tower top and the apron
         rbox([0.12, 0.06, 0.03], [1.065, 0.85, sg * 0.58], 'steel', { r: 0.008 }),
-        beam([1.11, 0.86, sg * 0.565], [1.45, 0.82, sg * 0.62], 0.01, 'steel'),
+        named('strut', beam([1.11, 0.86, sg * 0.565], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
+        named('strutBracket', rbox([0.02, 0.04, 0.04], [1.345, 0.815, sg * 0.615], 'steel', { r: 0.004 })),
       ),
     });
     reg.add({
@@ -134,12 +137,14 @@ export function buildClosures(reg) {
       // latch (#5) bolted to the front face of the carrier upper beam, striker (#3) above it
       named('latch', rbox([0.06, 0.08, 0.16], [2.155, 0.7, 0], 'darkMetal', { r: 0.01 })),
       rbox([0.04, 0.025, 0.05], [2.155, 0.752, 0], 'steel', { r: 0.006 }),
-      // release cable (#2): over the carrier beam, outboard of the frunk tub, behind the LH shock
-      // tower and over the rear of the wheelhouse, through the firewall at its outboard edge
-      // (outboard of the dash insulation, below the shotgun rail) to the handle on the LH lower dash
-      named('cable', tube([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
-        [1.45, 0.7, -0.47], [1.23, 0.65, -0.63], [1.11, 0.59, -0.69], [0.99, 0.55, -0.73], [0.85, 0.54, -0.742],
-        [0.72, 0.53, -0.75]], 0.004, 'steel')),
+      // release cable (#2): over the carrier beam, outboard of the frunk tub and inboard of the LH
+      // shock tower, then outboard behind the tower's rear wall (between it and the master cylinder,
+      // under the brake hose bracket) and over the rear of the wheelhouse, through the firewall at
+      // its outboard edge (outboard of the dash insulation, below the shotgun rail) to the handle on
+      // the LH lower dash
+      named('cable', pipe([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
+        [1.45, 0.7, -0.47], [1.336, 0.69, -0.475], [1.333, 0.68, -0.585], [1.23, 0.65, -0.63], [1.11, 0.582, -0.7], [0.99, 0.55, -0.73],
+        [0.85, 0.54, -0.742], [0.72, 0.53, -0.75]], 0.004, 'steel', { bend: 0.04 })),
       // on the LH end face of the lower instrument panel shell (z -0.74), facing the door opening
       named('handle', rbox([0.06, 0.03, 0.02], [0.7, 0.52, -0.745], 'blackPlastic', { r: 0.006 })),
     ),
