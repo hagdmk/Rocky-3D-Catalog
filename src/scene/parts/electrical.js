@@ -414,12 +414,12 @@ export function buildElectrical(reg) {
     reg.add({
       id: `horn-${sd}`, ko: `경음기 (${ko})`, en: `Horn ${en}`, tags: sd,
       groups: ['horns'], match: sg < 0 ? /HI TONE|510 Hz|BLT|NUT|CLIP|SEAL/ : /LOW TONE|410 Hz|SIREN|BBS|BLT|NUT|CLIP|SEAL/,
-      // RC horn (#1/#2, the version 'located on front end module'): its integral bracket bolted under
-      // the front energy absorber crush can (the later 510/410 Hz horns bolt to the centre active
-      // louver with BLT M6x20 #3 instead)
+      // RC horn (#1/#2, located on the front end module): its integral bracket, a strap from the back of
+      // the horn, bolted to the front face of the fascia carrier's side post (the later 510/410 Hz horns
+      // bolt to the centre active louver with BLT M6x20 #3 instead)
       object: group(
         named('horn', disc(0.05, 0.03, 'x', [2.26, 0.38, sg * 0.6], 'blackPlastic')),
-        named('bracket', box([0.03, 0.006, 0.08], [2.27, 0.428, sg * 0.555], 'steel')),
+        named('bracket', box([0.106, 0.005, 0.04], [2.192, 0.4, sg * 0.615], 'steel')),
       ),
     });
   }
