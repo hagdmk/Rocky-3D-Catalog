@@ -252,7 +252,7 @@ export const JOINTS = [
   ...[7, 8, 9, 10, 11, 12].map((i) => J(`park-sensors-rear#S${i}`, 'rear-bumper-harness#lead', 'REAR BUMPER HARNESS - PARK ASSIST (#1) at the sensor (#3)')),
   J('cabin-harness-L#rearLead@end', 'air-suspension-ecu', 'LH body harness at the air suspension ECU behind the LH trunk side trim'),
   J('cabin-harness-R#trunkLead@end', 'park-assist-ecu#ecu', 'RH body harness at the park assist ECU'),
-  J('cabin-harness-R#trunkLead', 'liftgate-ecu#ecu', 'RH body harness at the power liftgate / park brake ECU'),
+  J('cabin-harness-R#ecuLead@end', 'liftgate-ecu#ecu', 'RH body harness branch into its connector on the power liftgate / park brake ECU'),
   J('rear-bumper-harness#lead@start', 'cabin-harness-L#rearLead@end', 'rear bumper harness (#1) plugs into the LH body harness at the trunk side'),
   J('rear-subframe-harness#lead@start', 'cabin-harness-R#rearLead@end', 'REAR SUBFRAME HARNESS (#2) plugs into the RH body harness above the wheelhouse'),
   J('rear-subframe-harness#grommet', 'trunk-floor-ext-R#shelf', 'rear subframe harness grommet in the trunk floor extension shelf (grommet not listed in the catalog)'),
@@ -275,7 +275,7 @@ export const JOINTS = [
   J('park-assist-ecu#bracket', 'rear-quarter-inner-R#quarterInner', 'BRACKET, PARK ASSIST/BLINDSPOT ECU (#3) bolted to the RH rear quarter inner panel'),
   J('park-assist-ecu#bracket', 'park-assist-ecu#ecu', 'park assist ECU (#1) on its bracket'),
   ...each((s) => [
-    J(`horn-${s}#bracket`, `front-bumper-beam#can${s}`, 'horn bracket bolted (BLT M6x20 #3) under the energy absorber crush can'),
+    J(`horn-${s}#bracket`, `front-bumper-beam#can${s}`, 'RC horn (#1/#2, the version located on the front end module): integral bracket bolted under the energy absorber crush can'),
     J(`horn-${s}#bracket`, `horn-${s}#horn`, 'horn on its integral bracket'),
   ]),
   J('radar#bracket', 'radar#sensor', 'Sub-Asm of Forward Radar Brackets (#2) on the radar'),
@@ -468,12 +468,12 @@ export const PASS_OK = [
   { a: 'brake-pedal#arm', b: 'dash-panel', reason: 'the pedal arm passes the cut-out in the LH footwell cover of the instrument panel' },
   { a: 'dash-harness#ip', b: 'dash-panel', reason: 'the IP harness leaves the instrument panel through the side cover openings at the A-pillars' },
   { a: 'roof-harness#header', b: 'dash-panel', reason: 'the headliner harness drops behind the IP side cover at the A-pillar' },
-  { a: 'door-harness-*B#lead', b: 'b-pillar-*', reason: 'the lower B-pillar is a closed section drawn as a solid block: the rear door harness enters it through a grommeted hole in its inboard wall and leaves through the rear door harness grommet (#2/#4) in its rear face below the lower hinge' },
+  ...['L', 'R'].map((s) => ({ a: `door-harness-${s}B#lead`, b: `b-pillar-${s}`, reason: 'the lower B-pillar is a closed section drawn as a solid block: the rear door harness enters it through a grommeted hole in its inboard wall and leaves through the rear door harness grommet (#2/#4) in its rear face below the lower hinge' })),
   { a: 'hvac-drain-hose#hose', b: 'sound-insulation', reason: 'the dash insulator is drawn without the hole for the drain tube grommet (heater assembly #6); the drain tube passes through the grommet there' },
   { a: 'hvac-unit#evapPipes', b: 'sound-insulation', reason: 'the dash insulator is drawn without its opening for the evaporator pipes, which pass through the bulkhead to the TXV (A/C pipes #11) on the motor-bay side' },
   ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier through the opening in its front closeout (#14) and runs under it to its outlet in the carrier's side wall; the tunnel trim is drawn as a closed shell` })),
   { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness leaves the trunk through it in its grommet (rear-subframe-harness#grommet)' },
-  { a: 'door-harness-*B#lead', b: 'rocker-*', reason: 'the scuff plate is drawn as one piece across the B-pillar foot; on the car the sill trim ends at the B-pillar lower trim (pillar trim #14) and the rear door harness rises there from the body harness under the sill trim into the pillar' },
+  ...['L', 'R'].map((s) => ({ a: `door-harness-${s}B#lead`, b: `rocker-${s}`, reason: 'the sloped inboard flank of the scuff plate (rocker panel trim #6) is drawn without its slot under the foot of the B-pillar lower trim (#14), where the plate top is already cut out: the rear door harness rises through it from the body harness under the scuff plate into the pillar, hidden by the trim foot' })),
   { a: 'hood-latch#cable', b: 'dash-panel', reason: 'the lower instrument panel is drawn without the opening for the hood release handle (#1) in its LH lower edge: the release cable (#2) runs inside the panel along its LH end cover and reaches the handle through that opening' },
 ];
 
