@@ -115,8 +115,9 @@ export function buildElectrical(reg) {
   const LD = [[0.84, 0.562, -0.66], [0.89, 0.5, -0.6], [0.9, 0.47, -0.45], [0.9, 0.465, 0], [0.9, 0.47, 0.45], [0.88, 0.49, 0.6], [0.82, 0.52, 0.655]];
   const toe = (x) => 0.2975 + (x - 0.72) * 0.456 + W + 0.0045; // harness centre lying on the toe board
   for (const { sd, sg, ko, en } of SIDES) {
-    // #lead: off the main harness forward to the dash insulator, outboard along it and down the slot
-    // between the insulator and the front flange of the A-pillar lower trim (pillar-trim-*#kickPanel),
+    // #lead: off the main harness forward to the dash insulator, outboard along it through the hole in the
+    // kick panel's front closeout (y 0.462-0.497) and down between the insulator and the front flange of the
+    // A-pillar lower trim (pillar-trim-*#kickPanel),
     // back along the outboard edge of the toe board behind that trim, then along the sill under the scuff
     // plate (rocker-*#scuff), outboard of the carpet edge, to the B-pillar foot, where the rear door
     // harness plugs in.
@@ -127,7 +128,7 @@ export function buildElectrical(reg) {
     // wheelhouse where the rear subframe harness plugs in, and #trunkLead on under the liftgate / park
     // brake ECU to the park assist ECU.
     const zs = sg * 0.765;
-    const floor = [sg < 0 ? LD[1] : LD[5], [0.958, 0.495, sg * 0.665], [0.958, 0.47, sg * 0.768], [0.952, toe(0.952), sg * 0.772], [0.84, toe(0.84), sg * 0.767],
+    const floor = [sg < 0 ? LD[1] : LD[5], [0.958, 0.495, sg * 0.665], [0.958, 0.481, sg * 0.768], [0.952, toe(0.952), sg * 0.772], [0.84, toe(0.84), sg * 0.767],
       [0.76, toe(0.76), sg * 0.766], [0.7, 0.312, zs], [0.2, 0.312, zs], [-0.32, 0.312, zs]];
     // (the climb is clipped to the top of the wheelhouse arch at |z| 0.835, 0.452 from the wheel centre, well
     // inboard of the C-pillar lower trim's outboard return and the lock pillar; it turns outboard to the body
