@@ -129,9 +129,12 @@ export function buildElectrical(reg) {
     const zs = sg * 0.765;
     const floor = [sg < 0 ? LD[1] : LD[5], [0.958, 0.495, sg * 0.665], [0.958, 0.47, sg * 0.768], [0.952, toe(0.952), sg * 0.772], [0.84, toe(0.84), sg * 0.767],
       [0.76, toe(0.76), sg * 0.766], [0.7, 0.312, zs], [0.2, 0.312, zs], [-0.32, 0.312, zs]];
+    // (the climb is clipped to the top of the wheelhouse arch at |z| 0.835, 0.452 from the wheel centre, well
+    // inboard of the C-pillar lower trim's outboard return and the lock pillar; it turns outboard to the body
+    // side only behind the lock pillar)
     const climb = [[-0.32, 0.312, zs], [-0.7, 0.312, zs], [-0.9, 0.318, sg * 0.766], [-0.945, 0.335, sg * 0.766],
-      [-0.952, 0.392, sg * 0.767], [-0.962, 0.425, sg * 0.82], [-0.975, 0.48, sg * 0.872], [-1.005, 0.55, sg * 0.884],
-      [-1.05, 0.62, sg * 0.888], [-1.1, 0.672, sg * 0.897], [-1.2, 0.758, sg * 0.91], [-1.32, 0.806, sg * 0.915], [-1.48, 0.815, sg * 0.915]];
+      [-0.952, 0.392, sg * 0.767], [-0.968, 0.432, sg * 0.8], [-0.986, 0.461, sg * 0.835], [-1.015, 0.543, sg * 0.835],
+      [-1.064, 0.624, sg * 0.835], [-1.123, 0.688, sg * 0.84], [-1.2, 0.752, sg * 0.88], [-1.32, 0.806, sg * 0.915], [-1.48, 0.815, sg * 0.915]];
     const toAirEcu = [[-1.62, 0.822, -0.915], [-1.76, 0.812, -0.915], [-1.834, 0.8, -0.915]];
     reg.add({
       id: `cabin-harness-${sd}`, ko: `캐빈(보디) 하네스 (${ko})`, en: `Cabin (body) harness ${en}`, tags: sd,
@@ -264,12 +267,12 @@ export function buildElectrical(reg) {
     id: 'roof-harness', ko: '파노라믹 루프·헤드라이닝 하네스', en: 'Panoramic roof & headlining harness',
     groups: ['panoramic-roof-and-head-lining-harness'],
     object: group(
-      // (up the A-pillar in short chords that follow the skin, 1.5 mm outboard of the pillar trim at offset
-      // -0.03 and under the front roof drain tube, which crosses it at offset -0.0155 near s 2.06)
-      named('header', pipe([[0.875, 0.83, -0.84], ...skinPath([[1.62, 4.02], [2.34, 4.02]], 'L', -0.0225, 12),
+      // (up the A-pillar in short chords that follow the skin, 1 mm outboard of the pillar trim at offset
+      // -0.03 and under the front roof drain tube, which crosses it at offset about -0.018 near s 2.05)
+      named('header', pipe([[0.875, 0.83, -0.84], ...skinPath([[1.62, 4.02], [2.34, 4.02]], 'L', -0.024, 12),
         skinAt(2.345, 4.2, 'L', -0.012), skinAt(2.35, 4.5, 'L', -0.018),
         skinAt(2.4, 4.75, 'L', -0.024), skinAt(2.6, 4.75, 'L', -0.026), skinAt(3.0, 4.75, 'L', -0.026), skinAt(3.2, 4.75, 'L', -0.026),
-        skinAt(3.25, 4.85, 'L', -0.026)], 0.006, 'wire', { bend: 0.05 })),
+        skinAt(3.25, 4.85, 'L', -0.026)], 0.005, 'wire', { bend: 0.05 })),
       named('consoleLead', pipe([skinAt(2.35, 4.5, 'L', -0.018), skinAt(2.3, 4.55, 'L', -0.018), skinAt(2.298, 4.8, 'L', -0.022),
         skinAt(2.298, 4.85, 'L', -0.04)], 0.006, 'wire', { bend: 0.03 })),
       named('rearT', tube([skinAt(3.24, 4.65, 'L', -0.018), skinAt(3.24, 5, 'L', -0.018), skinAt(3.24, 4.65, 'R', -0.018)], 0.008, 'wire')),
