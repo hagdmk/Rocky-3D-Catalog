@@ -393,6 +393,8 @@ if (want('clash')) {
   const STEP = 0.008;
   const DEPTH = 0.010;
   const PART_DEPTH = 0.040;
+  const PART_SPAN = 0.040; // a deep fastened overlap: second principal extent below this
+  const PART_AREA = 0.0016; // ... and at most this area (m², 8 mm cells in its best-fit plane)
   let pairsN = 0;
   const found = new Set();
   for (const a of reg.items) {
@@ -432,17 +434,19 @@ if (want('clash')) {
           }
         }
         // fastened parts may overlap only locally (a bushing in an eye, a bolt in a bracket); a deep overlap
-        // spread over a whole face (40 x 40 mm or more) needs an explicit inset reason on the joint row
-        // each separate overlap (points linked within 12 mm) is judged by its principal extents, so the
-        // verdict does not depend on orientation and two small lugs far apart are not one big overlap
+        // spread over a whole face (40 x 40 mm, or 1600 mm² in all) needs an explicit inset reason on the joint row
+        // each separate overlap (points linked within 12 mm) is judged by its principal extents and by the
+        // area it covers in its best-fit plane (8 mm grid cells), so the verdict does not depend on
+        // orientation, two small lugs far apart are not one big overlap, and a long narrow strip counts
         for (const [s, pts] of partArea) {
           for (const cl of M.clusterPoints(pts, 0.012)) {
             const e = M.principalExtents(cl);
-            if (e[1] < 0.04) continue;
+            const area = M.planarArea(cl, STEP);
+            if (e[1] < PART_SPAN && area <= PART_AREA + 1e-12) continue;
             const bName = partName(s.mesh);
             if (allowed(a, b, aName) || allowed(b, a, bName)) continue;
-            errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} overlaps ${b.id}${bName ? `#${bName}` : ''}, which it is fastened to, more than ${DEPTH * 1000} mm deep over ${mm(e[0])} x ${mm(e[1])} mm `
-              + `(set inside it? give the joint row an inset reason)`);
+            errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} overlaps ${b.id}${bName ? `#${bName}` : ''}, which it is fastened to, more than ${DEPTH * 1000} mm deep over ${mm(e[0])} x ${mm(e[1])} mm, ${Math.round(area * 1e6)} mm² `
+              + `(limits ${PART_SPAN * 1000} mm across, ${Math.round(PART_AREA * 1e6)} mm²; set inside it? give the joint row an inset reason)`);
             break;
           }
         }
