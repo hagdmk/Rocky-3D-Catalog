@@ -703,8 +703,13 @@ export function buildInterior(reg) {
   reg.add({
     id: 'liftgate-trim', ko: '리프트게이트 실내 트림', en: 'Liftgate interior trim',
     groups: ['liftgate-interior-trim'],
-    // cut out round the latch at the bottom edge
-    object: region([[4.42, 4.93, 3.1, 5], [3.3, 4.42, 4.04, 4.12]], { offset: -0.035, exclude: [[4.865, 4.93, 4.76, 5]], mat: 'greyPlastic', edges: false }),
+    // cut out round the latch at the bottom edge; its side bands (side trims #13/#14) run from the headliner's C-pillar
+    // top strip up to the glass edge, where a lip turns out to the glass and closes the frame from the cabin (the
+    // liftgate harness runs behind it)
+    object: group(
+      region([[4.42, 4.93, 3.1, 5], [3.3, 4.42, 3.995, 4.12]], { offset: -0.035, exclude: [[4.865, 4.93, 4.76, 5]], mat: 'greyPlastic', edges: false }),
+      named('lip', group(...SIDES.map(({ sd }) => skinStrip(sd, 3.305, 4.42, [4.118, -0.035], [4.118, -0.006], 'greyPlastic')))),
+    ),
   });
   reg.add({
     id: 'trunk-sill-trim', ko: '트렁크 실(문턱) 트림', en: 'Trunk sill trim',
