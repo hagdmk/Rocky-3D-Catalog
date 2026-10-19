@@ -245,7 +245,7 @@ export const JOINTS = [
     J(`door-harness-${s}F#lead@start`, 'dash-harness#ip', 'front door harness with grommet (#1/#3) to the IP harness at the A-pillar'),
     J(`door-harness-${s}F#lead@end`, `door-controller-${s}`, 'front door harness at the DOOR CONTROLLER'),
     J(`door-harness-${s}B#lead@start`, `cabin-harness-${s}#lead@end`, 'rear door harness with grommet (#2/#4) to the body harness at the B-pillar foot'),
-    J(`door-harness-${s}B#lead@end`, `door-latch-${s}B`, 'rear door harness at the rear door latch'),
+    J(`door-harness-${s}B#lead@end`, `door-latch-${s}B#latch`, 'rear door harness connector in the rear door latch'),
     J(`liftgate-harness-${s}#lead@start`, 'roof-harness#rearT', 'liftgate harness to the headliner harness at the rear header'),
   ]),
   ...[1, 2, 3, 4, 5, 6].map((i) => J(`park-sensors-front#S${i}`, 'front-end-harness#bumper', 'FRONT BUMPER HARNESS (#1) at the park assist sensor (#3)')),
@@ -276,7 +276,8 @@ export const JOINTS = [
   J('park-assist-ecu#bracket', 'rear-quarter-inner-R#quarterInner', 'BRACKET, PARK ASSIST/BLINDSPOT ECU (#3) bolted to the RH rear quarter inner panel'),
   J('park-assist-ecu#bracket', 'park-assist-ecu#ecu', 'park assist ECU (#1) on its bracket'),
   ...each((s) => [
-    J(`horn-${s}#bracket`, 'front-bumper-carrier', 'RC horn (#1/#2, the version located on the front end module): integral bracket bolted to the fascia carrier (FEM) side post'),
+    J(`horn-${s}#tab`, 'front-bumper-carrier', 'RC horn (#1/#2, the version located on the front end module): end tab of its integral bracket bolted to the front face of the fascia carrier (FEM) side post'),
+    J(`horn-${s}#tab`, `horn-${s}#bracket`, 'end tab of the integral bracket strap'),
     J(`horn-${s}#bracket`, `horn-${s}#horn`, 'horn on its integral bracket'),
   ]),
   J('radar#bracket', 'radar#sensor', 'Sub-Asm of Forward Radar Brackets (#2) on the radar'),
@@ -342,7 +343,10 @@ export const JOINTS = [
   ...each((s) => [
     J(`hood-hinge-${s}#strutBracket`, `hood-hinge-${s}#strut@end`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of its body bracket BRKT-GAS PROP BODY (#2)'),
     J(`hood-hinge-${s}#strutBracket`, `front-inner-${s}#tower`, 'BRKT-GAS PROP LH/RH BODY (hood hinges #2) bolted (BLT HF M6x15 #3) to the rear face of the shock tower'),
-    J(`hood-hinge-${s}#base`, `front-inner-${s}`, 'HOOD HINGE (#6) body flange bolted from above (BLT HEX FLG M8x20 #7, NUT M8 #5) to the top of the shotgun upper at the cowl side (side underhood aprons #2/#3 have holes for the hinges)'),
+    J(`hood-hinge-${s}#base`, `front-inner-${s}`, 'HOOD HINGE (#6) body leaf bolted from above (2 x BLT HEX FLG M8x20 #7) to the top of the shotgun upper at the cowl side (side underhood aprons #2/#3 have holes for the hinges)'),
+    J(`hood-hinge-${s}#hoodLeaf`, 'hood', 'HOOD HINGE (#6) hood leaf on the hood underside, on the hood studs with 3 x NUT M8 #5'),
+    J(`hood-hinge-${s}#strut@start`, `hood-hinge-${s}#hoodBracket`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of BRKT-GAS PROP HOOD SIDE (#4)'),
+    J(`hood-hinge-${s}#hoodBracket`, 'hood', 'BRKT-GAS PROP LH/RH HOOD (#4) on the hood underside, on the hood studs with 2 x NUT M8 #5'),
   ]),
   // rear structure and bumper
   ...each((s) => [
@@ -401,7 +405,9 @@ export const JOINTS = [
     J(`door-latch-${k}#striker`, `rear-quarter-inner-${s}#lockPillar`, 'rear door striker on the lock pillar'),
   ]),
   ...corners((k) => [
-    J(`door-latch-${k}#latch`, `door-${k}#inner`, 'door latch screwed to the door inner panel', { inset: "the latch body sits in the door's rear shut face, inside the door between the inner and outer panels" }),
+    J(`door-latch-${k}#latch`, `door-${k}#inner`, 'door latch screwed to the door inner panel'),
+    J(`door-latch-${k}#cable@start`, `door-latch-${k}#latch`, 'interior release cable hooked into the latch'),
+    J(`door-latch-${k}#cable@end`, `door-latch-${k}#opener`, 'interior release cable at the door opener (#7)'),
     ...['railF', 'railR', 'motor'].map((n) => J(`regulator-${k}#${n}`, `door-${k}#inner`, 'glass regulator bolted to the door inner panel')),
     ...['railF', 'railR'].map((n) => J(`regulator-${k}#${n}`, `door-glass-${k}`, 'regulator carrier clamped on the lower edge of the door glass')),
   ]),
@@ -412,7 +418,12 @@ export const JOINTS = [
     J(`wind-deflector#arm${s}`, 'pano-cassette', 'wind deflector arm pivot on the roof cassette frame'),
   ]),
   J('chmsl', 'liftgate', 'CHMSL #8 on the liftgate top edge, under the glass'),
-  ...each((s) => [J(`liftgate-hinge-${s}`, 'roof-panel', 'liftgate hinge bolted to the roof rear header')]),
+  ...each((s) => [J(`liftgate-hinge-${s}#hinge`, 'roof-panel', 'liftgate hinge bolted to the roof rear header')]),
+  ...each((s) => [
+    J(`liftgate-hinge-${s}#bodyStud`, `rear-quarter-inner-${s}#cPillar`, 'BALL STUD - LIFTGATE (#17), body side, on the C-pillar reinforcement (quarter inner #23/#24); the strut (#15/#16) clipped on its ball'),
+    J(`liftgate-hinge-${s}#gateStud`, 'liftgate', 'BALL STUD - LIFTGATE (#17) on the liftgate side band; the strut (#15/#16) clipped on its ball'),
+    J(`liftgate-hinge-${s}#pinchSensor`, 'liftgate', 'ANTI PINCH SENSOR ASY (#12/#13) clipped (push clips #14) along the liftgate side band'),
+  ]),
   J('roof-seals', 'roof-panel', 'SEAL-MAIN #10 and outer trim seals #2-#5 on the pano roof opening flange'),
   ...each((s) => [
     J(`trunk-side-trim-${s}#bracket`, `rear-quarter-inner-${s}`, 'trunk bracket #6 LH / #7 RH screwed to the wheelhouse'),
@@ -422,6 +433,7 @@ export const JOINTS = [
   J('liftgate-spoiler', 'liftgate', 'spoiler bonded to the liftgate (ADHESIVE TAPE, PRIMER)'),
   J('license-plate-front', 'front-fascia', 'front plate bracket screwed to the fascia (SCR, RVT)'),
   J('labels-underhood', 'hood', 'emission / refrigerant / first responder labels on the hood underside'),
+  J('labels-window', 'door-glass-LB', 'MONRONEY label on the inside of the LH rear door glass (ADHESIVE TAPE)'),
   // seats, restraints, instrument panel
   ...each((s) => [
     J(`front-seat-track-${s}#feet`, 'floor-pan', 'seat tracks bolted to the floor (BLT M10x28.4 / M8x27)'),
@@ -487,6 +499,8 @@ export const PASS_OK = [
   ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier (center tunnel trim #1) through the opening in its front face, below the front closeout panel (#14), and runs inside it to its outlet in the carrier's side wall; the carrier is drawn as a closed shell` })),
   { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the outboard flange of the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness passes down through it in its grommet (rear-subframe-harness#grommet), under the trunk side finisher' },
   { a: 'hood-latch#cable', b: 'dash-panel', reason: 'the lower instrument panel is drawn without the opening for the hood release handle (#1) in its LH lower edge: the release cable (#2) runs inside the panel along its LH end cover and reaches the handle through that opening' },
+  ...['LF', 'RF', 'LB', 'RB'].map((k) => ({ a: `door-latch-${k}#cable`, b: `door-${k}`, reason: 'the door inner panel is drawn without its access openings: the interior release cable leaves the latch in the door cavity and passes through the opening beside it to the opener (#7) in the trim' })),
+  ...['L', 'R'].map((s) => ({ a: `door-harness-${s}B#lead`, b: `door-${s}B`, reason: 'the rear door inner panel is drawn without its access openings: the rear door harness runs on the inboard face of the panel, under the trim, and its connector reaches the latch in the door cavity through the opening beside it' })),
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).

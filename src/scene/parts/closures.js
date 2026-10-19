@@ -41,11 +41,11 @@ export function buildClosures(reg) {
     reg.add({
       id: `rear-door-hinges-${sd}`, ko: `뒤 도어 힌지 (${ko})`, en: `Rear door hinges ${en}`, tags: `${sd}B`,
       groups: ['rear-door-hinges-and-fittings'],
-      // bolted to the B-pillar rear face and to the front of the rear door inner panel, inboard of
-      // the door seals
+      // bolted to the B-pillar rear face and to the front of the rear door inner panel (BLT M8x26 #5), inboard of
+      // the door seals; each against the inner panel, which moves outboard with height (tumblehome)
       object: group(
         rbox([0.05, 0.05, 0.036], [xr, 0.58, sg * 0.935], 'steel', { r: 0.008 }),
-        rbox([0.05, 0.05, 0.036], [xr, 0.86, sg * 0.935], 'steel', { r: 0.008 }),
+        rbox([0.05, 0.05, 0.036], [xr, 0.86, sg * 0.943], 'steel', { r: 0.008 }),
       ),
     });
     // The hood hinge (#6) sits on top of the rear end of the shotgun upper rail (front-inner-*, structure.js), at the
@@ -65,27 +65,45 @@ export function buildClosures(reg) {
       id: `hood-hinge-${sd}`, ko: `후드 힌지·가스 스트럿 (${ko})`, en: `Hood hinge & gas strut ${en}`, tags: sd,
       groups: ['hood-hinges-and-fittings'],
       object: group(
-        // body leaf: a horizontal flange on the rail top, bolted from above with 2 vertical M8 bolts (BLT HEX FLG
-        // M8x20 #7) into the rail, nuts (NUT M8 #5) underneath; the side aprons (underhood trim #2/#3) have holes for it
+        // body leaf: a flange on the rail top, bolted from above with 2 vertical M8 bolts (BLT HEX FLG M8x20 #7) into
+        // the rail; the side aprons (underhood trim #2/#3) have holes for it
         named('base', railPlate(1.12, 1.0, 0.023, 0.006, 0.045)),
-        // hinge body on the leaf (its hood leaf reaches up to the hood underside), with the active hinge's large inboard
-        // flange over the pedestrian protection actuator's plunger
-        railPlate(1.125, 1.005, 0.046, 0.04, 0.03),
+        // hinge body: the closed 4-bar links, from the body leaf up to the hood leaf, with the active hinge's large
+        // inboard flange over the pedestrian protection actuator's plunger
+        railPlate(1.125, 1.005, 0.053, 0.054, 0.03),
         box([0.04, 0.005, 0.078], [1.03, 0.8945, sg * 0.731], 'steel'),
-        // gas strut (#1) from an inboard arm of the hinge forward, inboard of the rail and under the side apron, to its
-        // body bracket (#2, BLT HF M6x15 #3) on the rear face of the shock tower
-        box([0.02, 0.008, 0.045], [1.12, 0.869, sg * 0.7395], 'steel'),
+        // hood leaf: a flat plate on the hood underside, on top of the links, held on the 3 hood studs by NUT M8 (#5);
+        // the rail runs parallel to the hood here and the plate is rolled 0.0475 rad about the rail axis to the hood's
+        // cross slope, so it lies flat 0.4-0.8 mm under the skin
+        named('hoodLeaf', (() => { const m = railPlate(1.125, 1.005, 0.0824, 0.006, 0.04); m.rotateY(sg * 0.0475); return m; })()),
+        // gas strut (#1) from the ball stud of BRKT-GAS PROP HOOD SIDE (#4) forward, inboard of the rail and under the
+        // side apron, to the ball stud of its body bracket (#2, BLT HF M6x15 #3) on the rear face of the shock tower
         named('strut', beam([1.12, 0.862, sg * 0.722], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
         named('strutBracket', rbox([0.02, 0.04, 0.04], [1.345, 0.815, sg * 0.615], 'steel', { r: 0.004 })),
+        // BRKT-GAS PROP HOOD SIDE (#4): its flange on the hood underside (2 x NUT M8 #5 on the hood studs), inboard of the
+        // hinge, and a web down behind the side underhood apron's rear edge (outboard of the rear apron) to the strut's
+        // ball stud; the web's drop stands for the hood inner panel's deep section there (not drawn) plus the bracket
+        named('hoodBracket', group(
+          box([0.05, 0.004, 0.034], [1.112, 0.9314, sg * 0.722], 'steel', [0, 0, -0.12]),
+          box([0.004, 0.078, 0.03], [1.1165, 0.891, sg * 0.722], 'steel'),
+        )),
       ),
     });
     reg.add({
       id: `liftgate-hinge-${sd}`, ko: `리프트게이트 힌지·스트럿 (${ko})`, en: `Liftgate hinge & strut ${en}`, tags: sd,
       groups: ['liftgate-hinges-and-fittings'], match: /HINGE|STRUT|BALL STUD|WEDGE|BUMPER|ANTI PINCH|push clip|SEALER|BLT|NUT/,
       object: group(
-        rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 }), // hinge on the roof rear header
-        tube([skinAt(3.9, 4.05, sd, -0.05), skinAt(4.15, 3.6, sd, -0.08), skinAt(4.35, 3.0, sd, -0.1)], 0.012, 'steel'),
-        tube([skinAt(3.35, 4.06, sd, -0.025), skinAt(4.0, 4.06, sd, -0.025), skinAt(4.5, 4.03, sd, -0.025)], 0.005, 'rubber'), // anti-pinch sensor
+        named('hinge', rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 })), // hinge on the roof rear header
+        // LIFTGATE GAS / POWER STRUT (#15/#16) on its two BALL STUDs (#17): the body stud forward, on the C-pillar
+        // reinforcement top (through a hole in the upper C-pillar trim), and the liftgate stud rearward, on the liftgate
+        // side band (through a hole in the liftgate side trim); closed, the strut lies along the opening edge just
+        // inboard of the trims
+        named('bodyStud', beam(skinAt(3.715, 3.70, sd, -0.024), skinAt(3.715, 3.70, sd, -0.06), 0.005, 'steel')),
+        named('strut', tube([skinAt(3.715, 3.70, sd, -0.06), skinAt(4.0, 3.975, sd, -0.061), skinAt(4.3, 4.036, sd, -0.054)], 0.012, 'steel')),
+        named('gateStud', beam(skinAt(4.3, 4.036, sd, -0.001), skinAt(4.3, 4.036, sd, -0.054), 0.005, 'steel')), // (the liftgate is drawn as its outer skin only: the stud reaches to 1 mm under it)
+        // ANTI PINCH SENSOR (#12/#13) clipped (push clips #14) along the liftgate side band: it follows the skin, its
+        // surface 1.5 mm under it (the liftgate is drawn as its outer skin only), so it no longer cuts through the skin
+        named('pinchSensor', tube(skinPath([[3.35, 4.06], [4.0, 4.06], [4.3, 4.06], [4.5, 4.03]], sd, -0.0065, 4), 0.005, 'rubber')),
       ),
     });
   }
@@ -134,7 +152,10 @@ export function buildClosures(reg) {
           faceTo(rbox([0.17, 0.045, 0.024], [0, 0, 0], 'darkMetal', { r: 0.006 }), skinAt(hs, hv, sd, -0.0125), hn, 'z'),
         ),
       });
-      // latch on the inner panel at the rear edge of the door, ahead of the B-pillar / lock pillar
+      // latch at the rear edge of the door, ahead of the B-pillar / lock pillar, inside the door cavity between the
+      // outer skin and the inner panel: its inboard face on the inner panel (offset -0.04), its outboard face 10 mm inside
+      // the skin; the interior release cable starts in it, leaves the door cavity through the inner panel's access
+      // opening (not drawn) and runs inboard of the panel, under the trim, to the opener
       const ls = range[1] - (fr === 'F' ? 0.05 : 0.04);
       const latchGroups = fr === 'F'
         ? ['front-door-latch-and-striker', 'front-door-latch-and-interior-release']
@@ -143,10 +164,10 @@ export function buildClosures(reg) {
         id: `door-latch-${sd}${fr}`, ko: `${frKo} 도어 래치·실내 릴리스 (${ko})`, en: `${frEn} door latch & interior release ${en}`, tags: `${sd}${fr}`,
         groups: latchGroups,
         object: group(
-          named('latch', rbox([0.05, 0.09, 0.05], skinAt(ls, 1.75, sd, -0.04).toArray(), 'darkMetal', { r: 0.008 })), // on the door inner panel
+          named('latch', rbox([0.05, 0.09, 0.03], skinAt(ls, 1.75, sd, -0.025).toArray(), 'darkMetal', { r: 0.008 })),
           named('striker', rbox([0.03, 0.03, 0.03], skinAt(range[1] + (fr === 'F' ? 0.01 : 0.03), 1.75, sd, -0.03).toArray(), 'steel', { r: 0.006 })), // on the B / lock pillar
-          rbox([0.1, 0.03, 0.025], skinAt(range[1] - 0.25, 2.15, sd, -0.105).toArray(), 'chrome', { r: 0.008 }),
-          tube([skinAt(ls, 1.75, sd, -0.05), skinAt(range[1] - 0.15, 2.0, sd, -0.08), skinAt(range[1] - 0.25, 2.15, sd, -0.1)], 0.003, 'steel'),
+          named('opener', rbox([0.1, 0.03, 0.025], skinAt(range[1] - 0.25, 2.15, sd, -0.105).toArray(), 'chrome', { r: 0.008 })),
+          named('cable', tube([skinAt(ls, 1.75, sd, -0.03), skinAt(range[1] - 0.15, 2.0, sd, -0.08), skinAt(range[1] - 0.25, 2.15, sd, -0.1)], 0.003, 'steel')),
         ),
       });
     }
@@ -332,15 +353,16 @@ export function buildClosures(reg) {
     id: 'labels-underhood', ko: '라벨 - 후드 아래(배출가스·냉매·구조대원)', en: 'Labels - under hood (emissions, refrigerant, first responder)', tags: 'F',
     groups: ['labels'], match: /EMISSION|REFRIGERANT|FIRST RESPONDER|FRONT INFO|VEHICLE|LBL/,
     object: group(
-      // on the hood underside, above the frunk
-      box([0.1, 0.002, 0.07], [1.95, 0.7985, 0.35], 'paper'),
-      box([0.08, 0.002, 0.05], [1.95, 0.801, -0.35], 'paper'),
+      // on the hood underside, above the frunk, tilted to its slope (-0.149 rad at x 1.90-2.00), 0.2-0.9 mm under the skin
+      box([0.1, 0.002, 0.07], [1.95, 0.8064, 0.35], 'paper', [0, 0, -0.149]),
+      box([0.08, 0.002, 0.05], [1.95, 0.8064, -0.35], 'paper', [0, 0, -0.149]),
     ),
   });
   reg.add({
     id: 'labels-window', ko: '라벨 - 창문 스티커(먼로니)', en: 'Labels - window sticker (Monroney)', tags: 'LB',
     groups: ['labels'], match: /MONRONEY|ADHESIVE TAPE/,
-    object: box([0.2, 0.25, 0.002], skinAt(3.15, 3.42, 'L', -0.012).toArray(), 'paper'),
+    // taped to the inner face of the LH rear door glass (the glass is at offset -0.004), following its curve
+    object: region([[3.05, 3.25, 3.2, 3.7]], { side: 'L', offset: -0.0055, mat: 'paper', edges: false }),
   });
 
   // --- Panoramic roof ----------------------------------------------------------------------
@@ -385,17 +407,18 @@ export function buildClosures(reg) {
   // opening seal (s 3.3), back along the roof rail between that seal (v 3.97) and the rear door seal
   // (v 3.9), and down the C-pillar behind the rear door opening.
   const drains = [];
-  for (const { sd } of SIDES) {
+  for (const { sd, sg } of SIDES) {
     // (front: off the spout outboard under the headliner, then down the A-pillar inside its section the whole way, behind
     // the pillar trim: at v 4.03 on the windshield side of the headliner harness (LH, v 4.02 further in), round the
     // pillar root ahead of the harness, the tweeter pocket and the door seal's corner, across the sail under the harness
-    // where it lies against the skin (s 1.625, v 3.74), on the door seal side of it down to the hinge pillar and down
-    // inside the hinge pillar to its outlet; it no longer passes through the door opening)
+    // where it lies against the skin (s 1.625, v 3.74), on the door seal side of it down to the hinge pillar, into the
+    // pillar's A-pillar-root section and down inside the hinge pillar, leaving its outer wall above the sill, behind the
+    // fender, to its outlet; it no longer passes through the door opening or over the top of the hinge pillar)
     drains.push(named(`drainF${sd}`, tube([skinAt(R0 - 0.02, 4.17, sd, -0.022), skinAt(2.37, 4.095, sd, -0.016), skinAt(2.33, 4.04, sd, -0.01),
       skinAt(2.2, 4.035, sd, -0.009), skinAt(2.1, 4.03, sd, -0.011), ...[[1.95, 4.032, -0.0095], [1.8, 4.033, -0.0095], [1.7, 4.036, -0.0105],
         [1.65, 4.025, -0.013], [1.622, 3.98, -0.016], [1.615, 3.88, -0.019], [1.62, 3.78, -0.021], [1.63, 3.7, -0.021], [1.64, 3.6, -0.019],
         [1.632, 3.45, -0.016], [1.6, 3.3, -0.015]].map(([s, v, o]) => skinAt(s, v, sd, o)),
-      skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02), skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
+      [0.892, 0.921, sg * 0.854], [0.93, 0.9, sg * 0.89], [0.952, 0.76, sg * 0.926], [0.955, 0.56, sg * 0.932], skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
     drains.push(named(`drainR${sd}`, pipe([[R1 + 0.02, 4.17, -0.022], [3.215, 4.1, -0.016], [3.225, 4.06, -0.012], [3.268, 4.06, -0.012],
       [3.268, 3.94, -0.008], [3.5, 3.94, -0.008], [3.58, 3.86, -0.015], [3.62, 3.5, -0.015], [3.64, 3.0, -0.015], [3.64, 2.4, -0.02],
       [3.64, 1.5, -0.02], [3.64, 0.8, -0.02]].map(([s, v, o]) => skinAt(s, v, sd, o)), 0.005, 'rubber', { bend: 0.02 })));

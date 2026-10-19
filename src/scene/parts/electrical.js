@@ -224,7 +224,7 @@ export function buildElectrical(reg) {
       object: named('lead', pipe([[-0.305, 0.312, sg * 0.765], [-0.303, 0.372, sg * 0.767], [-0.295, 0.43, sg * 0.8], [-0.278, 0.466, sg * 0.845],
         [-0.265, 0.468, sg * 0.86], [-0.262, 0.468, sg * 0.928],
         [-0.3, 0.5, sg * 0.928], [-0.4, 0.62, sg * 0.932], skinAt(r0 + 0.12, 1.45, sd, -0.05), skinAt((r0 + r1) / 2, 1.6, sd, -0.05),
-        [-0.95, 0.89, sg * 0.946], [-0.99, 0.905, sg * 0.946]], 0.008, 'wire', { bend: 0.04 })),
+        [-0.95, 0.89, sg * 0.946], [-0.99, 0.905, sg * 0.946], skinAt(r1 - 0.04, 1.7, sd, -0.03)], 0.008, 'wire', { bend: 0.04 })), // its connector into the latch, below the release cable
     });
     // liftgate harnesses: from the headliner harness T at the rear header (above the headliner), in front
     // of the liftgate hinge and outboard along the header between the pano cassette's rear corner and the
@@ -409,9 +409,10 @@ export function buildElectrical(reg) {
       // coils whose location the catalog does not give, drawn in the console's rear end
       named('consoleCoil', torus(0.022, 0.007, 'y', [0.32, 0.3177, 0], 'blackPlastic')),
       named('rearCoil', torus(0.022, 0.007, 'y', [-0.33, 0.3177, 0], 'blackPlastic')),
-      // rectangular antennas (#4): two fore-aft against the inside of the IP end caps' outer walls (SCR M4 #9),
-      // the third in the rear bumper
-      ...SIDES.map(({ sd, sg }) => named(`ipAntenna${sd}`, rbox([0.14, 0.025, 0.012], [0.62, 0.85, sg * 0.832], 'blackPlastic', { r: 0.003 }))),
+      // rectangular antennas (#4): two fore-aft against the inside of the IP end caps' outer walls (SCR M4 #9), set
+      // 1 mm (the moulded wall thickness; the cap wall at |z| 0.838 is drawn as a bare surface) inboard of it; the third in
+      // the rear bumper
+      ...SIDES.map(({ sd, sg }) => named(`ipAntenna${sd}`, rbox([0.14, 0.025, 0.012], [0.62, 0.85, sg * 0.831], 'blackPlastic', { r: 0.003 }))),
       rbox([0.04, 0.025, 0.14], [-2.33, 0.56, 0], 'blackPlastic', { r: 0.006 }),
     ),
   });
@@ -420,11 +421,19 @@ export function buildElectrical(reg) {
       id: `horn-${sd}`, ko: `경음기 (${ko})`, en: `Horn ${en}`, tags: sd,
       groups: ['horns'], match: sg < 0 ? /HI TONE|510 Hz|BLT|NUT|CLIP|SEAL/ : /LOW TONE|410 Hz|SIREN|BBS|BLT|NUT|CLIP|SEAL/,
       // RC horn (#1/#2, located on the front end module): its integral bracket, a strap from the back of
-      // the horn, bolted to the front face of the fascia carrier's side post (the later 510/410 Hz horns
-      // bolt to the centre active louver with BLT M6x20 #3 instead)
+      // the horn whose end is bent down into a tab lying flat on the front face of the fascia carrier's side post
+      // (which leans back 3.6 deg) and bolted through it (the later 510/410 Hz horns bolt to the centre active louver
+      // with BLT M6x20 #3 instead)
       object: group(
         named('horn', disc(0.05, 0.03, 'x', [2.26, 0.38, sg * 0.6], 'blackPlastic')),
-        named('bracket', box([0.106, 0.005, 0.04], [2.192, 0.4, sg * 0.615], 'steel')),
+        named('bracket', box([0.1025, 0.005, 0.04], [2.19375, 0.4, sg * 0.615], 'steel')),
+        named('tab', (() => {
+          const P = (y) => new THREE.Vector3(2.13 - 0.03 * (y - 0.218) / 0.482, y, sg * 0.615); // post axis (structure.js)
+          const n = new THREE.Vector3(0.482, 0.03, 0).normalize(); // post front-face normal; the face is 20 mm off the axis
+          const m = bar(P(0.38).addScaledVector(n, 0.022), P(0.42).addScaledVector(n, 0.022), 0.004, 0.04, 'steel');
+          delete m.userData.span; // a 40 x 40 mm tab, not a linear member
+          return m;
+        })()),
       ),
     });
   }

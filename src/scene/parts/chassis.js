@@ -673,7 +673,8 @@ export function buildChassis(reg) {
       named('gearbox', rbox([0.34, 0.26, 0.18], [XF - 0.02, WY, 0.0], 'aluminum', { r: 0.04 })),
       named('inverter', rbox([0.24, 0.2, 0.22], [XF - 0.1, WY + 0.02, -0.2], 'darkMetal', { r: 0.03 })),
       // LHS motor mount #8/#9 on the left subframe rail, torque reaction arm #13 to the rear cross member
-      named('mount', rbox([0.155, 0.065, 0.07], [XF + 0.0875, WY - 0.0625, -0.31], 'rubber', { r: 0.02 })), // underside on the rail top
+      // (underside on the full width of the rail top, its top kept under the LH inner CV joint, inboard face on the inverter)
+      named('mount', rbox([0.155, 0.048, 0.085], [XF + 0.0875, WY - 0.071, -0.3275], 'rubber', { r: 0.02 })),
       named('torqueArm', bar([XF - 0.17, WY - 0.12, 0.05], [XF - 0.3, WY - 0.12, 0.05], 0.035, 0.05, 'aluminum')),
     ),
   });
