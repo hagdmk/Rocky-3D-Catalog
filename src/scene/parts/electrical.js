@@ -7,7 +7,7 @@ import { SV } from './exterior.js';
 import { SEAT } from './interior.js';
 import { STEER } from './chassis.js';
 import {
-  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, disc, faceTo, mesh,
+  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, disc, torus, faceTo, mesh,
 } from '../geom.js';
 
 const SIDES = [
@@ -400,13 +400,17 @@ export function buildElectrical(reg) {
     ),
   });
   reg.add({
-    id: 'passive-entry', ko: '패시브 엔트리 안테나(콘솔·뒤 범퍼)', en: 'Passive entry antennas (console, rear bumper)',
+    id: 'passive-entry', ko: '패시브 엔트리 안테나(콘솔·IP 엔드캡·뒤 범퍼)', en: 'Passive entry antennas (console, IP end caps, rear bumper)',
     groups: ['remote-and-passive-entry'],
     object: group(
-      // LF coils (#1) inside the centre console shell, on the carpeted tunnel floor: the front one in the
-      // dead key fob bracket (#10, push-pull rivets #11), the rear one in the console's rear end
-      named('consoleCoil', rbox([0.12, 0.025, 0.04], [0.32, 0.3235, 0], 'blackPlastic', { r: 0.006 })),
-      named('rearCoil', rbox([0.12, 0.025, 0.04], [-0.33, 0.3235, 0], 'blackPlastic', { r: 0.006 })),
+      // LF coils (#1, ring-shaped, qty 5) lying on the carpeted tunnel floor inside the centre console shell: the
+      // front one in the dead key fob bracket (#10, push-pull rivets #11); the rear one stands for one of the
+      // coils whose location the catalog does not give, drawn in the console's rear end
+      named('consoleCoil', torus(0.022, 0.007, 'y', [0.32, 0.3177, 0], 'blackPlastic')),
+      named('rearCoil', torus(0.022, 0.007, 'y', [-0.33, 0.3177, 0], 'blackPlastic')),
+      // rectangular antennas (#4): two fore-aft against the inside of the IP end caps' outer walls (SCR M4 #9),
+      // the third in the rear bumper
+      ...SIDES.map(({ sd, sg }) => named(`ipAntenna${sd}`, rbox([0.14, 0.025, 0.012], [0.62, 0.85, sg * 0.832], 'blackPlastic', { r: 0.003 }))),
       rbox([0.04, 0.025, 0.14], [-2.33, 0.56, 0], 'blackPlastic', { r: 0.006 }),
     ),
   });
@@ -414,12 +418,12 @@ export function buildElectrical(reg) {
     reg.add({
       id: `horn-${sd}`, ko: `경음기 (${ko})`, en: `Horn ${en}`, tags: sd,
       groups: ['horns'], match: sg < 0 ? /HI TONE|510 Hz|BLT|NUT|CLIP|SEAL/ : /LOW TONE|410 Hz|SIREN|BBS|BLT|NUT|CLIP|SEAL/,
-      // RC horn (#1/#2, the version 'located on front end module'): its integral bracket bolted under
-      // the front energy absorber crush can (the later 510/410 Hz horns bolt to the centre active
-      // louver with BLT M6x20 #3 instead)
+      // RC horn (#1/#2, located on the front end module): its integral bracket, a strap from the back of
+      // the horn, bolted to the front face of the fascia carrier's side post (the later 510/410 Hz horns
+      // bolt to the centre active louver with BLT M6x20 #3 instead)
       object: group(
         named('horn', disc(0.05, 0.03, 'x', [2.26, 0.38, sg * 0.6], 'blackPlastic')),
-        named('bracket', box([0.03, 0.006, 0.08], [2.27, 0.428, sg * 0.555], 'steel')),
+        named('bracket', box([0.106, 0.005, 0.04], [2.192, 0.4, sg * 0.615], 'steel')),
       ),
     });
   }
