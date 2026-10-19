@@ -225,23 +225,28 @@ export function buildElectrical(reg) {
         [-0.3, 0.5, sg * 0.928], [-0.4, 0.62, sg * 0.932], skinAt(r0 + 0.12, 1.45, sd, -0.05), skinAt((r0 + r1) / 2, 1.6, sd, -0.05),
         [-0.95, 0.89, sg * 0.946], [-0.99, 0.905, sg * 0.946]], 0.008, 'wire', { bend: 0.04 })),
     });
-    // liftgate harnesses: from the headliner harness T at the rear header (above the headliner),
-    // inboard of the liftgate hinge, over the opening seal where it crosses the header (between the
-    // seal and the roof / glass, clear of both), past the AM/FM amplifier and down the liftgate frame
-    // between its panel and the trim to the rear camera (LH) or the latch (RH)
-    const t0 = skinAt(3.24, 4.65, sd, -0.018);
-    const lg = [t0, V(-0.79, 1.3905, t0.z), V(-0.81, 1.3905, t0.z), V(-0.83, 1.387, t0.z), skinAt(3.39, 4.4, sd, -0.018),
-      skinAt(3.46, 4.33, sd, -0.018), skinAt(3.6, 4.3, sd, -0.018)];
-    for (const s of [3.8, 4.1, 4.4, 4.7, 4.85]) lg.push(skinAt(s, 4.15, sd, -0.02));
+    // liftgate harnesses: from the headliner harness T at the rear header (above the headliner), in front
+    // of the liftgate hinge and outboard along the header between the pano cassette's rear corner and the
+    // opening seal, under the rear roof drain tube, then over the seal where it turns down the side
+    // (between the seal and the liftgate panel) onto the liftgate and down its side frame in the band
+    // behind the liftgate trim, outboard of the glass (under the drain tube again where it crosses the
+    // band), to the rear camera (LH) or the latch (RH); offsets are along the skin normal (skin 0, trim and
+    // headliner -0.035)
+    const lgPts = [[3.24, 4.65, -0.018], [3.205, 4.635, -0.022], [3.185, 4.59, -0.022], [3.185, 4.49, -0.022], [3.24, 4.42, -0.022],
+      [3.25, 4.24, -0.024], [3.255, 4.16, -0.029], [3.265, 4.1, -0.022], [3.3, 4.09, -0.0085], [3.33, 4.095, -0.02],
+      [3.37, 4.095, -0.028], [3.43, 4.095, -0.022], [3.6, 4.095, -0.02], [3.9, 4.095, -0.02], [4.2, 4.095, -0.02], [4.4, 4.095, -0.02],
+      [4.7, 4.15, -0.02], [4.85, 4.15, -0.02]];
+    const lg = lgPts.map(([s, v, o]) => skinAt(s, v, sd, o));
     if (sg < 0) lg.push(skinAt(4.85, 4.6, sd, -0.02), findOnFace('rear', 0.86, -0.06, -0.022).p, findOnFace('rear', 0.864, -0.004, -0.024).p);
     else lg.push(findOnFace('rear', 0.84, 0.3, -0.022).p, findOnFace('rear', 0.795, 0.15, -0.022).p, findOnFace('rear', 0.782, 0.06, -0.022).p);
     reg.add({
       id: `liftgate-harness-${sd}`, ko: `리프트게이트 하네스 (${ko})`, en: `Liftgate harness ${en}`, tags: sd,
       groups: ['doors-and-liftgate-harnesses'], match: /LIFTGATE/,
       object: group(
-        named('lead', tube(lg, 0.008, 'wire')),
-        // connector lead to the AM/FM antenna amplifier beside the harness
-        named('ampLead', tube([skinAt(3.4, 4.38, sd, -0.02), skinAt(3.38, 4.36, sd, -0.021)], 0.005, 'wire')),
+        named('lead', pipe(lg, 0.006, 'wire', { bend: 0.03 })),
+        // connector lead off it on the header, over the seal to the AM/FM antenna amplifier on the liftgate
+        named('ampLead', pipe([[3.245, 4.36, -0.022], [3.275, 4.355, -0.011], [3.3, 4.355, -0.0075], [3.335, 4.355, -0.012]]
+          .map(([s, v, o]) => skinAt(s, v, sd, o)), 0.005, 'wire', { bend: 0.01 })),
       ),
     });
   }
