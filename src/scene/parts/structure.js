@@ -552,7 +552,8 @@ export function buildStructure(reg) {
     const t = 0.008;
     return group(
       quadPlate([P(2.1, zi), P(2.1, zo(2.1)), P(hx1, zo(hx1)), P(hx1, zi)], t, 'blackPlastic'),
-      quadPlate([P(hx0, zi), P(hx0, zo(hx0)), P(1.15, zo(1.15)), P(1.15, zi)], t, 'blackPlastic'),
+      // behind the tower its inner edge follows the frunk tub's rear chamfer (5 mm outboard of the hood seal)
+      quadPlate([P(hx0, zi), P(hx0, zo(hx0)), P(1.15, zo(1.15)), P(1.15, fzr + 0.005 - ((1.2 - 1.15) / (fxc - fx1)) * (fz - fzr))], t, 'blackPlastic'),
       quadPlate([P(hx1, zi), P(hx1, hz0), P(hx0, hz0), P(hx0, zi)], t, 'blackPlastic'),
       quadPlate([P(hx1, hz1), P(hx1, zo(hx1)), P(hx0, zo(hx0)), P(hx0, hz1)], t, 'blackPlastic'),
       // shock tower cover: cap and its front / side walls down to the apron opening
@@ -573,10 +574,11 @@ export function buildStructure(reg) {
       object: sideApron(sg),
     });
   }
+  // its front edge laps 12 mm over the frunk tub's rear wall, resting on the hood seal there
   reg.add({
     id: 'underhood-apron-rear', ko: '리어 언더후드 에이프런(냉각수 캡 접근)', en: 'Rear underhood apron',
     groups: ['underhood-trim'], match: /APRON, RR|U.HOOD APRON RR|DM ASY-UNDERHOOD APRON, RR|SEAL - HOOD TO COWL/,
-    object: quadPlate([[1.2, ay(1.2), -0.62], [1.2, ay(1.2), 0.62], [0.98, ay(0.98) - 0.005, 0.62], [0.98, ay(0.98) - 0.005, -0.62]], 0.008, 'blackPlastic'),
+    object: quadPlate([[1.212, ay(1.2) - 0.0012, -0.62], [1.212, ay(1.2) - 0.0012, 0.62], [0.98, ay(0.98) - 0.005, 0.62], [0.98, ay(0.98) - 0.005, -0.62]], 0.008, 'blackPlastic'),
   });
 
   // --- NVH plugs and patches (floor pan plugs, door inner panel tapes) ----------------

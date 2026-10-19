@@ -182,10 +182,26 @@ export function buildExterior(reg) {
     groups: ['closure-panels'],
     object: region([[SV.hoodFront, SV.hoodRear, 2.55, 5]], { field: (q, s, v) => -FRONT.head(q, s, v) }),
   });
+  // Cowl screen over the wiper module and the plenum; the wiper spindles rise through it.  Its front
+  // flange turns down at its front edge under the hood's rear edge and slopes forward, clear of the wiper
+  // motor, onto the rear underhood apron (|z| 0.62) and, beyond the apron, onto the plenum ends (to
+  // |z| 0.745, inboard of the shotgun rail ends), so with the hood open the module and the plenum stay
+  // covered.
   reg.add({
     id: 'cowl-screen', ko: '카울 스크린', en: 'Cowl screen', shell: true, match: /COWL/,
     groups: ['underhood-trim'],
-    object: region([[SV.hoodRear, SV.cowlRear, 2.55, 5]], { mat: 'blackPlastic' }),
+    object: group(
+      region([[SV.hoodRear, SV.cowlRear, 2.55, 5]], { mat: 'blackPlastic' }),
+      named('flange', (() => {
+        const [x0, yTop, yKnee, x1] = [0.9655, 0.9485, 0.9445, 0.992];
+        return plates([
+          quadPlate([[x0, yTop, -0.745], [x0, yTop, 0.745], [x0, yKnee, 0.745], [x0, yKnee, -0.745]], 0.003, 'blackPlastic'),
+          quadPlate([[x0, yKnee, -0.62], [x0, yKnee, 0.62], [x1, 0.904, 0.62], [x1, 0.904, -0.62]], 0.003, 'blackPlastic'),
+          // beyond the apron, steeper, down to the plenum's front edge
+          ...[-1, 1].map((sg) => quadPlate([[x0, yKnee, sg * 0.62], [x0, yKnee, sg * 0.745], [0.995, 0.869, sg * 0.745], [0.995, 0.869, sg * 0.62]], 0.003, 'blackPlastic')),
+        ], 'blackPlastic');
+      })()),
+    ),
   });
 
   // --- Glass ---------------------------------------------------------------
