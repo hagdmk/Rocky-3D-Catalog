@@ -334,7 +334,7 @@ export function buildClosures(reg) {
     object: group(
       // on the hood underside, above the frunk
       box([0.1, 0.002, 0.07], [1.95, 0.7985, 0.35], 'paper'),
-      box([0.08, 0.002, 0.05], [1.95, 0.799, -0.35], 'paper'),
+      box([0.08, 0.002, 0.05], [1.95, 0.801, -0.35], 'paper'),
     ),
   });
   reg.add({
