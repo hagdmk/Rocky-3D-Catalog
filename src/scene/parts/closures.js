@@ -3,7 +3,7 @@
 
 import * as THREE from 'three';
 import { skinAt, skinNormal, skinPath, findOnFace } from '../body.js';
-import { region, SV } from './exterior.js';
+import { region, SV, skinRibbon } from './exterior.js';
 import { xOf } from '../profile.js';
 import {
   V, group, named, rbox, box, cyl, beam, bar, tube, pipe, faceTo, mesh, quadPlate,
@@ -102,7 +102,7 @@ export function buildClosures(reg) {
   for (const { sd, sg, ko, en } of SIDES) {
     for (const [fr, range, frKo, frEn] of [['F', SV.frontDoor, '앞', 'front'], ['B', SV.rearDoor, '뒤', 'rear']]) {
       const sm = (range[0] + range[1]) / 2;
-      const vTop = SV.vSill + 0.01;
+      const vTop = SV.vSill + 0.005; // the rail tops end just inside the glass clamp, under the inner belt seal
       // rail from the inner panel up along the outer skin (clear of the door harness) to the glass edge
       const rail = (d0, d1) => pipe([[1.0, -0.036], [1.6, -0.019], [2.1, -0.017], [2.5, -0.017], [vTop, -0.012]]
         .map(([v, o]) => skinAt(sm + d0 + (d1 - d0) * ((v - 1.0) / (vTop - 1.0)), v, sd, o)), 0.008, 'steel');
@@ -205,7 +205,10 @@ export function buildClosures(reg) {
   // --- Seals -------------------------------------------------------------------------
   // Body side primary seals round the door openings, and the margin seals that fill the shut lines just
   // under the skin: A-pillar margin (front door seals #6) between the fender / cowl and the front door,
-  // B-pillar margin (rear door seals #5) between the front and the rear door, below the belt moulding.
+  // B-pillar margin (rear door seals #5) between the front and the rear door, below the belt moulding.  The belt
+  // seals close both sides of the door glass's lower edge: the inner belt seal (front #2 / rear #3 SEAL - DOOR FR/RR INR
+  // BELT) from the trim pad's window-sill cap to the glass, the outer belt seal (front #3 / rear #4 OTR BELT) from the
+  // bright belt moulding to the glass.
   for (const { sd, ko, en } of SIDES) {
     const f = SV.frontDoor;
     const r = SV.rearDoor;
@@ -216,6 +219,8 @@ export function buildClosures(reg) {
       object: group(
         loop([[f[0] + 0.01, 0.32], [f[1] - 0.01, 0.32], [f[1] - 0.01, 3.9], [f[0] + 0.06, 3.9], [f[0] + 0.01, 3.0], [f[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
         named('aPillarMargin', margin(SV.fenderRear, f[0], SV.vSill)),
+        named('innerBelt', skinRibbon(sd, f[0] + 0.03, f[1] - 0.025, [3.02, -0.012], [3.03, -0.0045], 'rubber')),
+        named('outerBelt', skinRibbon(sd, SV.frontGlass[0], SV.frontGlass[1], [SV.vSill, 0.002], [3.015, -0.0035], 'rubber')),
       ),
     });
     reg.add({
@@ -224,6 +229,8 @@ export function buildClosures(reg) {
       object: group(
         loop([[r[0] + 0.01, 0.32], [r[1] - 0.01, 0.32], [r[1] - 0.01, 3.0], [r[1] - 0.06, 3.9], [r[0] + 0.01, 3.9], [r[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
         named('bPillarMargin', margin(f[1], r[0], SV.vBelt)),
+        named('innerBelt', skinRibbon(sd, r[0] + 0.02, SV.rearGlass[1] - 0.005, [3.02, -0.012], [3.03, -0.0045], 'rubber')),
+        named('outerBelt', skinRibbon(sd, SV.rearGlass[0], SV.rearGlass[1], [SV.vSill, 0.002], [3.015, -0.0035], 'rubber')),
       ),
     });
   }

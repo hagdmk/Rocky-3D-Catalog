@@ -114,7 +114,7 @@ export const REAR = {
 const LG_EDGE = 3.965;
 
 /** Surface ribbon between two lines on the skin, (v0, offset o0) and (v1, o1), over s0..s1 (fraction t0..t1 across). */
-function skinRibbon(sd, s0, s1, [v0, o0], [v1, o1], mat, t0 = 0, t1 = 1) {
+export function skinRibbon(sd, s0, s1, [v0, o0], [v1, o1], mat, t0 = 0, t1 = 1) {
   const k = Math.max(2, Math.ceil((s1 - s0) / 0.04));
   const pos = [];
   const idx = [];
