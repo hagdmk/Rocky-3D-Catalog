@@ -579,7 +579,10 @@ if (want('float')) {
         rowTested++;
         const whole = y.shape === shapeOfItem(y.it);
         if (touchOnce(`${a.id}/${idx[0]}|${whole ? y.it.id : ref}`, P, y.shape)) byJoint.add(y.it.id);
-        else rowMissed++;
+        else {
+          rowMissed++;
+          if (verbose) info.push(`float: joint partner ${ref} does not touch ${label}, which is measured against every part near it`);
+        }
       }
       for (const cfg of CONFIGS) {
         if (!visibleIn(a, cfg)) continue;
