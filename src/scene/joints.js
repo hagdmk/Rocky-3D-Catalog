@@ -450,6 +450,7 @@ export const PASS_OK = [
   { a: 'door-harness-*B#lead', b: 'b-pillar-*', reason: 'the lower B-pillar is a closed section drawn as a solid block: the rear door harness enters it through a grommeted hole in its inboard wall and leaves through the rear door harness grommet (#2/#4) in its rear face below the lower hinge' },
   { a: 'hvac-drain-hose#hose', b: 'sound-insulation', reason: 'the dash insulator is drawn without the hole for the drain tube grommet (heater assembly #6); the drain tube passes through the grommet there' },
   { a: 'hvac-unit#evapPipes', b: 'sound-insulation', reason: 'the dash insulator is drawn without its opening for the evaporator pipes, which pass through the bulkhead to the TXV (A/C pipes #11) on the motor-bay side' },
+  ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier through the opening in its front closeout (#14) and runs under it to its outlet in the carrier's side wall; the tunnel trim is drawn as a closed shell` })),
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).

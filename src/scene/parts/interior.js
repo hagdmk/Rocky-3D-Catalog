@@ -24,6 +24,10 @@ export const REAR_SEAT = { x: -0.95 };
 // over the tunnel the shell is open (the HVAC case and the console closeouts close it there).
 const IP_TOP = [[0.9, 0.925], [0.54, 0.94], [0.47, 0.905], [0.463, 0.88], [0.44, 0.8], [0.4475, 0.72], [0.46, 0.64]];
 const IP_COLUMN = { z0: -0.43, z1: -0.31, j0: 3, j1: 5 }; // column opening in the face, y 0.72-0.88
+// instrument cluster opening in the top rear edge and the upper face, y 0.80-0.94, over the column
+const IP_CLUSTER = { z0: -0.537, z1: -0.203, j0: 1, j1: 4 };
+// cluster recess walls in the IP cluster frame: from the edge of the opening back to the screen's front face
+const CLUSTER_CHEEK = [[0.54, 0.94], [0.47, 0.905], [0.463, 0.88], [0.44, 0.8], [0.525, 0.825], [0.51, 0.946]];
 // LH: at the kick panel the cover carries the hood release handle; over the body controller hung from the
 // beam it rises above the controller; inboard it runs above the pedal box, under the column U-joint and
 // the steering I-shaft
@@ -68,15 +72,24 @@ function capZ(pts, z, mat) {
 function dashShell() {
   const face = (b) => [...IP_TOP, b];
   const faceSt = [
-    [-0.735, IP_LH_OUT[0]], [-0.61, IP_LH_OUT[0]], [-0.6, IP_LH_IN[0]], [IP_COLUMN.z0, IP_LH_IN[0]], [IP_COLUMN.z1, IP_LH_IN[0]],
-    [-0.28, IP_LH_IN[0]], [-0.27, IP_CTR_B], [0.21, IP_CTR_B], [0.22, IP_RH_IN[0]], [0.735, IP_RH_OUT[0]],
+    [-0.735, IP_LH_OUT[0]], [-0.61, IP_LH_OUT[0]], [-0.6, IP_LH_IN[0]], [IP_CLUSTER.z0, IP_LH_IN[0]], [IP_COLUMN.z0, IP_LH_IN[0]],
+    [IP_COLUMN.z1, IP_LH_IN[0]], [-0.28, IP_LH_IN[0]], [-0.27, IP_CTR_B], [IP_CLUSTER.z1, IP_CTR_B], [0.21, IP_CTR_B],
+    [0.22, IP_RH_IN[0]], [0.735, IP_RH_OUT[0]],
   ].map(([z, b]) => ({ z, pts: face(b) }));
+  const opening = (i, j) => (faceSt[i].z === IP_COLUMN.z0 && j >= IP_COLUMN.j0 && j < IP_COLUMN.j1)
+    || (faceSt[i].z >= IP_CLUSTER.z0 && faceSt[i + 1].z <= IP_CLUSTER.z1 && j >= IP_CLUSTER.j0 && j < IP_CLUSTER.j1);
   const lh = [[-0.735, IP_LH_KICK], [-0.7, IP_LH_KICK], [-0.69, IP_LH_OUT], [-0.61, IP_LH_OUT], [-0.6, IP_LH_IN], [-0.28, IP_LH_IN]]
     .map(([z, pts]) => ({ z, pts }));
   const rh = [[0.22, IP_RH_IN], [0.53, IP_RH_IN], [0.575, IP_RH_OUT], [0.735, IP_RH_OUT]].map(([z, pts]) => ({ z, pts }));
   return group(
-    // the steering column and its covers pass through the opening in the face
-    loftZ(faceSt, 'leather', (i, j) => faceSt[i].z === IP_COLUMN.z0 && j >= IP_COLUMN.j0 && j < IP_COLUMN.j1),
+    // the steering column and its covers pass through the opening in the face; above it the cluster shows
+    // through its opening under the cluster hood
+    loftZ(faceSt, 'leather', opening),
+    // cluster frame (#28): recess side walls and, beside the column, its floor under the screen
+    capZ(CLUSTER_CHEEK, IP_CLUSTER.z0, 'blackPlastic'),
+    capZ(CLUSTER_CHEEK, IP_CLUSTER.z1, 'blackPlastic'),
+    ...[[IP_CLUSTER.z0, IP_COLUMN.z0], [IP_COLUMN.z1, IP_CLUSTER.z1]].map(([z0, z1]) => quadPlate(
+      [[0.44, 0.8, z0], [0.44, 0.8, z1], [0.525, 0.825, z1], [0.525, 0.825, z0]], 0.003, 'blackPlastic')),
     loftZ(lh, 'leather'),
     loftZ(rh, 'leather'),
     // IP side covers (#15/#16)
@@ -158,8 +171,8 @@ export function buildInterior(reg) {
   // leave the two ears beside the touchscreen; the rear footwell ducts and the centre console duct
   // leave its floor and pass under the HVAC controller, behind the console front closeouts.  The floor
   // ducts (#17 LH / #18 RH) then run back under the console carrier (over the restraint controller and
-  // the ESC sensor) and leave it at the base of its side walls, under the front seat cushions, where
-  // their outlets blow rearward into the rear footwells.
+  // the ESC sensor) to outlets in the base of its side walls under the front seat cushions, which blow
+  // out under the seats into the rear footwells.
   const duct = (name, pts, r) => named(name, pipe(pts, r, 'blackPlastic', { bend: 0.03 }));
   const vents = [];
   for (const [z, w, name] of [[-0.62, 0.16, 'ventL'], [-0.168, 0.1, 'ventCL'], [0.168, 0.1, 'ventCR'], [0.62, 0.16, 'ventR']]) {
@@ -175,9 +188,9 @@ export function buildInterior(reg) {
       ...SIDES.map(({ sd, sg }) => duct(`centre${sd}`, [[0.565, 0.715, sg * 0.145], [0.5, 0.77, sg * 0.158], [0.455, 0.79, sg * 0.168]], 0.02)),
       ...SIDES.map(({ sd, sg }) => duct(`floor${sd}`, [[0.7, 0.445, sg * 0.14], [0.7, 0.41, sg * 0.135], [0.62, 0.345, sg * 0.11],
         [0.47, 0.33, sg * 0.1], [0.3, 0.33, sg * 0.1], [0.17, 0.384, sg * 0.09], [-0.15, 0.384, sg * 0.09], [-0.212, 0.338, sg * 0.1],
-        [-0.25, 0.335, sg * 0.138], [-0.275, 0.335, sg * 0.143]], 0.017)),
-      // fishtail outlets at the duct ends, under the rear edge of the front seat cushions
-      ...SIDES.map(({ sd, sg }) => named(`floorOutlet${sd}`, rbox([0.02, 0.036, 0.036], [-0.284, 0.335, sg * 0.143], 'blackPlastic', { r: 0.004 }))),
+        [-0.25, 0.335, sg * 0.102], [-0.256, 0.335, sg * 0.118]], 0.017)),
+      // their outlets in the base of the console side walls, under the front seat cushions
+      ...SIDES.map(({ sd, sg }) => named(`floorOutlet${sd}`, rbox([0.046, 0.04, 0.004], [-0.256, 0.335, sg * 0.1335], 'blackPlastic', { r: 0.0015 }))),
       duct('console', [[0.65, 0.45, 0.035], [0.63, 0.4, 0.035], [0.5, 0.365, 0.04], [0.43, 0.367, 0.04], [-0.32, 0.37, 0.04],
         [-0.36, 0.42, 0.035], [-0.393, 0.47, 0.035]], 0.022),
     ),
@@ -187,7 +200,8 @@ export function buildInterior(reg) {
     groups: ['instrument-cluster'],
     object: group(
       rbox([0.035, 0.12, 0.33], [0.53, 0.887, -0.37], 'screen', { r: 0.008, rot: [0, 0, 0.2] }),
-      rbox([0.09, 0.03, 0.36], [0.55, 0.962, -0.37], 'leather', { r: 0.012 }),
+      // hood over the screen, overhanging the opening in the IP
+      rbox([0.11, 0.026, 0.37], [0.54, 0.959, -0.37], 'leather', { r: 0.011 }),
       // mounting brackets from the cluster housing to the cross-car beam, either side of the column
       ...[-0.48, -0.215].map((z, i) => named(`bracket${i}`, beam([0.552, 0.872, z], [0.716, 0.753, z], 0.008, 'steel'))),
     ),
@@ -237,19 +251,18 @@ export function buildInterior(reg) {
       // riser at the rear edge of the floor up in front of the 2nd-row cushion, to above its front underside
       quadPlate([[-0.68, 0.305, -0.57], [-0.68, 0.305, 0.57], [-0.68, 0.5, 0.57], [-0.68, 0.5, -0.57]], 0.01, 'carpet'),
       // and turned back under the cushion's front edge, closing the gap to it
-      quadPlate([[-0.675, 0.502, -0.565], [-0.675, 0.502, 0.565], [-0.72, 0.502, 0.565], [-0.72, 0.502, -0.565]], 0.004, 'carpet'),
+      quadPlate([[-0.675, 0.502, -0.565], [-0.675, 0.502, 0.565], [-0.708, 0.502, 0.565], [-0.708, 0.502, -0.565]], 0.004, 'carpet'),
       // rear footwell outboard corners, beside the cushion: the riser continues out to the sill and a carpeted
       // closeout (heel-kick shelf) runs back from it at y 0.465 to the rear rail node and the wheelhouse, with
       // a return down to the sill top; the HV cable and coolant hose risers stay below it (energy.js)
       ...SIDES.map(({ sd, sg }) => named(`corner${sd}`, group(
-        quadPlate([[-0.68, 0.305, sg * 0.57], [-0.68, 0.305, sg * 0.768], [-0.68, 0.465, sg * 0.768], [-0.68, 0.465, sg * 0.57]], 0.01, 'carpet'),
-        quadPlate([[-0.675, 0.465, sg * 0.565], [-0.975, 0.465, sg * 0.565], [-0.975, 0.465, sg * 0.768], [-0.675, 0.465, sg * 0.768]], 0.01, 'carpet'),
-        // over the node closeout to the front face of the lower C-pillar trim
-        quadPlate([[-0.975, 0.465, sg * 0.72], [-0.995, 0.465, sg * 0.72], [-0.995, 0.465, sg * 0.768], [-0.975, 0.465, sg * 0.768]], 0.01, 'carpet'),
+        // (notched at the sill for the cabin harness, which runs on under the scuff plate and this closeout)
+        quadPlate([[-0.68, 0.305, sg * 0.57], [-0.68, 0.305, sg * 0.74], [-0.68, 0.465, sg * 0.74], [-0.68, 0.465, sg * 0.57]], 0.01, 'carpet'),
+        quadPlate([[-0.68, 0.34, sg * 0.74], [-0.68, 0.34, sg * 0.772], [-0.68, 0.465, sg * 0.772], [-0.68, 0.465, sg * 0.74]], 0.01, 'carpet'),
+        quadPlate([[-0.675, 0.465, sg * 0.565], [-0.935, 0.465, sg * 0.565], [-0.935, 0.465, sg * 0.772], [-0.675, 0.465, sg * 0.772]], 0.01, 'carpet'),
         // inner lip tucked against the cushion side, return down past the sill top
-        quadPlate([[-0.675, 0.465, sg * 0.566], [-0.975, 0.465, sg * 0.566], [-0.975, 0.5, sg * 0.566], [-0.675, 0.5, sg * 0.566]], 0.004, 'carpet'),
-        quadPlate([[-0.675, 0.35, sg * 0.768], [-0.965, 0.35, sg * 0.768], [-0.965, 0.465, sg * 0.768], [-0.675, 0.465, sg * 0.768]], 0.004, 'carpet'),
-        quadPlate([[-0.965, 0.372, sg * 0.768], [-0.995, 0.372, sg * 0.768], [-0.995, 0.465, sg * 0.768], [-0.965, 0.465, sg * 0.768]], 0.004, 'carpet'),
+        quadPlate([[-0.675, 0.465, sg * 0.566], [-0.935, 0.465, sg * 0.566], [-0.935, 0.5, sg * 0.566], [-0.675, 0.5, sg * 0.566]], 0.004, 'carpet'),
+        quadPlate([[-0.675, 0.35, sg * 0.772], [-0.935, 0.35, sg * 0.772], [-0.935, 0.465, sg * 0.772], [-0.675, 0.465, sg * 0.772]], 0.004, 'carpet'),
       ))),
     ),
   });
@@ -314,47 +327,96 @@ export function buildInterior(reg) {
         // tower, up to the upper C-pillar trim and the parcel shelf.  Front face over the node and the rear
         // footwell closeout, inner face against the wheelhouse inner wall, top under the upper trim; the
         // C-pillar reinforcement and the C-pillar impact sensor are inside it
-        named('cPillarLower', group(
-          quadPlate([[-0.995, 0.555, sg * 0.597], [-0.995, 0.555, sg * 0.72], [-0.995, 0.975, sg * 0.72], [-0.995, 0.975, sg * 0.597]], 0.004, 'greyPlastic'),
-          quadPlate([[-0.995, 0.465, sg * 0.72], [-0.995, 0.465, sg * 0.885], [-0.995, 0.975, sg * 0.885], [-0.995, 0.975, sg * 0.72]], 0.004, 'greyPlastic'),
-          quadPlate([[-0.995, 0.555, sg * 0.597], [-1.275, 0.555, sg * 0.597], [-1.275, 0.975, sg * 0.597], [-0.995, 0.975, sg * 0.597]], 0.004, 'greyPlastic'),
-          quadPlate([[-1.275, 0.625, sg * 0.597], [-1.385, 0.625, sg * 0.597], [-1.385, 0.975, sg * 0.597], [-1.275, 0.975, sg * 0.597]], 0.004, 'greyPlastic'),
-          quadPlate([[-0.995, 0.975, sg * 0.597], [-1.28, 0.975, sg * 0.597], [-1.28, 0.975, sg * 0.885], [-0.995, 0.975, sg * 0.885]], 0.004, 'greyPlastic'),
-          quadPlate([[-1.385, 0.792, sg * 0.735], [-1.385, 0.792, sg * 0.885], [-1.385, 0.975, sg * 0.885], [-1.385, 0.975, sg * 0.735]], 0.004, 'greyPlastic'),
-        )),
+        named('cPillarLower', (() => {
+          const q = (pts) => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'greyPlastic');
+          return group(
+            // front face just behind the rear door trim's armrest, on the footwell closeout and the sill top
+            q([[-0.935, 0.465, 0.597], [-0.935, 0.465, 0.772], [-0.935, 0.975, 0.772], [-0.935, 0.975, 0.597]]),
+            q([[-0.935, 0.36, 0.772], [-0.935, 0.36, 0.86], [-0.935, 0.81, 0.86], [-0.935, 0.81, 0.772]]),
+            q([[-0.935, 0.81, 0.772], [-0.935, 0.81, 0.845], [-0.935, 0.975, 0.845], [-0.935, 0.975, 0.772]]),
+            // outboard return to the shut face over the front of the wheelhouse arch, past the door armrest's
+            // rear end; the cabin harness climbs to the lock pillar behind it
+            q([[-0.935, 0.36, 0.86], [-0.982, 0.36, 0.9], [-0.988, 0.655, 0.905], [-0.935, 0.655, 0.86]]),
+            q([[-0.935, 0.655, 0.86], [-0.964, 0.655, 0.86], [-0.964, 0.705, 0.86], [-0.935, 0.705, 0.86]]),
+            q([[-0.964, 0.655, 0.86], [-0.964, 0.655, 0.905], [-0.964, 0.705, 0.905], [-0.964, 0.705, 0.86]]),
+            q([[-0.935, 0.705, 0.86], [-0.99, 0.705, 0.905], [-0.99, 0.81, 0.905], [-0.935, 0.81, 0.86]]),
+            q([[-0.964, 0.655, 0.905], [-0.99, 0.655, 0.905], [-0.99, 0.705, 0.905], [-0.964, 0.705, 0.905]]),
+            q([[-0.99, 0.425, 0.905], [-1.02, 0.53, 0.905], [-1.02, 0.81, 0.905], [-0.99, 0.81, 0.905]]),
+            q([[-1.02, 0.53, 0.905], [-1.06, 0.605, 0.905], [-1.06, 0.81, 0.905], [-1.02, 0.81, 0.905]]),
+            // inner face against the wheelhouse inner wall, beside the seat back
+            q([[-0.935, 0.555, 0.597], [-1.275, 0.555, 0.597], [-1.275, 0.975, 0.597], [-0.935, 0.975, 0.597]]),
+            q([[-1.275, 0.625, 0.597], [-1.385, 0.625, 0.597], [-1.385, 0.975, 0.597], [-1.275, 0.975, 0.597]]),
+            // top under the upper C-pillar trim, and the rear end at the shock tower
+            q([[-0.935, 0.975, 0.597], [-1.28, 0.975, 0.597], [-1.28, 0.975, 0.885], [-0.935, 0.975, 0.885]]),
+            q([[-1.385, 0.792, 0.735], [-1.385, 0.792, 0.885], [-1.385, 0.975, 0.885], [-1.385, 0.975, 0.735]]),
+            // foot on the rail node top, out to the side of the cushion
+            q([[-0.935, 0.553, 0.568], [-1.19, 0.553, 0.568], [-1.19, 0.553, 0.597], [-0.935, 0.553, 0.597]]),
+          );
+        })()),
       ),
     });
     reg.add({
       id: `trunk-side-trim-${sd}`, ko: `트렁크 사이드 트림 (${ko})`, en: `Trunk side finisher ${en}`, tags: sd,
       groups: ['trunk-carpet-and-side-finishers'], match: /SIDE TRIM|BRKT|COVER,STRUT|COVER, STRUT|CHARGE PORT COVER/,
-      object: group(
-        // LH: back to the liftgate opening (behind the liftgate drain), cut out for the charge port cover
-        named('panel', sd === 'L'
-          ? region([[3.95, 4.635, 1.25, 2.95]], { side: sd, offset: -0.11, exclude: [[4.488, 4.635, 1.5, 2.95]], mat: 'carpet', edges: false })
-          : region([[3.95, 4.5, 1.25, 2.95]], { side: sd, offset: -0.11, mat: 'carpet', edges: false })),
-        // trunk bracket #6 (LH) / #7 (RH): stands on the wheelhouse and carries the finisher's lower edge
-        named('bracket', bar([-1.838, 0.676, sg * 0.864], [-1.765, 0.614, sg * 0.864], 0.025, 0.04, 'steel')),
-        // lower edge turned in onto the edge of the shelf over the back of the wheelhouse (trunk floor extension)
-        named('lowerEdge', group(
-          quadPlate([[-1.715, 0.676, sg * 0.842], [-1.766, 0.676, sg * 0.842], [-1.766, 0.825, sg * 0.867], [-1.715, 0.854, sg * 0.87]], 0.004, 'carpet'),
-          quadPlate([[-1.766, 0.676, sg * 0.842], [-1.824, 0.676, sg * 0.842], [-1.824, 0.775, sg * 0.865], [-1.766, 0.825, sg * 0.867]], 0.004, 'carpet'),
-          quadPlate([[-1.824, 0.676, sg * 0.842], [-1.858, 0.676, sg * 0.842], [-1.858, 0.68, sg * 0.862], [-1.824, 0.775, sg * 0.865]], 0.004, 'carpet'),
-          quadPlate([[-1.857, 0.679, sg * 0.836], [-1.987, 0.679, sg * 0.836], [-1.987, 0.673, sg * 0.849], [-1.857, 0.673, sg * 0.862]], 0.004, 'carpet'),
-        )),
-        // CHARGE PORT COVER: bulges inboard over the back of the charge port inlet and the cable's loop into it,
-        // and closes the finisher's rear edge to the quarter (the liftgate drain runs down inside it)
-        ...(sd === 'L' ? [named('chargePortCover', group(
-          quadPlate([[-1.987, 0.795, -0.73], [-2.14, 0.795, -0.73], [-2.14, 0.97, -0.73], [-1.987, 0.97, -0.73]], 0.004, 'carpet'),
-          quadPlate([[-1.987, 0.795, -0.73], [-1.987, 0.795, -0.857], [-1.987, 0.97, -0.857], [-1.987, 0.97, -0.73]], 0.004, 'carpet'),
-          quadPlate([[-1.987, 0.97, -0.73], [-2.118, 0.97, -0.73], [-2.118, 0.97, -0.857], [-1.987, 0.97, -0.857]], 0.004, 'carpet'),
-          quadPlate([[-2.118, 0.97, -0.73], [-2.14, 0.97, -0.73], [-2.14, 0.97, -0.842], [-2.118, 0.97, -0.842]], 0.004, 'carpet'),
-          quadPlate([[-1.987, 0.795, -0.73], [-2.118, 0.795, -0.73], [-2.118, 0.795, -0.857], [-1.987, 0.795, -0.857]], 0.004, 'carpet'),
-          quadPlate([[-2.118, 0.795, -0.73], [-2.14, 0.795, -0.73], [-2.14, 0.795, -0.82], [-2.118, 0.795, -0.82]], 0.004, 'carpet'),
-          quadPlate([[-2.14, 0.795, -0.73], [-2.14, 0.795, -0.915], [-2.14, 0.96, -0.915], [-2.14, 0.96, -0.73]], 0.004, 'carpet'),
-          quadPlate([[-2.14, 0.671, -0.81], [-2.14, 0.671, -0.915], [-2.14, 0.795, -0.915], [-2.14, 0.795, -0.81]], 0.004, 'carpet'),
-          quadPlate([[-2.119, 0.671, -0.818], [-2.14, 0.671, -0.81], [-2.14, 0.795, -0.81], [-2.119, 0.795, -0.82]], 0.004, 'carpet'),
-        ))] : []),
-      ),
+      object: (() => {
+        // the finisher wall stands at |z| ZP, inboard of the harnesses, ECUs and the charge cable behind it, from the
+        // shock tower back to the liftgate opening (behind the liftgate drain); it comes down onto the wheelhouse
+        // arch (covered by its hump) and the shelf behind it, with a notch on the RH side where the rear subframe
+        // harness passes inboard to its grommet in the shelf, and up to the parcel shelf
+        const ZP = 0.868;
+        const q = (pts, mat = 'carpet') => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, mat);
+        const archY = (x) => 0.352 + Math.sqrt(0.44 ** 2 - (x + 1.425) ** 2);
+        const notch = sd === 'R' ? [-1.765, -1.845] : null;
+        const st = [];
+        for (const x of [-1.39, -1.45, -1.5, -1.55, -1.6, -1.65, -1.7]) st.push([x, archY(x) + 0.008]);
+        st.push([-1.723, 0.684]);
+        if (notch) st.push([notch[0], 0.684], [notch[0], 0.735], [notch[1], 0.735], [notch[1], 0.684]);
+        st.push([-1.95, 0.684], [-1.987, 0.675], [-2.115, 0.675]);
+        const top = (x) => (sd === 'L' && x < -1.987 + 1e-6 ? 0.795 : 0.96); // LH: cut out above for the charge port cover
+        const wall = [];
+        for (let i = 0; i + 1 < st.length; i++) {
+          const [x0, y0] = st[i];
+          const [x1, y1] = st[i + 1];
+          if (x0 === x1) continue;
+          const t = top((x0 + x1) / 2);
+          wall.push(q([[x0, y0, ZP], [x1, y1, ZP], [x1, t, ZP], [x0, t, ZP]]));
+        }
+        // hump over the wheelhouse arch, outboard of the shock tower and behind it
+        const hump = [];
+        const hx = [-1.435, -1.5, -1.55, -1.585, -1.585, -1.65, -1.7, -1.723];
+        for (let i = 0; i + 1 < hx.length; i++) {
+          const [x0, x1] = [hx[i], hx[i + 1]];
+          if (x0 === x1) continue;
+          const zi = x0 > -1.585 ? 0.685 : 0.605;
+          hump.push(q([[x0, archY(x0) + 0.012, zi], [x1, archY(x1) + 0.012, zi], [x1, archY(x1) + 0.012, ZP], [x0, archY(x0) + 0.012, ZP]]));
+        }
+        // lower edge onto the edge of the shelf over the back of the wheelhouse (trunk floor extension)
+        const edge = (notch ? [[-1.723, notch[0]], [notch[1], -1.987]] : [[-1.723, -1.987]])
+          .map(([x0, x1]) => q([[x0, 0.679, 0.836], [x1, 0.679, 0.836], [x1, 0.678, ZP], [x0, 0.682, ZP]]));
+        // rear end: returned inboard of the liftgate drain and closed to the quarter
+        const rear = [
+          q([[-2.115, 0.675, ZP], [-2.115, 0.675, 0.815], [-2.115, top(-2.1), 0.815], [-2.115, top(-2.1), ZP]]),
+          q([[-2.115, 0.675, 0.815], [-2.14, 0.675, 0.81], [-2.14, top(-2.1), 0.81], [-2.115, top(-2.1), 0.815]]),
+          q([[-2.14, 0.675, 0.81], [-2.14, 0.675, 0.915], [-2.14, top(-2.1), 0.915], [-2.14, top(-2.1), 0.81]]),
+        ];
+        return group(
+          named('panel', group(...wall, ...hump, ...rear)),
+          // trunk bracket #6 (LH) / #7 (RH): stands on the wheelhouse and carries the finisher's lower edge
+          named('bracket', bar([-1.838, 0.676, sg * 0.864], [-1.765, 0.614, sg * 0.864], 0.025, 0.04, 'steel')),
+          named('lowerEdge', group(...edge)),
+          // CHARGE PORT COVER: bulges inboard over the back of the charge port inlet and the cable's loop into it,
+          // back to the rear closeout (the liftgate drain runs down inside it)
+          ...(sd === 'L' ? [named('chargePortCover', group(
+            q([[-1.987, 0.795, 0.73], [-2.14, 0.795, 0.73], [-2.14, 0.97, 0.73], [-1.987, 0.97, 0.73]]),
+            q([[-1.987, 0.795, 0.73], [-1.987, 0.795, ZP], [-1.987, 0.97, ZP], [-1.987, 0.97, 0.73]]),
+            q([[-1.987, 0.97, 0.73], [-2.118, 0.97, 0.73], [-2.118, 0.97, ZP], [-1.987, 0.97, ZP]]),
+            q([[-2.118, 0.97, 0.73], [-2.14, 0.97, 0.73], [-2.14, 0.97, 0.842], [-2.118, 0.97, 0.842]]),
+            q([[-1.987, 0.795, 0.73], [-2.115, 0.795, 0.73], [-2.115, 0.795, ZP], [-1.987, 0.795, ZP]]),
+            q([[-2.115, 0.795, 0.73], [-2.14, 0.795, 0.73], [-2.14, 0.795, 0.81], [-2.115, 0.795, 0.815]]),
+            q([[-2.14, 0.795, 0.73], [-2.14, 0.795, 0.915], [-2.14, 0.96, 0.915], [-2.14, 0.96, 0.73]]),
+          ))] : []),
+        );
+      })(),
     });
     reg.add({
       id: `trunk-c-pillar-trim-${sd}`, ko: `트렁크 C필러 리어 트림 (${ko})`, en: `Trunk C-pillar rear trim ${en}`, tags: sd,
