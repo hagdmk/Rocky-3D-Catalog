@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 export const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 
@@ -202,6 +203,23 @@ export function quadPlate(corners, t, mat) {
   g.setIndex(idx);
   g.computeVertexNormals();
   return mesh(g, mat);
+}
+
+/**
+ * One mesh from several plain plates (quadPlate, region, ...) of one material, to keep draw calls down.
+ * Each mesh's own transform is baked in; pass only unnamed BufferGeometry meshes without userData flags.
+ */
+export function plates(list, mat) {
+  const ms = list.flat().filter(Boolean);
+  const geos = ms.map((m) => {
+    m.updateMatrix();
+    const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+    g.deleteAttribute('uv');
+    return g.applyMatrix4(m.matrix);
+  });
+  const g = mergeGeometries(geos, false);
+  g.computeVertexNormals();
+  return mesh(g, mat ?? ms[0].userData.mat);
 }
 
 const _axes = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
