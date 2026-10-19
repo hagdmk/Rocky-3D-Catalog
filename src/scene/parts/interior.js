@@ -544,7 +544,9 @@ export function buildInterior(reg) {
     });
     reg.add({
       id: `trunk-side-trim-${sd}`, ko: `트렁크 사이드 트림 (${ko})`, en: `Trunk side finisher ${en}`, tags: sd,
-      groups: ['trunk-carpet-and-side-finishers'], match: /SIDE TRIM|BRKT|COVER,STRUT|COVER, STRUT|CHARGE PORT COVER/,
+      // the CHARGE PORT COVER (untagged row) is drawn on the LH finisher only, where the charge port is
+      groups: ['trunk-carpet-and-side-finishers'],
+      match: sd === 'L' ? /SIDE TRIM|BRKT|COVER,STRUT|COVER, STRUT|CHARGE PORT COVER/ : /SIDE TRIM|BRKT|COVER,STRUT|COVER, STRUT/,
       object: (() => {
         // the finisher wall stands at |z| ZP, inboard of the harnesses, ECUs and the charge cable behind it, from the
         // shock tower back to the liftgate opening (behind the liftgate drain); it comes down onto the wheelhouse
@@ -620,9 +622,19 @@ export function buildInterior(reg) {
           // outer lip down onto the top of the finisher wall
           q([[-1.385, 0.958, 0.872], [-1.6, 0.958, 0.872], [-1.6, T, 0.872], [-1.385, T, 0.872]]),
         );
+        // RH: the finisher bulges inboard round the notch, over the rear subframe harness dropping to its grommet
+        // in the shelf (and the carpet cut round it), down onto the trunk carpet
+        const bulge = notch ? (() => {
+          const [xa, xb, zi, yt] = [-1.775, -1.84, 0.795, 0.745];
+          return [
+            q([[xa, 0.683, zi], [xb, 0.683, zi], [xb, yt, zi], [xa, yt, zi]]),
+            q([[xa, yt, zi], [xb, yt, zi], [xb, yt, ZP], [xa, yt, ZP]]),
+            ...[xa, xb].map((x) => q([[x, 0.683, zi], [x, 0.683, ZP], [x, yt, ZP], [x, yt, zi]])),
+          ];
+        })() : [];
         return group(
           named('strutCover', strutCover),
-          named('panel', group(...wall, ...hump, ...rear)),
+          named('panel', group(...wall, ...hump, ...rear, ...bulge)),
           // trunk bracket #6 (LH) / #7 (RH): stands on the wheelhouse and carries the finisher's lower edge
           named('bracket', bar([-1.838, 0.676, sg * 0.864], [-1.765, 0.614, sg * 0.864], 0.025, 0.04, 'steel')),
           named('lowerEdge', group(...edge)),
@@ -864,12 +876,11 @@ export function buildInterior(reg) {
     groups: ['3rd-row-seats'],
     // shown stowed, folded flat (the parcel shelf can only be fitted with the 3rd row folded): the seat back
     // folded down over the cushion, its carpeted back panel flush with the load floor in the trunk carpet's
-    // cut-out and the head restraints folded flat on it; drawn without the floor well the real seat folds into
+    // cut-out and the head restraints folded flat on it; drawn without the floor well the real seat folds into, as
+    // a slab standing on the trunk floor, with its pivot brackets (bolted to the floor) inside it
     object: group(
-      named('seat', rbox([0.42, 0.024, 0.9], [-1.875, 0.633, 0], 'carpet', { r: 0.006 })),
-      ...[-0.2, 0.2].map((z) => rbox([0.12, 0.012, 0.18], [-2.02, 0.648, z], 'leather', { r: 0.005 })),
-      // seat pivot brackets bolted down to the trunk floor (BLT M10x28.4 #6 into BARREL NUT M10 #5)
-      named('mounts', group(...[-2.06, -1.69].flatMap((x) => [-0.42, 0.42].map((z) => box([0.04, 0.012, 0.03], [x, 0.627, z], 'steel'))))),
+      named('seat', rbox([0.42, 0.024, 0.9], [-1.875, 0.632, 0], 'carpet', { r: 0.006 })),
+      ...[-0.2, 0.2].map((z) => rbox([0.12, 0.012, 0.18], [-2.02, 0.647, z], 'leather', { r: 0.005 })),
     ),
   });
 
@@ -935,8 +946,8 @@ export function buildInterior(reg) {
     groups: ['3rd-row-seat-belts'],
     object: group(
       ...[-1, 1].flatMap((sg) => [
-        rbox([0.06, 0.012, 0.05], [-2.05, 0.651, sg * 0.4], 'blackPlastic', { r: 0.004 }),
-        tube([[-2.04, 0.651, sg * 0.4], [-1.87, 0.651, sg * 0.34], [-1.7, 0.651, sg * 0.12]], 0.006, 'fabric'),
+        rbox([0.06, 0.012, 0.05], [-2.05, 0.65, sg * 0.4], 'blackPlastic', { r: 0.004 }),
+        tube([[-2.04, 0.65, sg * 0.4], [-1.87, 0.65, sg * 0.34], [-1.7, 0.65, sg * 0.12]], 0.006, 'fabric'),
       ]),
     ),
   });
