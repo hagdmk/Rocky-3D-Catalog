@@ -275,6 +275,26 @@ export function buildStructure(reg) {
       named('cowlFront', plates(SIDES.map(({ sg }) => quadPlate([[0.997, 0.8, sg * 0.54], [0.997, 0.8, sg * 0.75], [0.997, 0.867, sg * 0.75], [0.997, 0.867, sg * 0.54]], 0.004, 'aluminum')), 'aluminum')),
       // between the hinge pillars (|z| 0.79); its outboard front corners stop short of the shotgun
       // rail ends (x 0.975, |z| 0.75-0.82)
+      // rear floor under the 2nd-row seat: a heel kick up from the floor pan's rear edge to the seat floor on the
+      // battery pack's rear hump (y 0.375), on which the chargers and the HV junction box stand and into which the
+      // cushion frame hooks clip, back to the rear rail nodes, inboard of the body harnesses along the sills (under the
+      // carpeted corner closeouts); holes where the RH HV cable to the front and the LH coolant hose to the charger
+      // come up through it
+      named('rearFloor', (() => {
+        const Y = 0.376;
+        const R = (x0, x1, z0, z1) => quadPlate([[x0, Y, z0], [x0, Y, z1], [x1, Y, z1], [x1, Y, z0]], 0.002, 'aluminum');
+        return plates([
+          quadPlate([[-0.703, 0.294, -0.745], [-0.703, 0.294, 0.745], [-0.703, Y + 0.001, 0.745], [-0.703, Y + 0.001, -0.745]], 0.003, 'aluminum'),
+          R(-0.703, -0.98, -0.48, 0.48),
+          // LH outboard part, round the coolant hose (pumpToCharger) at (-0.86, -0.525)
+          R(-0.703, -0.84, -0.745, -0.48), R(-0.84, -0.88, -0.745, -0.555), R(-0.84, -0.88, -0.5, -0.48), R(-0.88, -0.973, -0.745, -0.48),
+          // RH outboard part, round the HV cable to the front (hv-cable-front) at (-0.747, 0.613)
+          R(-0.703, -0.722, 0.48, 0.745), R(-0.722, -0.772, 0.48, 0.58), R(-0.722, -0.772, 0.648, 0.745), R(-0.772, -0.973, 0.48, 0.745),
+        ], 'aluminum');
+      })()),
+      // rear seat crossmember across the rear rail fronts (on their tops), under the rear edge of the cushion and
+      // above the HV cables and hoses to the rear drive unit: the 2nd-row buckles are bolted to it
+      named('seatCrossmember', quadPlate([[-1.085, 0.4285, -0.55], [-1.085, 0.4285, 0.55], [-1.15, 0.4455, 0.55], [-1.15, 0.4455, -0.55]], 0.004, 'aluminum')),
       named('plenum', plates([
         quadPlate([plenumAt(0.99, -0.74), plenumAt(0.99, 0.74), plenumAt(0.905, 0.74), plenumAt(0.905, -0.74)], 0.003, 'aluminum'),
         ...SIDES.map(({ sg }) => quadPlate([plenumAt(0.965, sg * 0.74), plenumAt(0.965, sg * 0.79), plenumAt(0.905, sg * 0.79), plenumAt(0.905, sg * 0.74)], 0.003, 'aluminum')),

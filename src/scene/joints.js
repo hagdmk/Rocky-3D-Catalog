@@ -444,8 +444,10 @@ export const JOINTS = [
   J('glove-box', 'dash-panel', 'ASY GLOVE BOX COMP (dash panel #24) hinged in the lower right IP'),
   J('dash-panel', 'dash-support-frame#beam', 'IP carrier (#10) bolted to the cross-car beam (BLT HEX FL M8x25, dash panel #45 = dash support frame #7)'),
   J('rearview-mirror', 'windshield', 'mirror base on its button bonded to the windshield'),
-  J('rear-seat-cushion#hooks', 'floor-pan', 'rear cushion frame wire hooks (cushion assy #4) clipped to the rear edge of the floor pan'),
-  J('rear-seat-cushion#hooks', 'rear-seat-cushion#cushion', 'hooks on the cushion frame'),
+  J('rear-seat-cushion#hooks', 'floor-pan#rearFloor', 'rear cushion frame wire hooks (cushion assy #4) clipped into the rear floor'),
+  J('rear-seat-cushion#hooks', 'rear-seat-cushion#pan', 'hooks on the cushion frame pan'),
+  ...[0, 1, 2, 3].map((i) => J(`rear-belts#buckle${i}`, 'floor-pan#seatCrossmember', 'BUCKLE ASY, 2ND ROW (2nd row seat belts #4) bolted (#5) to the rear seat crossmember')),
+  ...each((s) => [J('floor-pan#seatCrossmember', `rear-rail-${s}#railFront`, 'rear seat crossmember of the body in white (ECOAT BODY IN WHITE) welded across the rear rail fronts (rear end panels #5/#6)')]),
   ...each((s) => [
     J(`pedestrian-protection#actuator${s}`, `front-inner-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 bracket bolted (BLT HF M6x20 #8) to the shotgun rail beside the hood hinge'),
   ]),
@@ -481,6 +483,7 @@ export const PASS_OK = [
   ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier (center tunnel trim #1) through the opening in its front face, below the front closeout panel (#14), and runs inside it to its outlet in the carrier's side wall; the carrier is drawn as a closed shell` })),
   { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the outboard flange of the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness passes down through it in its grommet (rear-subframe-harness#grommet), under the trunk side finisher' },
   { a: 'hood-latch#cable', b: 'dash-panel', reason: 'the lower instrument panel is drawn without the opening for the hood release handle (#1) in its LH lower edge: the release cable (#2) runs inside the panel along its LH end cover and reaches the handle through that opening' },
+  ...[0, 1, 2, 3].map((i) => ({ a: `rear-belts#buckle${i}`, b: 'rear-seat-cushion', reason: 'the 2nd-row cushion and its frame pan are drawn solid, without the slots the buckle stalks (2nd row seat belts #4) pass down through to their anchor bolts (#5) on the rear seat crossmember' })),
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).
