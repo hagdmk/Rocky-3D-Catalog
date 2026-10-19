@@ -12,7 +12,8 @@ export function meshesOf(obj) {
 
 // ---------------------------------------------------------------- solids
 // Closed primitives count as solids, so a part that sits inside another one
-// reads as touching it.  Open cylinders and plates are surface only.
+// reads as touching it.  Open cylinders and plates are surface only.  A tube (hose, cable) is a
+// solid that ends flat at its open end rings.
 function solidOf(m) {
   const s = solidShape(m);
   if (s) {
@@ -40,8 +41,12 @@ function solidShape(m) {
       return { kind: 'sphere', inv, box, r: p.radius };
     case 'TubeGeometry': {
       const len = p.path.getLength();
-      const pts = p.path.getSpacedPoints(Math.max(60, Math.ceil(len / 0.004)));
-      return { kind: 'tube', inv, box, r: p.radius, pts };
+      const n = Math.max(60, Math.ceil(len / 0.004));
+      const pts = p.path.getSpacedPoints(n);
+      // TubeGeometry is open: it stops at its end rings, square to the path tangent there. The k segments
+      // within r of an open end may not reach past that end's plane (no hemispherical caps).
+      const ends = p.closed ? null : { k: Math.ceil(p.radius / (len / n)) + 1, t0: p.path.getTangentAt(0), t1: p.path.getTangentAt(1) };
+      return { kind: 'tube', inv, box, r: p.radius, pts, ends };
     }
     case 'TorusGeometry':
       return { kind: 'torus', inv, box, R: p.radius, r: p.tube };
@@ -90,6 +95,8 @@ export function insideSolid(s, x, y, z) {
     case 'tube': {
       const r2 = s.r * s.r;
       const P = s.pts;
+      const E = s.ends;
+      const Z = P[P.length - 1];
       for (let i = 0; i < P.length - 1; i++) {
         const a = P[i];
         const b = P[i + 1];
@@ -99,7 +106,11 @@ export function insideSolid(s, x, y, z) {
         let t = L > 0 ? (apx * abx + apy * aby + apz * abz) / L : 0;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         const dx = apx - t * abx; const dy = apy - t * aby; const dz = apz - t * abz;
-        if (dx * dx + dy * dy + dz * dz <= r2) return true;
+        if (dx * dx + dy * dy + dz * dz > r2) continue;
+        // the clamp keeps the inner points filling the outside of bends; the open ends are cut at their planes
+        if (E && i < E.k && (lx - P[0].x) * E.t0.x + (ly - P[0].y) * E.t0.y + (lz - P[0].z) * E.t0.z < 0) continue; // behind the start ring
+        if (E && i >= P.length - 1 - E.k && (lx - Z.x) * E.t1.x + (ly - Z.y) * E.t1.y + (lz - Z.z) * E.t1.z > 0) continue; // past the end ring
+        return true;
       }
       return false;
     }
