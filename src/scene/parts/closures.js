@@ -144,7 +144,10 @@ export function buildClosures(reg) {
           faceTo(rbox([0.17, 0.045, 0.024], [0, 0, 0], 'darkMetal', { r: 0.006 }), skinAt(hs, hv, sd, -0.0125), hn, 'z'),
         ),
       });
-      // latch on the inner panel at the rear edge of the door, ahead of the B-pillar / lock pillar
+      // latch at the rear edge of the door, ahead of the B-pillar / lock pillar, inside the door cavity between the
+      // outer skin and the inner panel: its inboard face on the inner panel (offset -0.04), its outboard face 10 mm inside
+      // the skin; the interior release cable starts in it, leaves the door cavity through the inner panel's access
+      // opening (not drawn) and runs inboard of the panel, under the trim, to the opener
       const ls = range[1] - (fr === 'F' ? 0.05 : 0.04);
       const latchGroups = fr === 'F'
         ? ['front-door-latch-and-striker', 'front-door-latch-and-interior-release']
@@ -153,10 +156,10 @@ export function buildClosures(reg) {
         id: `door-latch-${sd}${fr}`, ko: `${frKo} 도어 래치·실내 릴리스 (${ko})`, en: `${frEn} door latch & interior release ${en}`, tags: `${sd}${fr}`,
         groups: latchGroups,
         object: group(
-          named('latch', rbox([0.05, 0.09, 0.05], skinAt(ls, 1.75, sd, -0.04).toArray(), 'darkMetal', { r: 0.008 })), // on the door inner panel
+          named('latch', rbox([0.05, 0.09, 0.03], skinAt(ls, 1.75, sd, -0.025).toArray(), 'darkMetal', { r: 0.008 })),
           named('striker', rbox([0.03, 0.03, 0.03], skinAt(range[1] + (fr === 'F' ? 0.01 : 0.03), 1.75, sd, -0.03).toArray(), 'steel', { r: 0.006 })), // on the B / lock pillar
-          rbox([0.1, 0.03, 0.025], skinAt(range[1] - 0.25, 2.15, sd, -0.105).toArray(), 'chrome', { r: 0.008 }),
-          tube([skinAt(ls, 1.75, sd, -0.05), skinAt(range[1] - 0.15, 2.0, sd, -0.08), skinAt(range[1] - 0.25, 2.15, sd, -0.1)], 0.003, 'steel'),
+          named('opener', rbox([0.1, 0.03, 0.025], skinAt(range[1] - 0.25, 2.15, sd, -0.105).toArray(), 'chrome', { r: 0.008 })),
+          named('cable', tube([skinAt(ls, 1.75, sd, -0.03), skinAt(range[1] - 0.15, 2.0, sd, -0.08), skinAt(range[1] - 0.25, 2.15, sd, -0.1)], 0.003, 'steel')),
         ),
       });
     }

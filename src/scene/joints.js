@@ -404,7 +404,9 @@ export const JOINTS = [
     J(`door-latch-${k}#striker`, `rear-quarter-inner-${s}#lockPillar`, 'rear door striker on the lock pillar'),
   ]),
   ...corners((k) => [
-    J(`door-latch-${k}#latch`, `door-${k}#inner`, 'door latch screwed to the door inner panel', { inset: "the latch body sits in the door's rear shut face, inside the door between the inner and outer panels" }),
+    J(`door-latch-${k}#latch`, `door-${k}#inner`, 'door latch screwed to the door inner panel'),
+    J(`door-latch-${k}#cable@start`, `door-latch-${k}#latch`, 'interior release cable hooked into the latch'),
+    J(`door-latch-${k}#cable@end`, `door-latch-${k}#opener`, 'interior release cable at the door opener (#7)'),
     ...['railF', 'railR', 'motor'].map((n) => J(`regulator-${k}#${n}`, `door-${k}#inner`, 'glass regulator bolted to the door inner panel')),
     ...['railF', 'railR'].map((n) => J(`regulator-${k}#${n}`, `door-glass-${k}`, 'regulator carrier clamped on the lower edge of the door glass')),
   ]),
@@ -491,6 +493,8 @@ export const PASS_OK = [
   ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier (center tunnel trim #1) through the opening in its front face, below the front closeout panel (#14), and runs inside it to its outlet in the carrier's side wall; the carrier is drawn as a closed shell` })),
   { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the outboard flange of the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness passes down through it in its grommet (rear-subframe-harness#grommet), under the trunk side finisher' },
   { a: 'hood-latch#cable', b: 'dash-panel', reason: 'the lower instrument panel is drawn without the opening for the hood release handle (#1) in its LH lower edge: the release cable (#2) runs inside the panel along its LH end cover and reaches the handle through that opening' },
+  ...['LF', 'RF', 'LB', 'RB'].map((k) => ({ a: `door-latch-${k}#cable`, b: `door-${k}`, reason: 'the door inner panel is drawn without its access openings: the interior release cable leaves the latch in the door cavity and passes through the opening beside it to the opener (#7) in the trim' })),
+  ...['L', 'R'].map((s) => ({ a: `door-harness-${s}B#lead`, b: `door-${s}B`, reason: 'the rear door inner panel is drawn without its access openings: the rear door harness runs on the inboard face of the panel, under the trim, and its connector reaches the latch in the door cavity through the opening beside it' })),
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).

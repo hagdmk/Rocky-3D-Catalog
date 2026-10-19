@@ -224,7 +224,7 @@ export function buildElectrical(reg) {
       object: named('lead', pipe([[-0.305, 0.312, sg * 0.765], [-0.303, 0.372, sg * 0.767], [-0.295, 0.43, sg * 0.8], [-0.278, 0.466, sg * 0.845],
         [-0.265, 0.468, sg * 0.86], [-0.262, 0.468, sg * 0.928],
         [-0.3, 0.5, sg * 0.928], [-0.4, 0.62, sg * 0.932], skinAt(r0 + 0.12, 1.45, sd, -0.05), skinAt((r0 + r1) / 2, 1.6, sd, -0.05),
-        [-0.95, 0.89, sg * 0.946], [-0.99, 0.905, sg * 0.946]], 0.008, 'wire', { bend: 0.04 })),
+        [-0.95, 0.89, sg * 0.946], [-0.99, 0.905, sg * 0.946], skinAt(r1 - 0.04, 1.75, sd, -0.03)], 0.008, 'wire', { bend: 0.04 })), // its connector into the latch
     });
     // liftgate harnesses: from the headliner harness T at the rear header (above the headliner), in front
     // of the liftgate hinge and outboard along the header between the pano cassette's rear corner and the
