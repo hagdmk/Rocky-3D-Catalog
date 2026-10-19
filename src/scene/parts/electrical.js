@@ -272,11 +272,12 @@ export function buildElectrical(reg) {
     id: 'roof-harness', ko: '파노라믹 루프·헤드라이닝 하네스', en: 'Panoramic roof & headlining harness',
     groups: ['panoramic-roof-and-head-lining-harness'],
     object: group(
-      // (up the A-pillar in short chords that follow the skin, 1 mm outboard of the pillar trim at offset
-      // -0.03 and under the front roof drain tube, which crosses it at offset about -0.018 near s 2.05)
+      // (in short chords that follow the skin: up the A-pillar 1 mm outboard of the pillar trim at offset -0.03
+      // and under the front roof drain tube, which crosses it at offset about -0.018 near s 2.05; along the roof
+      // between the pano frame at -0.02 and the headliner at -0.035)
       named('header', pipe([[0.875, 0.83, -0.84], ...skinPath([[1.62, 4.02], [2.34, 4.02]], 'L', -0.024, 12),
         skinAt(2.345, 4.2, 'L', -0.012), skinAt(2.35, 4.5, 'L', -0.018),
-        skinAt(2.4, 4.75, 'L', -0.024), skinAt(2.6, 4.75, 'L', -0.026), skinAt(3.0, 4.75, 'L', -0.026), skinAt(3.2, 4.75, 'L', -0.026),
+        skinAt(2.4, 4.75, 'L', -0.024), ...skinPath([[2.5, 4.75], [3.2, 4.75]], 'L', -0.026, 10),
         skinAt(3.25, 4.85, 'L', -0.026)], 0.005, 'wire', { bend: 0.05 })),
       named('consoleLead', pipe([skinAt(2.35, 4.5, 'L', -0.018), skinAt(2.3, 4.55, 'L', -0.018), skinAt(2.298, 4.8, 'L', -0.022),
         skinAt(2.298, 4.85, 'L', -0.04)], 0.006, 'wire', { bend: 0.03 })),
