@@ -95,6 +95,8 @@ export function buildClosures(reg) {
     object: group(
       region([[4.585, 4.66, 4.1, 5]], { offset: 0.008, mat: 'carbon' }),
       region([[4.585, 4.66, 4.1, 5]], { offset: 0.001, mat: 'carbon', edges: false }), // underside on the adhesive tape
+      // its rounded edges closing the shell between the two skins: front edge, outboard ends and trailing edge
+      ...SIDES.map(({ sd }) => loop([[4.585, 5], [4.585, 4.1], [4.66, 4.1], [4.66, 5]], sd, 0.0045, 0.0035, 'carbon')),
     ),
   });
 
@@ -332,7 +334,7 @@ export function buildClosures(reg) {
     object: group(
       // on the hood underside, above the frunk
       box([0.1, 0.002, 0.07], [1.95, 0.7985, 0.35], 'paper'),
-      box([0.08, 0.002, 0.05], [1.95, 0.7985, -0.35], 'paper'),
+      box([0.08, 0.002, 0.05], [1.95, 0.799, -0.35], 'paper'),
     ),
   });
   reg.add({

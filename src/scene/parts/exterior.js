@@ -93,6 +93,8 @@ const notFrontParts = (q, s, v) => max(-FRONT.nose(q, s), -FRONT.fog(q, s), -FRO
 
 // --- Rear face --------------------------------------------------------------
 const BACKLITE = [3.29, 4.42, 4.12, 5];
+// the liftgate's hole for it runs on past the top centreline, so its cut is not traced along v = 5
+const BACKLITE_HOLE = [BACKLITE[0], BACKLITE[1], BACKLITE[2], 6];
 const fasciaTop = (s) => 0.6 + 0.1 * smooth(4.45, 4.78, s);
 export const REAR = {
   lamp: (q, s) => max(4.4 - s, 0.875 - q.y, q.y - 0.975, 0.3 - q.za),
@@ -104,7 +106,7 @@ export const REAR = {
   gateFace: (q, s) => max(4.55 - s, q.za - 0.62, fasciaTop(s) - q.y),
   liftgate: (q, s, v) => {
     const top = max(SV.vRoof - 0.12 - v, SV.liftgateFront - s, -max(4.55 - s, q.y - fasciaTop(s)));
-    return max(min(top, REAR.gateFace(q, s)), -REAR.lamp(q, s), -0.1 * rectF(s, v, BACKLITE));
+    return max(min(top, REAR.gateFace(q, s)), -REAR.lamp(q, s), -0.1 * rectF(s, v, BACKLITE_HOLE));
   },
   bodySide: (q, s, v) => max(-REAR.fascia(q, s), -REAR.lamp(q, s), -REAR.liftgate(q, s, v), -REAR.charge(q, s)),
 };

@@ -611,8 +611,9 @@ export function buildStructure(reg) {
 
   // --- NVH plugs and patches (floor pan plugs, door inner panel tapes) ----------------
   const plugs = [];
-  for (const x of [0.6, 0.1, -0.4, -0.9]) {
-    for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.3, z], 'rubber', { seg: 14 })); // in the floor pan
+  // in the floor pan, and the rearmost pair in the rear floor under the 2nd-row seat (floor-pan#rearFloor)
+  for (const [x, y] of [[0.6, 0.3], [0.1, 0.3], [-0.4, 0.3], [-0.93, 0.376]]) {
+    for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, y, z], 'rubber', { seg: 14 }));
   }
   reg.add({
     id: 'nvh-plugs', ko: 'NVH 댐핑 패치·바디 플러그 (여러 위치)', en: 'NVH damping patches & body plugs (various)',
