@@ -12,7 +12,8 @@ export function meshesOf(obj) {
 
 // ---------------------------------------------------------------- solids
 // Closed primitives count as solids, so a part that sits inside another one
-// reads as touching it.  Open cylinders and plates are surface only.
+// reads as touching it.  Open cylinders and plates are surface only.  A tube (hose, cable) is a
+// solid that ends flat at its open end rings.
 function solidOf(m) {
   const s = solidShape(m);
   if (s) {
@@ -40,8 +41,12 @@ function solidShape(m) {
       return { kind: 'sphere', inv, box, r: p.radius };
     case 'TubeGeometry': {
       const len = p.path.getLength();
-      const pts = p.path.getSpacedPoints(Math.max(60, Math.ceil(len / 0.004)));
-      return { kind: 'tube', inv, box, r: p.radius, pts };
+      const n = Math.max(60, Math.ceil(len / 0.004));
+      const pts = p.path.getSpacedPoints(n);
+      // TubeGeometry is open: it stops at its end rings, square to the path tangent there. The k segments
+      // within r of an open end may not reach past that end's plane (no hemispherical caps).
+      const ends = p.closed ? null : { k: Math.ceil(p.radius / (len / n)) + 1, t0: p.path.getTangentAt(0), t1: p.path.getTangentAt(1) };
+      return { kind: 'tube', inv, box, r: p.radius, pts, ends };
     }
     case 'TorusGeometry':
       return { kind: 'torus', inv, box, R: p.radius, r: p.tube };
@@ -90,6 +95,8 @@ export function insideSolid(s, x, y, z) {
     case 'tube': {
       const r2 = s.r * s.r;
       const P = s.pts;
+      const E = s.ends;
+      const Z = P[P.length - 1];
       for (let i = 0; i < P.length - 1; i++) {
         const a = P[i];
         const b = P[i + 1];
@@ -99,7 +106,11 @@ export function insideSolid(s, x, y, z) {
         let t = L > 0 ? (apx * abx + apy * aby + apz * abz) / L : 0;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
         const dx = apx - t * abx; const dy = apy - t * aby; const dz = apz - t * abz;
-        if (dx * dx + dy * dy + dz * dz <= r2) return true;
+        if (dx * dx + dy * dy + dz * dz > r2) continue;
+        // the clamp keeps the inner points filling the outside of bends; the open ends are cut at their planes
+        if (E && i < E.k && (lx - P[0].x) * E.t0.x + (ly - P[0].y) * E.t0.y + (lz - P[0].z) * E.t0.z < 0) continue; // behind the start ring
+        if (E && i >= P.length - 1 - E.k && (lx - Z.x) * E.t1.x + (ly - Z.y) * E.t1.y + (lz - Z.z) * E.t1.z > 0) continue; // past the end ring
+        return true;
       }
       return false;
     }
@@ -507,10 +518,12 @@ export function boxThickness(s) {
   return Math.min((2 * s.hx) / r[0], (2 * s.hy) / r[1], (2 * s.hz) / r[2]);
 }
 
-/** Principal extents (largest first, metres) of a point set given as [x, y, z] arrays. */
-export function principalExtents(pts) {
+/**
+ * Principal axes of a point set given as [x, y, z] arrays: {c: centroid, axes: [3 unit vectors]},
+ * axes ordered by variance, largest first.
+ */
+export function principalAxes(pts) {
   const n = pts.length;
-  if (n < 2) return [0, 0, 0];
   const c = [0, 0, 0];
   for (const p of pts) for (let i = 0; i < 3; i++) c[i] += p[i] / n;
   const C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
@@ -527,12 +540,36 @@ export function principalExtents(pts) {
       for (let k = 0; k < 3; k++) { const a = V[k][i]; const b2 = V[k][j]; V[k][i] = cs * a - sn * b2; V[k][j] = sn * a + cs * b2; }
     }
   }
-  const ext = [0, 1, 2].map((k) => {
+  const axes = [0, 1, 2].sort((u, v) => C[v][v] - C[u][u]).map((k) => [V[0][k], V[1][k], V[2][k]]);
+  return { c, axes };
+}
+
+const project = (p, c, a) => (p[0] - c[0]) * a[0] + (p[1] - c[1]) * a[1] + (p[2] - c[2]) * a[2];
+
+/** Principal extents (largest first, metres) of a point set given as [x, y, z] arrays. */
+export function principalExtents(pts) {
+  if (pts.length < 2) return [0, 0, 0];
+  const { c, axes } = principalAxes(pts);
+  const ext = axes.map((a) => {
     let lo = Infinity; let hi = -Infinity;
-    for (const p of pts) { const d = (p[0] - c[0]) * V[0][k] + (p[1] - c[1]) * V[1][k] + (p[2] - c[2]) * V[2][k]; if (d < lo) lo = d; if (d > hi) hi = d; }
+    for (const p of pts) { const d = project(p, c, a); if (d < lo) lo = d; if (d > hi) hi = d; }
     return hi - lo;
   });
   return ext.sort((u, v) => v - u);
+}
+
+/**
+ * Area (m²) a point set covers in its best-fit plane: the points projected onto the two largest principal
+ * axes and snapped to a g x g grid whose origin is the projected min corner; occupied cells x g².
+ */
+export function planarArea(pts, g) {
+  if (!pts.length) return 0;
+  const { c, axes } = principalAxes(pts);
+  const uv = pts.map((p) => [project(p, c, axes[0]), project(p, c, axes[1])]);
+  let u0 = Infinity; let v0 = Infinity;
+  for (const [u, v] of uv) { if (u < u0) u0 = u; if (v < v0) v0 = v; }
+  const cells = new Set(uv.map(([u, v]) => `${Math.floor((u - u0) / g)},${Math.floor((v - v0) / g)}`));
+  return cells.size * g * g;
 }
 
 /** Split points ([x, y, z] arrays) into clusters whose members lie within `link` of a neighbour. */
