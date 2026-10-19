@@ -435,6 +435,9 @@ export const JOINTS = [
   ...each((s) => [
     J(`pillar-trim-${s}#kickPanel`, `hinge-pillar-${s}`, 'ASY, A PILLAR TRIM LOWER (A/B/C post trim #8) clipped (TRIM CLIP #11) to the hinge pillar'),
     J(`pillar-trim-${s}#cPillarLower`, `rear-quarter-inner-${s}#innerWall`, 'ASY C-PILLAR TRIM LWR (A/B/C post trim #19) clipped to the wheelhouse inner wall'),
+    J(`pillar-trim-${s}#cPillarClips`, `rear-quarter-inner-${s}#cPillar`, 'C-pillar upper trim and ASY C-PILLAR TRIM MID (A/B/C post trim #22) clipped (TRIM CLIP #11) to the C-pillar reinforcement'),
+    J(`pillar-trim-${s}#cPillarClips`, `pillar-trim-${s}#cPillarMid`, 'trim clips in the back of the C-pillar trims'),
+    J(`trunk-c-pillar-trim-${s}#clip`, `rear-quarter-inner-${s}#cPillar`, 'ASY C-PILLAR REAR (interior trunk trim #11/#13) on its BRKT C-PILLAR (#9/#10), clipped (TRIM CLIP #16) to the C-pillar reinforcement'),
   ]),
   J('touchscreen', 'dash-panel', 'MCU in the CENTER SCREEN FRAME (touchscreen #2 = dash panel #35), BLT M5x25 (#3)'),
   J('instrument-cluster', 'dash-panel', 'cluster in the IP cluster frame and bezel (ASY FRAME INSTRUMENT CLUSTER / CLUSTER BEZEL, dash panel #28)'),

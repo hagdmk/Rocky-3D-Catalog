@@ -101,6 +101,12 @@ function vStrip(sd, s, v0, v1, o0, o1, mat) {
   g.computeVertexNormals();
   return mesh(g, mat);
 }
+/** Trim clip tower square to the skin at (s, v), from offset o0 out to o1 (radius r). */
+function skinClip(sd, s, v, o0, o1, mat = 'blackPlastic', r = 0.008) {
+  const a = skinAt(s, v, sd, o0);
+  const b = skinAt(s, v, sd, o1);
+  return faceTo(cyl(r, a.distanceTo(b), 'y', [0, 0, 0], mat), a.clone().add(b).multiplyScalar(0.5), b.clone().sub(a), 'y');
+}
 // edge of the headliner / A-pillar trim folded over the roof rail flange just above the door seal, out to the
 // edge of the body side skin: closes the roof rail from the door openings
 const RAIL_FLANGE = [[3.945, -0.0335], [3.952, -0.0015]];
@@ -362,11 +368,12 @@ export function buildInterior(reg) {
     // handle mounted in it.  They cover the whole inner panel: from just above the sill (over the speaker
     // basket) up to the window sill and back over the latch to the shut face; the front door trim starts at
     // the IP end
-    const doorTrim = (s0, s1) => [
+    const doorTrim = (s0, s1, capEnd = s1) => [
       region([[s0, s1, 0.66, 1.62]], { side: sd, offset: -0.07, mat: 'leather', edges: false }),
       region([[s0, s1, 1.58, 2.99]], { side: sd, offset: -0.113, mat: 'leather', edges: false }),
-      // window-sill cap from the top of the bolster out to the glass, over the top of the inner panel
-      skinStrip(sd, s0, s1, [2.99, -0.113], [3.02, -0.012], 'leather'),
+      // window-sill cap from the top of the bolster out to the glass, over the top of the inner panel (rear doors: up
+      // to the C-pillar trim behind the glass)
+      skinStrip(sd, s0, capEnd, [2.99, -0.113], [3.02, -0.012], 'leather'),
     ];
     reg.add({
       id: `door-trim-${sd}F`, ko: `앞 도어 트림 패드 (${ko})`, en: `Front door trim pad ${en}`, tags: `${sd}F`,
@@ -380,7 +387,7 @@ export function buildInterior(reg) {
       id: `door-trim-${sd}B`, ko: `뒤 도어 트림 패드 (${ko})`, en: `Rear door trim pad ${en}`, tags: `${sd}B`,
       groups: ['rear-door-trim-pad'],
       object: group(
-        doorTrim(SV.rearDoor[0] + 0.02, SV.rearDoor[1] - 0.025),
+        doorTrim(SV.rearDoor[0] + 0.02, SV.rearDoor[1] - 0.025, SV.rearGlass[1] - 0.005),
         rbox([0.22, 0.04, 0.06], [-0.85, 0.68, skinAt(sOf(-0.85), 1.35, sd, -0.1).z], 'leather', { r: 0.015 }),
       ),
     });
@@ -487,8 +494,16 @@ export function buildInterior(reg) {
         })())] : []),
         // C-pillar trim behind the rear door glass, and behind it the ASY C-PILLAR TRIM MID (#22) on to the
         // trunk C-pillar trim, over the C-pillar reinforcement (which lies against the body side outer)
-        named('cPillar', region([[SV.rearGlass[1], 3.67, 2.95, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
-        named('cPillarMid', region([[3.67, 3.78, 2.95, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
+        // (their lower edges come down over the top of the lower C-pillar trim)
+        named('cPillar', region([[SV.rearGlass[1], 3.67, 2.7, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
+        named('cPillarMid', region([[3.67, 3.78, 2.7, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
+        // trim clips (TRIM CLIP #11) on towers from their back faces to the C-pillar reinforcement: two under the mid
+        // trim, and a bracket from the rear edge of the upper trim
+        named('cPillarClips', group(
+          skinClip(sd, 3.735, 3.55, -0.022, -0.0445),
+          skinClip(sd, 3.775, 3.15, -0.022, -0.0445),
+          ...[3.648, 3.664, 3.68, 3.696].map((cs) => skinClip(sd, cs, 3.8, -0.022, -0.0445, 'blackPlastic', 0.006)),
+        )),
         // ASY C-PILLAR TRIM LWR (#19): covers the wheelhouse top beside the 2nd-row seat back, from the rear
         // door opening (behind the lock pillar and the cabin harness climbing against it) back to the shock
         // tower, up to the upper C-pillar trim and the parcel shelf.  Front face over the node and the rear
@@ -502,20 +517,22 @@ export function buildInterior(reg) {
             q([[-0.935, 0.36, 0.772], [-0.935, 0.36, 0.86], [-0.935, 0.81, 0.86], [-0.935, 0.81, 0.772]]),
             q([[-0.935, 0.81, 0.772], [-0.935, 0.81, 0.845], [-0.935, 0.975, 0.845], [-0.935, 0.975, 0.772]]),
             // outboard return to the shut face over the front of the wheelhouse arch, past the door armrest's
-            // rear end; the cabin harness climbs to the lock pillar behind it
-            q([[-0.935, 0.36, 0.86], [-0.982, 0.36, 0.9], [-0.988, 0.655, 0.905], [-0.935, 0.655, 0.86]]),
-            q([[-0.935, 0.655, 0.86], [-0.964, 0.655, 0.86], [-0.964, 0.705, 0.86], [-0.935, 0.705, 0.86]]),
-            q([[-0.964, 0.655, 0.86], [-0.964, 0.655, 0.905], [-0.964, 0.705, 0.905], [-0.964, 0.705, 0.86]]),
-            q([[-0.935, 0.705, 0.86], [-0.99, 0.705, 0.905], [-0.99, 0.81, 0.905], [-0.935, 0.81, 0.86]]),
-            q([[-0.964, 0.655, 0.905], [-0.99, 0.655, 0.905], [-0.99, 0.705, 0.905], [-0.964, 0.705, 0.905]]),
-            q([[-0.99, 0.425, 0.905], [-1.02, 0.53, 0.905], [-1.02, 0.81, 0.905], [-0.99, 0.81, 0.905]]),
-            q([[-1.02, 0.53, 0.905], [-1.06, 0.605, 0.905], [-1.06, 0.81, 0.905], [-1.02, 0.81, 0.905]]),
+            // rear end and back to the rear door seal at the lock pillar; the cabin harness climbs over the arch
+            // behind it
+            q([[-0.935, 0.36, 0.86], [-0.99, 0.36, 0.905], [-0.99, 0.81, 0.905], [-0.935, 0.81, 0.86]]),
+            ...[-0.99, -1.02, -1.06, -1.09].map((x0, i, a) => {
+              const x1 = a[i + 1] ?? -1.12;
+              const ay = (x) => 0.359 + Math.sqrt(Math.max(0, 0.44 ** 2 - (x + 1.425) ** 2));
+              return q([[x0, ay(x0), 0.905], [x1, ay(x1), 0.905], [x1, 0.81, 0.905], [x0, 0.81, 0.905]]);
+            }),
             // inner face against the wheelhouse inner wall, beside the seat back
             q([[-0.935, 0.555, 0.597], [-1.275, 0.555, 0.597], [-1.275, 0.975, 0.597], [-0.935, 0.975, 0.597]]),
             q([[-1.275, 0.625, 0.597], [-1.385, 0.625, 0.597], [-1.385, 0.975, 0.597], [-1.275, 0.975, 0.597]]),
             // top under the upper C-pillar trims back to the shock tower (where the trunk strut cover carries on), and
             // the rear end at the tower
             q([[-0.935, 0.975, 0.597], [-1.385, 0.975, 0.597], [-1.385, 0.975, 0.885], [-0.935, 0.975, 0.885]]),
+            // its outer edge turned up behind the lower edges of the upper C-pillar trims
+            q([[-0.99, 0.975, 0.884], [-1.385, 0.975, 0.884], [-1.385, 0.986, 0.884], [-0.99, 0.986, 0.884]]),
             q([[-1.385, 0.792, 0.735], [-1.385, 0.792, 0.885], [-1.385, 0.975, 0.885], [-1.385, 0.975, 0.735]]),
             // and between the seat back's side and the inner face, closing the slot in front of the shock tower
             q([[-1.382, 0.64, 0.558], [-1.382, 0.64, 0.597], [-1.382, 0.975, 0.597], [-1.382, 0.975, 0.558]]),
@@ -542,7 +559,8 @@ export function buildInterior(reg) {
         st.push([-1.723, 0.684]);
         if (notch) st.push([notch[0], 0.684], [notch[0], 0.735], [notch[1], 0.735], [notch[1], 0.684]);
         st.push([-1.95, 0.684], [-1.987, 0.675], [-2.115, 0.675]);
-        const top = (x) => (sd === 'L' && x < -1.987 + 1e-6 ? 0.795 : 0.96); // LH: cut out above for the charge port cover
+        // LH: cut out above for the charge port cover; behind the strut cover up to the lower edge of the trunk C-pillar trim
+        const top = (x) => (sd === 'L' && x < -1.987 + 1e-6 ? 0.795 : (x < -1.6 && x > -2.05 ? 0.986 : 0.96));
         const wall = [];
         for (let i = 0; i + 1 < st.length; i++) {
           const [x0, y0] = st[i];
@@ -625,7 +643,12 @@ export function buildInterior(reg) {
     reg.add({
       id: `trunk-c-pillar-trim-${sd}`, ko: `트렁크 C필러 리어 트림 (${ko})`, en: `Trunk C-pillar rear trim ${en}`, tags: sd,
       groups: ['interior-trunk-trim-panels'], match: /C-PILLAR|C-PI|GARNISH|LIFTGATE SWITCH|BRKT|TROUGH|STOP, LIFTGATE|MAGNET/,
-      object: region([[3.78, 4.42, 3.0, 4.0]], { side: sd, offset: -0.045, mat: 'greyPlastic', edges: false }),
+      object: group(
+        // (its front edge down over the rear end of the lower C-pillar trim)
+        region([[3.78, 4.42, 3.0, 4.0], [3.78, 3.85, 2.75, 3.0]], { side: sd, offset: -0.045, mat: 'greyPlastic', edges: false }),
+        // on its BRKT C-PILLAR (#9 LH / #10 RH) and trim clip (#16) to the C-pillar reinforcement at its front edge
+        named('clip', skinClip(sd, 3.8, 3.04, -0.022, -0.0445)),
+      ),
     });
   }
   // the headliner dips under the two pano roof drive motors at the front of the roof opening
