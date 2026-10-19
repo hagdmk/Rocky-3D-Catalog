@@ -269,13 +269,14 @@ export const JOINTS = [
 
   // --- electrical: modules on their mounts
   J('body-controller#mount', 'dash-support-frame#beam', 'MOUNT - ELECTRONICS - FOOTWELL (#6) under the cross-car beam'),
+  ...each((s) => [J(`passive-entry#ipAntenna${s}`, `dash-panel#end${s}`, 'ANTENNA PASSIVE ENTRY (#4, rectangular) screwed (SCR M4 #9, 2 per antenna) inside the IP end cap')]),
   J('body-controller#mount', 'body-controller#controller', 'body controller (#3) on the footwell electronics mount'),
   J('liftgate-ecu#bracket', 'rear-quarter-inner-R#quarterInner', 'BRACKET - ECU - PARK BRAKE AND PWR LIFTGATE (#4) bolted to the RH rear quarter inner panel'),
   J('liftgate-ecu#bracket', 'liftgate-ecu#ecu', 'power liftgate control module (#3) on its bracket'),
   J('park-assist-ecu#bracket', 'rear-quarter-inner-R#quarterInner', 'BRACKET, PARK ASSIST/BLINDSPOT ECU (#3) bolted to the RH rear quarter inner panel'),
   J('park-assist-ecu#bracket', 'park-assist-ecu#ecu', 'park assist ECU (#1) on its bracket'),
   ...each((s) => [
-    J(`horn-${s}#bracket`, `front-bumper-beam#can${s}`, 'RC horn (#1/#2, the version located on the front end module): integral bracket bolted under the energy absorber crush can'),
+    J(`horn-${s}#bracket`, 'front-bumper-carrier', 'RC horn (#1/#2, the version located on the front end module): integral bracket bolted to the fascia carrier (FEM) side post'),
     J(`horn-${s}#bracket`, `horn-${s}#horn`, 'horn on its integral bracket'),
   ]),
   J('radar#bracket', 'radar#sensor', 'Sub-Asm of Forward Radar Brackets (#2) on the radar'),
