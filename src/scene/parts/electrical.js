@@ -2,7 +2,7 @@
 // wipers/washers, horns and infotainment hardware.
 
 import * as THREE from 'three';
-import { skinAt, findOnFace } from '../body.js';
+import { skinAt, skinNormal, skinPath, findOnFace } from '../body.js';
 import { SV } from './exterior.js';
 import { SEAT } from './interior.js';
 import { STEER } from './chassis.js';
@@ -140,7 +140,10 @@ export function buildElectrical(reg) {
         named('lead', pipe(floor, W, 'wire', { bend: 0.04 })),
         named('rearLead', pipe(sg < 0 ? [...climb, ...toAirEcu] : climb, W, 'wire', { bend: 0.04 })),
         ...(sg > 0 ? [named('trunkLead', pipe([[-1.48, 0.815, 0.915], [-1.6, 0.826, 0.915], [-1.69, 0.8, 0.915], [-1.729, 0.785, 0.915]],
-          W, 'wire', { bend: 0.03 }))] : []),
+          W, 'wire', { bend: 0.03 })),
+        // branch up into the connector on the lower face of the power liftgate module
+        named('ecuLead', pipe([[-1.585, 0.826, 0.917], [-1.592, 0.829, 0.924], [-1.595, 0.8375, 0.9275]], 0.005, 'wire', { bend: 0.004 })),
+        rbox([0.03, 0.012, 0.022], [-1.595, 0.829, 0.9275], 'blackPlastic', { r: 0.003 })] : []),
       ),
     });
     // through the bulkhead grommet (ASY, PLATE A / PLATE B, BULKHEAD GROMMET) and along the top of
@@ -171,7 +174,11 @@ export function buildElectrical(reg) {
   reg.add({
     id: 'lower-dash-harness', ko: '메인(하부 대시) 하네스', en: 'Main (lower dash) harness',
     groups: ['main-lower-dash-and-motor-bay-harnesses'], match: /LOWER ?DASH|DASH LWR|FIRST RESPONDER|Body Main|CABLE TIE|CBL TIE|CLIP/,
-    object: named('trunk', tube(LD, W * 1.3, 'wire')),
+    object: group(
+      // up into its connector on the lower face of the body controller
+      named('trunk', tube([[0.84, 0.578, -0.66], ...LD], W * 1.3, 'wire')),
+      named('connector', rbox([0.045, 0.02, 0.036], [0.84, 0.565, -0.66], 'blackPlastic', { r: 0.004 })),
+    ),
   });
   reg.add({
     id: 'dcdc-pigtail', ko: 'DC-DC 컨버터 저전압 피그테일', en: 'DC-DC converter LV pigtail', tags: 'R',
@@ -257,10 +264,12 @@ export function buildElectrical(reg) {
     id: 'roof-harness', ko: '파노라믹 루프·헤드라이닝 하네스', en: 'Panoramic roof & headlining harness',
     groups: ['panoramic-roof-and-head-lining-harness'],
     object: group(
-      named('header', pipe([[0.875, 0.83, -0.84], skinAt(1.62, 4.02, 'L', -0.018), skinAt(1.9, 4.02, 'L', -0.018),
-        skinAt(2.2, 4.02, 'L', -0.018), skinAt(2.34, 4.02, 'L', -0.018), skinAt(2.345, 4.2, 'L', -0.012), skinAt(2.35, 4.5, 'L', -0.018),
+      // (up the A-pillar in short chords that follow the skin, 1.5 mm outboard of the pillar trim at offset
+      // -0.03 and under the front roof drain tube, which crosses it at offset -0.0155 near s 2.06)
+      named('header', pipe([[0.875, 0.83, -0.84], ...skinPath([[1.62, 4.02], [2.34, 4.02]], 'L', -0.0225, 12),
+        skinAt(2.345, 4.2, 'L', -0.012), skinAt(2.35, 4.5, 'L', -0.018),
         skinAt(2.4, 4.75, 'L', -0.024), skinAt(2.6, 4.75, 'L', -0.026), skinAt(3.0, 4.75, 'L', -0.026), skinAt(3.2, 4.75, 'L', -0.026),
-        skinAt(3.25, 4.85, 'L', -0.026)], 0.008, 'wire', { bend: 0.05 })),
+        skinAt(3.25, 4.85, 'L', -0.026)], 0.006, 'wire', { bend: 0.05 })),
       named('consoleLead', pipe([skinAt(2.35, 4.5, 'L', -0.018), skinAt(2.3, 4.55, 'L', -0.018), skinAt(2.298, 4.8, 'L', -0.022),
         skinAt(2.298, 4.85, 'L', -0.04)], 0.006, 'wire', { bend: 0.03 })),
       named('rearT', tube([skinAt(3.24, 4.65, 'L', -0.018), skinAt(3.24, 5, 'L', -0.018), skinAt(3.24, 4.65, 'R', -0.018)], 0.008, 'wire')),
@@ -359,12 +368,13 @@ export function buildElectrical(reg) {
       named('hazard', rbox([0.02, 0.025, 0.05], [0.468, 0.581, 0.0], 'blackPlastic', { r: 0.004 })),
       named('gloveBox', rbox([0.02, 0.025, 0.05], [0.468, 0.581, 0.07], 'blackPlastic', { r: 0.004 })),
       // steering control switch harness (#1 = front air bags #2): scroll wheels clipped into the
-      // spokes against the edge of the driver airbag, wired inside the spokes to the hub behind it
-      // (placed in the steering wheel frame, STEER in chassis.js: u across, w along the column)
+      // spokes against the edge of the driver airbag, wired inside the spokes outboard of the airbag
+      // module, then in behind its back face to the hub (placed in the steering wheel frame, STEER in
+      // chassis.js: u across, w along the column; the airbag spans w -0.031 .. -0.001, radius 0.074)
       ...[['L', 1], ['R', -1]].flatMap(([sd, u]) => [
         named(`scroll${sd}`, cyl(0.015, 0.01, 'x', STEER.at(u * 0.086, 0.0014, -0.0214), 'chrome', { seg: 32, rot: [0, 0, Math.PI / 2 - STEER.tilt] })),
-        named(sd === 'L' ? 'steeringHarness' : 'steeringHarnessR', tube([STEER.at(u * 0.086, 0.0012, -0.017),
-          STEER.at(u * 0.06, 0.0013, 0.0104), STEER.at(u * 0.025, 0.0017, 0.0014)], 0.004, 'wire')),
+        named(sd === 'L' ? 'steeringHarness' : 'steeringHarnessR', pipe([STEER.at(u * 0.086, 0.0012, -0.017),
+          STEER.at(u * 0.085, 0.0012, 0.006), STEER.at(u * 0.03, 0.0015, 0.004)], 0.004, 'wire', { bend: 0.008 })),
       ]),
     ),
   });
@@ -379,8 +389,10 @@ export function buildElectrical(reg) {
     id: 'passive-entry', ko: '패시브 엔트리 안테나(콘솔·뒤 범퍼)', en: 'Passive entry antennas (console, rear bumper)',
     groups: ['remote-and-passive-entry'],
     object: group(
-      rbox([0.12, 0.025, 0.04], [0.32, 0.33, 0], 'blackPlastic', { r: 0.006 }),
-      rbox([0.12, 0.025, 0.04], [-0.48, 0.33, 0], 'blackPlastic', { r: 0.006 }),
+      // LF coils (#1) inside the centre console shell, on the carpeted tunnel floor: the front one in the
+      // dead key fob bracket (#10, push-pull rivets #11), the rear one in the console's rear end
+      named('consoleCoil', rbox([0.12, 0.025, 0.04], [0.32, 0.3235, 0], 'blackPlastic', { r: 0.006 })),
+      named('rearCoil', rbox([0.12, 0.025, 0.04], [-0.33, 0.3235, 0], 'blackPlastic', { r: 0.006 })),
       rbox([0.04, 0.025, 0.14], [-2.33, 0.56, 0], 'blackPlastic', { r: 0.006 }),
     ),
   });
@@ -388,7 +400,9 @@ export function buildElectrical(reg) {
     reg.add({
       id: `horn-${sd}`, ko: `경음기 (${ko})`, en: `Horn ${en}`, tags: sd,
       groups: ['horns'], match: sg < 0 ? /HI TONE|510 Hz|BLT|NUT|CLIP|SEAL/ : /LOW TONE|410 Hz|SIREN|BBS|BLT|NUT|CLIP|SEAL/,
-      // integral bracket bolted (#3) under the front energy absorber crush can
+      // RC horn (#1/#2, the version 'located on front end module'): its integral bracket bolted under
+      // the front energy absorber crush can (the later 510/410 Hz horns bolt to the centre active
+      // louver with BLT M6x20 #3 instead)
       object: group(
         named('horn', disc(0.05, 0.03, 'x', [2.26, 0.38, sg * 0.6], 'blackPlastic')),
         named('bracket', box([0.03, 0.006, 0.08], [2.27, 0.428, sg * 0.555], 'steel')),
@@ -446,9 +460,13 @@ export function buildElectrical(reg) {
     const mc = [0.955, 0.924]; // motor axis
     const blade = (sd, pts) => tube(pts.map(([s, v]) => skinAt(s, v, sd, 0.009)), 0.007, 'rubber');
     const arm = (zp, sd, s1, v1, s2, v2) => group(
-      cyl(0.006, 0.016, 'y', [0.947, 0.956, zp], 'darkMetal'), // spindle through the cowl screen
-      cyl(0.011, 0.012, 'y', [0.947, 0.968, zp], 'blackPlastic'), // arm head with the cap nut (#8)
+      cyl(0.011, 0.012, 'y', [0.947, 0.968, zp], 'blackPlastic'), // arm head with the cap nut (#8) on the spindle top
       pipe([[0.947, 0.97, zp], skinAt(s1, v1, sd, 0.024), skinAt(s2, v2, sd, 0.019)], 0.005, 'paintDark', { bend: 0.03 }),
+    );
+    // module pivot housing with its spindle rising through the cowl screen (WIPER MODULE #1)
+    const pivot = (zp) => group(
+      cyl(0.013, 0.026, 'y', [0.947, 0.937, zp], 'darkMetal'),
+      cyl(0.006, 0.016, 'y', [0.947, 0.956, zp], 'darkMetal'),
     );
     reg.add({
       id: 'wipers', ko: '와이퍼 암·블레이드·모터', en: 'Wiper arms, blades & motor', tags: 'F',
@@ -460,8 +478,8 @@ export function buildElectrical(reg) {
         named('armR', arm(0.06, 'R', 1.6, 4.86, 1.645, 4.45)),
         named('frame', beam([...fr, -0.632], [...fr, 0.11], 0.009, 'steel')),
         named('footL', pad([...fr, -0.618], above(fr) - 0.009 + 0.003, 0.035, 0.03)),
-        named('pivotL', cyl(0.013, 0.026, 'y', [0.947, 0.937, -0.6], 'darkMetal')),
-        named('pivotR', cyl(0.013, 0.026, 'y', [0.947, 0.937, 0.06], 'darkMetal')),
+        named('pivotL', pivot(-0.6)),
+        named('pivotR', pivot(0.06)),
         named('link', beam([0.935, 0.938, 0.06], [0.935, 0.938, -0.6], 0.004, 'steel')),
         // crank housing standing on the plenum (bolt #2 from below), the motor along the plenum
         named('motor', group(
@@ -511,7 +529,13 @@ export function buildInfotainment(reg) {
   reg.add({
     id: 'xm-antenna', ko: '위성 라디오(XM) 안테나', en: 'Satellite radio (XM) antenna', tags: 'B',
     groups: ['satellite-radio-antenna'],
-    object: rbox([0.07, 0.02, 0.07], skinAt(3.3, 5, 'L', -0.035).toArray(), 'blackPlastic', { r: 0.006 }),
+    // under the roof rear header, between the roof panel and the headliner: behind the pano roof's rear
+    // seal, ahead of the headliner harness T and RH of the rear dome light
+    object: (() => {
+      const n = skinNormal(3.2, 4.7);
+      n.z = -n.z;
+      return faceTo(rbox([0.04, 0.016, 0.06], [0, 0, 0], 'blackPlastic', { r: 0.004 }), skinAt(3.2, 4.7, 'R', -0.009), n, 'y');
+    })(),
   });
   reg.add({
     id: 'overhead-console', ko: '오버헤드 콘솔(블루투스·마이크)', en: 'Overhead console (Bluetooth & mics)',

@@ -250,7 +250,7 @@ export const JOINTS = [
   ...[7, 8, 9, 10, 11, 12].map((i) => J(`park-sensors-rear#S${i}`, 'rear-bumper-harness#lead', 'REAR BUMPER HARNESS - PARK ASSIST (#1) at the sensor (#3)')),
   J('cabin-harness-L#rearLead@end', 'air-suspension-ecu', 'LH body harness at the air suspension ECU behind the LH trunk side trim'),
   J('cabin-harness-R#trunkLead@end', 'park-assist-ecu#ecu', 'RH body harness at the park assist ECU'),
-  J('cabin-harness-R#trunkLead', 'liftgate-ecu#ecu', 'RH body harness at the power liftgate / park brake ECU'),
+  J('cabin-harness-R#ecuLead@end', 'liftgate-ecu#ecu', 'RH body harness branch into its connector on the power liftgate / park brake ECU'),
   J('rear-bumper-harness#lead@start', 'cabin-harness-L#rearLead@end', 'rear bumper harness (#1) plugs into the LH body harness at the trunk side'),
   J('rear-subframe-harness#lead@start', 'cabin-harness-R#rearLead@end', 'REAR SUBFRAME HARNESS (#2) plugs into the RH body harness above the wheelhouse'),
   J('rear-subframe-harness#grommet', 'trunk-floor-ext-R#shelf', 'rear subframe harness grommet in the trunk floor extension shelf (grommet not listed in the catalog)'),
@@ -273,7 +273,7 @@ export const JOINTS = [
   J('park-assist-ecu#bracket', 'rear-quarter-inner-R#quarterInner', 'BRACKET, PARK ASSIST/BLINDSPOT ECU (#3) bolted to the RH rear quarter inner panel'),
   J('park-assist-ecu#bracket', 'park-assist-ecu#ecu', 'park assist ECU (#1) on its bracket'),
   ...each((s) => [
-    J(`horn-${s}#bracket`, `front-bumper-beam#can${s}`, 'horn bracket bolted (BLT M6x20 #3) under the energy absorber crush can'),
+    J(`horn-${s}#bracket`, `front-bumper-beam#can${s}`, 'RC horn (#1/#2, the version located on the front end module): integral bracket bolted under the energy absorber crush can'),
     J(`horn-${s}#bracket`, `horn-${s}#horn`, 'horn on its integral bracket'),
   ]),
   J('radar#bracket', 'radar#sensor', 'Sub-Asm of Forward Radar Brackets (#2) on the radar'),
