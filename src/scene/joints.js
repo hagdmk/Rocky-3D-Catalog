@@ -36,7 +36,7 @@ export const JOINTS = [
   J('steering-ishaft-upper#yoke', 'steering-wheel#column@end', 'upper link #6 U-joint on the column spline, bolt #7'),
   J('steering-ishaft-upper#sleeve', 'steering-ishaft#lowerLink@start', 'upper link sleeve on the lower link (upper #8/#9)'),
   J('steering-ishaft#couplingBolt', 'steering-ishaft-upper#sleeve', 'BOLT H M10x35 (upper #8) with NUT HF M10 (upper #9) through the sleeve pinch'),
-  J('steering-ishaft#dashSeal', 'sound-insulation', 'I-shaft dash seal in the firewall (lower #8 = upper #10)'),
+  J('steering-ishaft#dashSeal', 'sound-insulation#dash', 'I-shaft dash seal in the firewall (lower #8 = upper #10)'),
   J('steering-ishaft#ujLower', 'steering-gear#inputShaft@end', 'lower U-joint on the pinion input shaft (lower #7 = upper #8)'),
   ...each((s) => [
     J(`steering-gear#boss${s}`, `front-subframe#rail${s}`, 'gear bolted to the subframe (lower #2 M14x78)'),
@@ -188,7 +188,7 @@ export const JOINTS = [
   J('motor-coolant-loop#bypass@start', 'motor-coolant-loop#rockerR', 'ASY - HOSE (PT) - RKR TO BYPASS 3 WAY VLV (motor cooling #20) teed off the RH rocker hose'),
   J('motor-coolant-loop#bypass@end', 'motor-coolant-loop#valve3', 'ASY - HOSE (PT) - RKR TO BYPASS 3 WAY VLV (motor cooling #20) on the 3-way valve'),
   J('hvac-drain-hose#hose@start', 'hvac-unit', 'HVAC DRAIN HOSE on the HVAC case'),
-  J('hvac-drain-hose#grommet', 'sound-insulation', 'GROMMET, HVAC DRAIN TUBE (heater assembly #6) in the dash insulator'),
+  J('hvac-drain-hose#grommet', 'sound-insulation#dash', 'GROMMET, HVAC DRAIN TUBE (heater assembly #6) in the dash insulator'),
   J('ptc-heater', 'hvac-unit#case', 'CORE COMPLETE ASSY - PTC AIR HEATER (heater core #1) in the heater core slot of the HVAC UNIT - NO PTC HEATER (heater assembly #1)', { inset: 'the heater core slides into its slot in the HVAC case' }),
   J('hvac-blower#outlet', 'hvac-unit#case', 'blower scroll outlet bolted to the RH side of the HVAC case'),
 
@@ -305,8 +305,8 @@ export const JOINTS = [
     J(`wipers#arm${s}`, `wipers#blade${s}`, `BLADE ASY-WIPER (#${s === 'L' ? 4 : 5}) clipped to the arm (#${s === 'L' ? 6 : 7})`),
   ]),
   ...each((s) => [J(`washer-nozzles#nozzle${s}`, 'hood', 'WASHER NOZZLE (#1) clipped into the hood from below')]),
-  J('radio-tuner', 'dash-support-frame', 'RADIO (#1, TORX M5 #2) on the AMP AND TUNER bracket (dash support frame #5) under the cross-car beam'),
-  J('audio-amplifier', 'dash-support-frame', 'AUDIO, AMPLIFIER, EXTERNAL, PREMIUM on the AMP AND TUNER bracket (dash support frame #5)'),
+  J('radio-tuner', 'dash-support-frame#ampTunerBracket', 'RADIO (#1, TORX M5 #2) screwed into the AMP AND TUNER bracket (dash support frame #5) hung from the cross-car beam'),
+  J('audio-amplifier', 'dash-support-frame#ampTunerBracket', 'AUDIO, AMPLIFIER, EXTERNAL, PREMIUM screwed into the floor of the AMP AND TUNER bracket (dash support frame #5), below the radio'),
 
   // --- interior ducts: HVAC case outlets to the vents
   ...['faceL', 'faceR', 'centreL', 'centreR', 'floorL', 'floorR', 'console'].map((d) => J(`interior-ducts#${d}@start`, 'hvac-unit', 'duct on the HVAC case outlet')),
@@ -421,6 +421,11 @@ export const JOINTS = [
   ]),
   J('rear-belts#centreRetractor', 'rear-seat-back-60', '2nd row centre seatbelt retractor (#3) bolted in the 60% seat back frame (#9 BOLT, 2ND ROW CENTER RETRACTOR)', { inset: 'the retractor is inside the seat back' }),
   J('third-row-belts', 'third-row-seats', '3rd row seatbelt assembly (#1) anchored on the seat back frame (ASY - THIRD ROW SEAT #8)'),
+  J('third-row-seats#mounts', 'trunk-floor#floor', 'ASY - THIRD ROW SEAT (#8) pivot brackets bolted to the trunk floor (BLT M10x28.4 #6, BARREL NUT M10 #5)'),
+  ...each((s) => [
+    J(`pillar-trim-${s}#kickPanel`, `hinge-pillar-${s}`, 'ASY, A PILLAR TRIM LOWER (A/B/C post trim #8) clipped (TRIM CLIP #11) to the hinge pillar'),
+    J(`pillar-trim-${s}#cPillarLower`, `rear-quarter-inner-${s}#innerWall`, 'ASY C-PILLAR TRIM LWR (A/B/C post trim #19) clipped to the wheelhouse inner wall'),
+  ]),
   J('touchscreen', 'dash-panel', 'MCU in the CENTER SCREEN FRAME (touchscreen #2 = dash panel #35), BLT M5x25 (#3)'),
   J('instrument-cluster', 'dash-panel', 'cluster in the IP cluster frame and bezel (ASY FRAME INSTRUMENT CLUSTER / CLUSTER BEZEL, dash panel #28)'),
   J('glove-box', 'dash-panel', 'ASY GLOVE BOX COMP (dash panel #24) hinged in the lower right IP'),
@@ -458,6 +463,7 @@ export const PASS_OK = [
   { a: 'door-harness-*B#lead', b: 'b-pillar-*', reason: 'the lower B-pillar is a closed section drawn as a solid block: the rear door harness enters it through a grommeted hole in its inboard wall and leaves through the rear door harness grommet (#2/#4) in its rear face below the lower hinge' },
   { a: 'hvac-drain-hose#hose', b: 'sound-insulation', reason: 'the dash insulator is drawn without the hole for the drain tube grommet (heater assembly #6); the drain tube passes through the grommet there' },
   { a: 'hvac-unit#evapPipes', b: 'sound-insulation', reason: 'the dash insulator is drawn without its opening for the evaporator pipes, which pass through the bulkhead to the TXV (A/C pipes #11) on the motor-bay side' },
+  ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier through the opening in its front closeout (#14) and runs under it to its outlet in the carrier's side wall; the tunnel trim is drawn as a closed shell` })),
   { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness leaves the trunk through it in its grommet (rear-subframe-harness#grommet)' },
   { a: 'door-harness-*B#lead', b: 'rocker-*', reason: 'the scuff plate is drawn as one piece across the B-pillar foot; on the car the sill trim ends at the B-pillar lower trim (pillar trim #14) and the rear door harness rises there from the body harness under the sill trim into the pillar' },
 ];
