@@ -115,10 +115,11 @@ export function buildElectrical(reg) {
   const LD = [[0.84, 0.562, -0.66], [0.89, 0.5, -0.6], [0.9, 0.47, -0.45], [0.9, 0.465, 0], [0.9, 0.47, 0.45], [0.88, 0.49, 0.6], [0.82, 0.52, 0.655]];
   const toe = (x) => 0.2975 + (x - 0.72) * 0.456 + W + 0.0045; // harness centre lying on the toe board
   for (const { sd, sg, ko, en } of SIDES) {
-    // #lead: off the main harness, down into the front outboard corner of the footwell beside the
-    // hinge pillar (behind the A-pillar lower trim on the car), back along the outboard edge of the toe
-    // board, then along the sill under the scuff plate (rocker-*#scuff), outboard of the carpet edge,
-    // to the B-pillar foot, where the rear door harness plugs in.
+    // #lead: off the main harness forward to the dash insulator, outboard along it and down the slot
+    // between the insulator and the front flange of the A-pillar lower trim (pillar-trim-*#kickPanel),
+    // back along the outboard edge of the toe board behind that trim, then along the sill under the scuff
+    // plate (rocker-*#scuff), outboard of the carpet edge, to the B-pillar foot, where the rear door
+    // harness plugs in.
     // #rearLead: on under the scuff plate and the rear footwell corner, up the front of the rear
     // wheelhouse just behind the rear door (inboard of its seal), against the lock pillar and over the
     // wheelhouse near the body side, behind the C-pillar lower trim and the trunk side trim: LH to the
@@ -126,7 +127,7 @@ export function buildElectrical(reg) {
     // wheelhouse where the rear subframe harness plugs in, and #trunkLead on under the liftgate / park
     // brake ECU to the park assist ECU.
     const zs = sg * 0.765;
-    const floor = [sg < 0 ? LD[1] : LD[5], [0.94, 0.46, sg * 0.72], [0.945, toe(0.945), sg * 0.772], [0.84, toe(0.84), sg * 0.767],
+    const floor = [sg < 0 ? LD[1] : LD[5], [0.958, 0.495, sg * 0.665], [0.958, 0.47, sg * 0.768], [0.952, toe(0.952), sg * 0.772], [0.84, toe(0.84), sg * 0.767],
       [0.76, toe(0.76), sg * 0.766], [0.7, 0.312, zs], [0.2, 0.312, zs], [-0.32, 0.312, zs]];
     const climb = [[-0.32, 0.312, zs], [-0.7, 0.312, zs], [-0.9, 0.318, sg * 0.766], [-0.945, 0.335, sg * 0.766],
       [-0.952, 0.392, sg * 0.767], [-0.962, 0.425, sg * 0.82], [-0.975, 0.48, sg * 0.872], [-1.005, 0.55, sg * 0.884],

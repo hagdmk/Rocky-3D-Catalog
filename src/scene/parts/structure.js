@@ -90,6 +90,31 @@ function rearArch(sg, rIn, zIn, zOut, mat, a0, a1, aNode) {
   ];
 }
 
+// C-pillar reinforcement (quarter inner #23/#24): a 50 x 22 mm section bonded to the inside of the body
+// side outer (its outer face 2.5 mm inside the skin, 4 mm round the tight shoulder), from the top of the
+// wheelhouse arch up the quarter, round the shoulder and up the C-pillar to the roof rail; (s, v) skin
+// stations of its centre line and its inset.
+const C_PILLAR_SV = [[3.895, 0.45], [3.87, 1.0], [3.845, 1.5], [3.83, 1.85], [3.83, 1.98, 0.015], [3.83, 2.12, 0.015],
+  [3.83, 2.26, 0.015], [3.83, 2.4, 0.015], [3.826, 2.65], [3.805, 2.9], [3.784, 3.1], [3.763, 3.3], [3.746, 3.45],
+  [3.728, 3.6], [3.711, 3.73], [3.695, 3.86]];
+function cPillarReinf(sd) {
+  const P = C_PILLAR_SV.map(([s, v, d = 0.0135]) => skinAt(s, v, sd, -d));
+  const N = C_PILLAR_SV.map(([s, v]) => {
+    const n = skinNormal(s, v);
+    if (sd === 'R') n.z = -n.z;
+    return n;
+  });
+  // each segment square to the skin: its thickness along the mean normal of its two stations
+  return group(...P.slice(1).map((p, i) => {
+    const m = bar(P[i], p, 0.05, 0.022, 'aluminum');
+    const y = new THREE.Vector3().subVectors(p, P[i]).normalize();
+    const n = N[i].clone().add(N[i + 1]);
+    const z = n.addScaledVector(y, -n.dot(y)).normalize();
+    m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3().crossVectors(y, z), y, z));
+    return m;
+  }));
+}
+
 function hoodY(x, inset = 0.04) {
   return topY(sOf(x)) - inset;
 }
@@ -245,8 +270,9 @@ export function buildStructure(reg) {
           side: sd, offset: -0.03, mat: 'aluminum', edges: false,
           field: (q, s) => Math.max(archTop(q.x) + 0.004 - q.y, 0.62 - q.y, q.y - 0.955, Math.min(s - 4.39, q.y - 0.868)),
         })),
-        // C-pillar reinforcement (#23/#24): from the wheelhouse up behind the rear door opening to the roof rail
-        named('cPillar', bar([XR + 0.02, 0.8, sg * 0.71], [-1.21, 1.19, sg * 0.653], 0.04, 0.03, 'aluminum')),
+        // C-pillar reinforcement (#23/#24): just inside the body side outer, outboard of the C-pillar and
+        // trunk side trims, from the wheelhouse up behind the rear door opening to the roof rail
+        named('cPillar', cPillarReinf(sd)),
         // rear lamp housing reinforcement (#15/#16 = body side #4): bonded behind the body side
         // outer along the lower edge of the tail lamp pocket
         named('lampHousing', (() => {
@@ -264,6 +290,13 @@ export function buildStructure(reg) {
     groups: ['rear-end-panels'], match: /TRUNK FLOOR(?! PNL)|DIFFUSER|REAR BODY|BRKT/,
     object: group(
       named('floor', box([0.86, 0.01, 1.08], [-1.98, 0.615, 0], 'aluminum')),
+      // front section of the trunk floor assembly (#1) over the drive unit and the upper links, under the load
+      // floor carpet up to the 2nd-row seat back; beside the seat back its flanges reach out to the wheelhouse
+      // inner walls
+      named('frontFloor', group(
+        box([0.25, 0.01, 1.08], [-1.425, 0.615, 0], 'aluminum'),
+        ...[-1, 1].map((sg) => box([0.085, 0.01, 0.058], [-1.3425, 0.615, sg * 0.569], 'aluminum')),
+      )),
       // rear body panel (#4): its lower edge sits on the bumper beam
       named('rearPanel', box([0.02, 0.225, 1.3], [-2.36, 0.6575, 0], 'aluminum')),
     ),

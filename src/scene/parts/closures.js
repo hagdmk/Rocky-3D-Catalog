@@ -140,11 +140,12 @@ export function buildClosures(reg) {
       // release cable (#2): over the carrier beam, outboard of the frunk tub and inboard of the LH
       // shock tower, then outboard behind the tower's rear wall (between it and the master cylinder,
       // under the brake hose bracket) and over the rear of the wheelhouse, through the firewall at
-      // its outboard edge (outboard of the dash insulation, below the shotgun rail) to the handle on
-      // the LH lower dash
+      // its outboard edge (outboard of the dash insulation, below the shotgun rail), into the open
+      // front of the lower instrument panel and inside it along its LH end cover, above the kick
+      // panel, down to the handle on the LH lower dash
       named('cable', pipe([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
-        [1.45, 0.7, -0.47], [1.336, 0.69, -0.475], [1.333, 0.68, -0.585], [1.23, 0.65, -0.63], [1.11, 0.582, -0.7], [0.99, 0.55, -0.73],
-        [0.85, 0.54, -0.742], [0.72, 0.53, -0.75]], 0.004, 'steel', { bend: 0.04 })),
+        [1.45, 0.7, -0.47], [1.336, 0.69, -0.475], [1.333, 0.68, -0.585], [1.23, 0.65, -0.63], [1.11, 0.625, -0.7], [0.99, 0.645, -0.727],
+        [0.93, 0.635, -0.727], [0.85, 0.598, -0.727], [0.77, 0.575, -0.727], [0.712, 0.566, -0.729], [0.712, 0.545, -0.731], [0.712, 0.524, -0.738]], 0.004, 'steel', { bend: 0.02 })),
       // on the LH end face of the lower instrument panel shell (z -0.74), facing the door opening
       named('handle', rbox([0.06, 0.03, 0.02], [0.7, 0.52, -0.745], 'blackPlastic', { r: 0.006 })),
     ),
@@ -329,7 +330,7 @@ export function buildClosures(reg) {
     groups: ['drive-motor-and-cable-mechanism'], object: group(tracks),
   });
   // Drain tubes from the cassette corner spouts, between the outer skin and the
-  // pillar trims (outboard of the curtain airbags and the liftgate harness): the front
+  // pillar trims (outboard of the liftgate harness, clear of the ends of the curtain airbags): the front
   // ones down the A-pillar ahead of the door hinges, the rear ones down the C-pillar.
   const drains = [];
   for (const { sd } of SIDES) {
