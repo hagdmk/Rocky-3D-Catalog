@@ -278,6 +278,17 @@ export function buildStructure(reg) {
       object: group(
         quadPlate([[-1.95, 0.615, sg * 0.535], [-1.56, 0.615, sg * 0.535], [-1.56, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6]], 0.006, 'aluminum'),
         named('shelf', quadPlate([[SHELF_X0, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.84], [SHELF_X0, SHELF_Y, sg * 0.84]], 0.004, 'aluminum')),
+        // behind the wheelhouse the extension closes the trunk's rear corner back to the rear body panel,
+        // inboard of the liftgate drain tube; on the RH side it leaves room for the subwoofer enclosure,
+        // which stands on the load floor in front of the corner
+        named('rearCorner', group(...(() => {
+          const xf = sd === 'R' ? -2.18 : -1.95; // front end of the sloped flange
+          const zi = sd === 'R' ? 0.625 : 0.6; // inner edge of the corner shelf
+          return [
+            quadPlate([[-2.35, 0.615, sg * 0.535], [xf, 0.615, sg * 0.535], [xf, SHELF_Y, sg * 0.6], [-2.35, SHELF_Y, sg * 0.6]], 0.006, 'aluminum'),
+            quadPlate([[-1.95, SHELF_Y, sg * zi], [-2.35, SHELF_Y, sg * zi], [-2.35, SHELF_Y, sg * 0.815], [-1.95, SHELF_Y, sg * 0.815]], 0.004, 'aluminum'),
+          ];
+        })())),
       ),
     });
   }
