@@ -9,7 +9,7 @@ It places the catalog's **system → subsystem → group → part** structure wh
 - 366 3D locations (components). **All 213 groups** are placed in at least one location.
 - Zoom, rotate and pan; on hover or click the target stays solid and everything else turns translucent
 - The info panel shows the clicked part's catalog data: group, part number, quantity, remarks, source page and exploded view
-- Parts that are fastened together really touch, and **513 fastening points** are checked automatically
+- Parts that are fastened together really touch, and **543 fastening points** are checked automatically
   (bolts, bushings, ball joints, brackets, and the ends of lines and harnesses).
   A part listed in several groups (e.g. the steering I-shaft lower link, the 4-way coolant valve) is drawn once,
   so every group that lists it points at the same part.
@@ -78,12 +78,13 @@ A slider moves the parts outwards to show what lies inside.
 ### Showing only some systems, with their mounting parts
 
 When you narrow the view to some systems (untick systems in the tree, or "이 시스템만 보기" — show this system only —
-in the info panel), the parts of other systems that the visible parts mount on are drawn faintly.
-For example, with only steering and suspension shown, the subframes, shock towers and firewall appear faintly, so you
+in the info panel), the parts of other systems that the visible parts are fastened to are drawn faintly: only the
+section they bolt to, such as a subframe rail or a shock tower.
+For example, with only steering and suspension shown, the subframe rails, shock towers and dash insulation appear faintly, so you
 can see where the arms and the column are fastened.
 Faint parts cannot be clicked, and the option can be turned off in the view settings.
 
-![Steering and suspension only: the wheel, column, I-shaft, rack and tie rods form one chain, with the subframes, shock towers and firewall drawn faintly](docs/images/mount-context.png)
+![Steering and suspension only: the wheel, column, I-shaft, rack and tie rods form one chain, with the subframe rails, shock towers and dash insulation drawn faintly](docs/images/mount-context.png)
 
 ### Realistic materials and mobile
 
