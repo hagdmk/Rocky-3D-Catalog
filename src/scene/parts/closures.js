@@ -41,11 +41,11 @@ export function buildClosures(reg) {
     reg.add({
       id: `rear-door-hinges-${sd}`, ko: `뒤 도어 힌지 (${ko})`, en: `Rear door hinges ${en}`, tags: `${sd}B`,
       groups: ['rear-door-hinges-and-fittings'],
-      // bolted to the B-pillar rear face and to the front of the rear door inner panel, inboard of
-      // the door seals
+      // bolted to the B-pillar rear face and to the front of the rear door inner panel (BLT M8x26 #5), inboard of
+      // the door seals; each against the inner panel, which moves outboard with height (tumblehome)
       object: group(
         rbox([0.05, 0.05, 0.036], [xr, 0.58, sg * 0.935], 'steel', { r: 0.008 }),
-        rbox([0.05, 0.05, 0.036], [xr, 0.86, sg * 0.935], 'steel', { r: 0.008 }),
+        rbox([0.05, 0.05, 0.036], [xr, 0.86, sg * 0.943], 'steel', { r: 0.008 }),
       ),
     });
     // The hood hinge (#6) sits on top of the rear end of the shotgun upper rail (front-inner-*, structure.js), at the
