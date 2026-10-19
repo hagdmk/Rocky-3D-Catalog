@@ -340,7 +340,8 @@ export function buildClosures(reg) {
   reg.add({
     id: 'labels-window', ko: '라벨 - 창문 스티커(먼로니)', en: 'Labels - window sticker (Monroney)', tags: 'LB',
     groups: ['labels'], match: /MONRONEY|ADHESIVE TAPE/,
-    object: box([0.2, 0.25, 0.002], skinAt(3.15, 3.42, 'L', -0.012).toArray(), 'paper'),
+    // taped to the inner face of the LH rear door glass (the glass is at offset -0.004), following its curve
+    object: region([[3.05, 3.25, 3.2, 3.7]], { side: 'L', offset: -0.0055, mat: 'paper', edges: false }),
   });
 
   // --- Panoramic roof ----------------------------------------------------------------------

@@ -422,6 +422,7 @@ export const JOINTS = [
   J('liftgate-spoiler', 'liftgate', 'spoiler bonded to the liftgate (ADHESIVE TAPE, PRIMER)'),
   J('license-plate-front', 'front-fascia', 'front plate bracket screwed to the fascia (SCR, RVT)'),
   J('labels-underhood', 'hood', 'emission / refrigerant / first responder labels on the hood underside'),
+  J('labels-window', 'door-glass-LB', 'MONRONEY label on the inside of the LH rear door glass (ADHESIVE TAPE)'),
   // seats, restraints, instrument panel
   ...each((s) => [
     J(`front-seat-track-${s}#feet`, 'floor-pan', 'seat tracks bolted to the floor (BLT M10x28.4 / M8x27)'),
