@@ -276,7 +276,8 @@ export const JOINTS = [
   J('park-assist-ecu#bracket', 'rear-quarter-inner-R#quarterInner', 'BRACKET, PARK ASSIST/BLINDSPOT ECU (#3) bolted to the RH rear quarter inner panel'),
   J('park-assist-ecu#bracket', 'park-assist-ecu#ecu', 'park assist ECU (#1) on its bracket'),
   ...each((s) => [
-    J(`horn-${s}#bracket`, 'front-bumper-carrier', 'RC horn (#1/#2, the version located on the front end module): integral bracket bolted to the fascia carrier (FEM) side post'),
+    J(`horn-${s}#tab`, 'front-bumper-carrier', 'RC horn (#1/#2, the version located on the front end module): end tab of its integral bracket bolted to the front face of the fascia carrier (FEM) side post'),
+    J(`horn-${s}#tab`, `horn-${s}#bracket`, 'end tab of the integral bracket strap'),
     J(`horn-${s}#bracket`, `horn-${s}#horn`, 'horn on its integral bracket'),
   ]),
   J('radar#bracket', 'radar#sensor', 'Sub-Asm of Forward Radar Brackets (#2) on the radar'),

@@ -421,11 +421,19 @@ export function buildElectrical(reg) {
       id: `horn-${sd}`, ko: `경음기 (${ko})`, en: `Horn ${en}`, tags: sd,
       groups: ['horns'], match: sg < 0 ? /HI TONE|510 Hz|BLT|NUT|CLIP|SEAL/ : /LOW TONE|410 Hz|SIREN|BBS|BLT|NUT|CLIP|SEAL/,
       // RC horn (#1/#2, located on the front end module): its integral bracket, a strap from the back of
-      // the horn, bolted to the front face of the fascia carrier's side post (the later 510/410 Hz horns
-      // bolt to the centre active louver with BLT M6x20 #3 instead)
+      // the horn whose end is bent down into a tab lying flat on the front face of the fascia carrier's side post
+      // (which leans back 3.6 deg) and bolted through it (the later 510/410 Hz horns bolt to the centre active louver
+      // with BLT M6x20 #3 instead)
       object: group(
         named('horn', disc(0.05, 0.03, 'x', [2.26, 0.38, sg * 0.6], 'blackPlastic')),
-        named('bracket', box([0.106, 0.005, 0.04], [2.192, 0.4, sg * 0.615], 'steel')),
+        named('bracket', box([0.1025, 0.005, 0.04], [2.19375, 0.4, sg * 0.615], 'steel')),
+        named('tab', (() => {
+          const P = (y) => new THREE.Vector3(2.13 - 0.03 * (y - 0.218) / 0.482, y, sg * 0.615); // post axis (structure.js)
+          const n = new THREE.Vector3(0.482, 0.03, 0).normalize(); // post front-face normal; the face is 20 mm off the axis
+          const m = bar(P(0.38).addScaledVector(n, 0.022), P(0.42).addScaledVector(n, 0.022), 0.004, 0.04, 'steel');
+          delete m.userData.span; // a 40 x 40 mm tab, not a linear member
+          return m;
+        })()),
       ),
     });
   }

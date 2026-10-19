@@ -1102,12 +1102,26 @@ export function buildInterior(reg) {
       // sensing system (#9): its tube clipped along the front edge of the bumper beam, in the energy absorber
       named('sensor', tube([[2.39, 0.47, -0.6], [2.425, 0.47, -0.3], [2.432, 0.47, 0], [2.425, 0.47, 0.3], [2.39, 0.47, 0.6]], 0.008, 'darkMetal')),
       // hood actuators (#7) under the rear of the hood hinges, which they lift: the cylinder stands just inboard of the
-      // shotgun rail's inner face, its plunger under the hinge's inboard flange, and its own horizontal flange (no
-      // bracket) lies on the rail top beside the hinge's body leaf, bolted from above with 2 vertical bolts (#8 BLT HF M6x20)
-      ...SIDES.map(({ sd, sg }) => named(`actuator${sd}`, group(
-        cyl(0.02, 0.06, 'y', [1.03, 0.862, sg * 0.715], 'darkMetal'),
-        named(`flange${sd}`, box([0.03, 0.004, 0.044], [1.03, 0.879, sg * 0.735], 'steel')),
-      ))),
+      // shotgun rail's inner face, its plunger under the hinge's inboard flange, and its own flange (no bracket) runs
+      // through the cylinder's outboard side onto the rail: flush on the rail's sloped top (built in the rail's own frame,
+      // as the hood hinge plates), along its inboard strip between the rail's inner edge and the hinge's body leaf, with a
+      // hole ahead of and one behind the cylinder for the 2 vertical bolts (#8 BLT HF M6x20) into the rail top
+      ...SIDES.map(({ sd, sg }) => {
+        const RA = new THREE.Vector3(1.85, 0.758, sg * 0.72);
+        const RB = new THREE.Vector3(0.98, 0.863, sg * 0.785);
+        const q = bar(RA, RB, 0.04, 0.07, 'steel').quaternion;
+        const nTop = new THREE.Vector3(1, 0, 0).applyQuaternion(q);
+        if (nTop.y < 0) nTop.negate();
+        const nIn = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+        if (nIn.z * sg > 0) nIn.negate();
+        const at = (x) => RA.clone().lerp(RB, (1.85 - x) / 0.87).addScaledVector(nTop, 0.022).addScaledVector(nIn, 0.0415);
+        const fl = bar(at(1.06), at(1.0), 0.004, 0.036, 'steel'); // a plate on the rail top, not a linear member
+        delete fl.userData.span;
+        return named(`actuator${sd}`, group(
+          cyl(0.02, 0.06, 'y', [1.03, 0.862, sg * 0.715], 'darkMetal'),
+          named(`flange${sd}`, fl),
+        ));
+      }),
     ),
   });
   void bar; void beam; void V;
