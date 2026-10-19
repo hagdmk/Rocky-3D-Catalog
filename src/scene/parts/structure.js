@@ -275,16 +275,17 @@ export function buildStructure(reg) {
       // between the hinge pillars (|z| 0.79); its outboard front corners stop short of the shotgun
       // rail ends (x 0.975, |z| 0.75-0.82)
       // rear floor under the 2nd-row seat: a heel kick up from the floor pan's rear edge to the seat floor on the
-      // battery pack's rear hump (y 0.375), on which the chargers and the HV junction box stand and into which the
-      // cushion frame hooks clip, back to the rear rail nodes, inboard of the body harnesses along the sills (under the
-      // carpeted corner closeouts); holes where the RH HV cable to the front and the LH coolant hose to the charger
-      // come up through it
+      // battery pack's rear hump (y 0.375), on which the chargers and the HV junction box stand (its centre section
+      // carried back under the chargers) and to which the 2nd-row cushion structure's leg brackets are bolted, back to
+      // the rear rail nodes, inboard of the body harnesses along the sills (under the carpeted corner closeouts); holes
+      // where the RH HV cable to the front and the LH coolant hose to the charger come up through it
       named('rearFloor', (() => {
         const Y = 0.376;
         const R = (x0, x1, z0, z1) => quadPlate([[x0, Y, z0], [x0, Y, z1], [x1, Y, z1], [x1, Y, z0]], 0.002, 'aluminum');
         return plates([
           quadPlate([[-0.703, 0.294, -0.745], [-0.703, 0.294, 0.745], [-0.703, Y + 0.001, 0.745], [-0.703, Y + 0.001, -0.745]], 0.003, 'aluminum'),
           R(-0.703, -0.98, -0.48, 0.48),
+          R(-0.98, -1.062, -0.48, -0.13), R(-0.98, -1.062, 0.13, 0.48),
           // LH outboard part, round the coolant hose (pumpToCharger) at (-0.86, -0.525)
           R(-0.703, -0.84, -0.745, -0.48), R(-0.84, -0.88, -0.745, -0.555), R(-0.84, -0.88, -0.5, -0.48), R(-0.88, -0.973, -0.745, -0.48),
           // RH outboard part, round the HV cable to the front (hv-cable-front) at (-0.747, 0.613)
@@ -292,8 +293,12 @@ export function buildStructure(reg) {
         ], 'aluminum');
       })()),
       // rear seat crossmember across the rear rail fronts (on their tops), under the rear edge of the cushion and
-      // above the HV cables and hoses to the rear drive unit: the 2nd-row buckles are bolted to it
-      named('seatCrossmember', quadPlate([[-1.085, 0.4285, -0.55], [-1.085, 0.4285, 0.55], [-1.15, 0.4455, 0.55], [-1.15, 0.4455, -0.55]], 0.004, 'aluminum')),
+      // above the HV cables and hoses to the rear drive unit; the 2nd-row cushion structure's rear brackets are bolted to
+      // it over the rail fronts. Its short rear flange stops short of the large rear drive unit's motor
+      named('seatCrossmember', plates([
+        quadPlate([[-1.085, 0.4285, -0.55], [-1.085, 0.4285, 0.55], [-1.15, 0.4455, 0.55], [-1.15, 0.4455, -0.55]], 0.004, 'aluminum'),
+        quadPlate([[-1.15, 0.4455, -0.55], [-1.15, 0.4455, 0.55], [-1.17, 0.4507, 0.55], [-1.17, 0.4507, -0.55]], 0.004, 'aluminum'),
+      ], 'aluminum')),
       named('plenum', plates([
         quadPlate([plenumAt(0.99, -0.74), plenumAt(0.99, 0.74), plenumAt(0.905, 0.74), plenumAt(0.905, -0.74)], 0.003, 'aluminum'),
         ...SIDES.map(({ sg }) => quadPlate([plenumAt(0.965, sg * 0.74), plenumAt(0.965, sg * 0.79), plenumAt(0.905, sg * 0.79), plenumAt(0.905, sg * 0.74)], 0.003, 'aluminum')),
@@ -380,6 +385,15 @@ export function buildStructure(reg) {
       named('frontFloor', group(
         box([0.25, 0.01, 1.08], [-1.425, 0.615, 0], 'aluminum'),
         ...[-1, 1].map((sg) => box([0.085, 0.01, 0.06], [-1.3425, 0.615, sg * 0.57], 'aluminum')),
+        // front flange turned down behind the 2nd-row seat backs, over the rear drive unit, and outboard down onto the
+        // rail tops beside the seat ends: closes the space under the trunk floor from the seat crease
+        plates([
+          quadPlate([[-1.302, 0.61, -0.55], [-1.302, 0.61, 0.55], [-1.302, 0.561, 0.55], [-1.302, 0.561, -0.55]], 0.004, 'aluminum'),
+          ...[-1, 1].flatMap((sg) => [
+            quadPlate([[-1.302, 0.61, sg * 0.55], [-1.302, 0.61, sg * 0.557], [-1.302, 0.552, sg * 0.557], [-1.302, 0.552, sg * 0.55]], 0.004, 'aluminum'),
+            quadPlate([[-1.302, 0.61, sg * 0.557], [-1.302, 0.61, sg * 0.598], [-1.302, 0.473, sg * 0.598], [-1.302, 0.473, sg * 0.557]], 0.004, 'aluminum'),
+          ]),
+        ], 'aluminum'),
       )),
       // rear body panel (#4): its lower edge sits on the bumper beam
       named('rearPanel', box([0.02, 0.225, 1.3], [-2.36, 0.6575, 0], 'aluminum')),

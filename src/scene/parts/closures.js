@@ -386,8 +386,10 @@ export function buildClosures(reg) {
   // (v 3.9), and down the C-pillar behind the rear door opening.
   const drains = [];
   for (const { sd } of SIDES) {
-    drains.push(named(`drainF${sd}`, tube([skinAt(R0 - 0.02, 4.17, sd, -0.022), skinAt(2.2, 4.08, sd, -0.016), skinAt(1.95, 3.97, sd, -0.015),
-      skinAt(1.72, 3.8, sd, -0.015), skinAt(1.6, 3.3, sd, -0.015), skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02),
+    // (front: off the spout outboard under the headliner, then down the A-pillar at v <= 4.04 behind the pillar trim)
+    drains.push(named(`drainF${sd}`, tube([skinAt(R0 - 0.02, 4.17, sd, -0.022), skinAt(2.37, 4.095, sd, -0.016), skinAt(2.33, 4.04, sd, -0.01),
+      skinAt(2.2, 4.035, sd, -0.009), skinAt(2.1, 4.03, sd, -0.011), skinAt(1.95, 3.97, sd, -0.015), skinAt(1.873, 3.913, sd, -0.015),
+      skinAt(1.72, 3.8, sd, -0.015), skinAt(1.6652, 3.645, sd, -0.0119), skinAt(1.6, 3.3, sd, -0.015), skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02),
       skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
     drains.push(named(`drainR${sd}`, pipe([[R1 + 0.02, 4.17, -0.022], [3.215, 4.1, -0.016], [3.225, 4.06, -0.012], [3.268, 4.06, -0.012],
       [3.268, 3.94, -0.008], [3.5, 3.94, -0.008], [3.58, 3.86, -0.015], [3.62, 3.5, -0.015], [3.64, 3.0, -0.015], [3.64, 2.4, -0.02],

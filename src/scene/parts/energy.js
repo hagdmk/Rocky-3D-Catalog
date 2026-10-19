@@ -46,8 +46,8 @@ export function buildEnergy(reg) {
   });
 
   // --- Charging & HV distribution (rear, under the 2nd-row seat) -------------------------
-  // on the pack hump, below the seat cushion
-  const cy = 0.41;
+  // on the rear floor over the pack hump, below the seat cushion
+  const cy = 0.412;
   reg.add({
     id: 'rear-hvjb', ko: '리어 고전압 정션박스 (HVJB)', en: 'Rear HV junction box (HVJB)',
     groups: ['onboard-charger', 'high-voltage-cables-1st-generation', 'high-voltage-cables-2nd-generation'],
@@ -94,7 +94,7 @@ export function buildEnergy(reg) {
     // from the master charger, under the trunk floor and the floor extension, out under the extension's outer
     // edge over the back of the wheelhouse, then up behind (outboard of) the trunk side trim, below the air
     // suspension ECU, and in a loop under the inlet into the back (inboard face) of the inlet in the LH quarter
-    object: named('cable', pipe([[-1.04, 0.41, -0.42], [-1.19, 0.43, -0.44], [-1.22, 0.46, -0.47], [-1.29, 0.48, -0.47], [-1.37, 0.5, -0.49], [-1.41, 0.52, -0.52], [-1.44, 0.53, -0.53], [-1.57, 0.53, -0.53],
+    object: named('cable', pipe([[-1.04, 0.405, -0.42], [-1.15, 0.41, -0.435], [-1.2, 0.432, -0.445], [-1.22, 0.46, -0.47], [-1.29, 0.48, -0.47], [-1.37, 0.5, -0.49], [-1.41, 0.52, -0.52], [-1.44, 0.53, -0.53], [-1.57, 0.53, -0.53],
       [-1.835, 0.585, -0.575], [-1.84, 0.585, -0.625], [-1.84, 0.59, -0.885], [-1.855, 0.645, -0.912], [-1.993, 0.757, -0.915], [-1.993, 0.83, -0.915],
       [-2.045, 0.831, -0.915], [-2.05, 0.831, -0.758], [-2.05, 0.885, -0.758], [-2.05, 0.885, -0.8]], 0.014, 'hv')),
   });
@@ -110,7 +110,7 @@ export function buildEnergy(reg) {
     // Under the 2nd-row seat it runs over the slave charger, below the cushion, and drops behind the carpet riser
     // (x -0.68) into the channel beside the pack, below the rear footwell corner closeout (y 0.46)
     object: group(
-      named('cable', pipe([[-0.79, 0.415, 0.08], [-0.76, 0.46, 0.135], [-0.76, 0.46, 0.49], [-0.735, 0.3, 0.725], [-0.735, 0.272, 0.745], [1.04, 0.272, 0.745], [1.1, 0.272, 0.745], [1.1, 0.275, 0.6], [1.38, 0.48, 0.58], [1.4, 0.5, 0.56], [1.645, 0.52, 0.5]], 0.013, 'hv')),
+      named('cable', pipe([[-0.79, 0.417, 0.08], [-0.76, 0.462, 0.135], [-0.76, 0.462, 0.49], [-0.735, 0.3, 0.725], [-0.735, 0.272, 0.745], [1.04, 0.272, 0.745], [1.1, 0.272, 0.745], [1.1, 0.275, 0.6], [1.38, 0.48, 0.58], [1.4, 0.5, 0.56], [1.645, 0.52, 0.5]], 0.013, 'hv')),
       named('toFjb', pipe([[1.7, 0.5, 0.46], [1.65, 0.45, 0.36], [1.65, 0.44, 0.24]], 0.013, 'hv')),
     ),
   });
