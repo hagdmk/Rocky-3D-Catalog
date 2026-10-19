@@ -404,8 +404,11 @@ export function buildInterior(reg) {
         // widens outboard down to the door seal's A-pillar run and turns down at its front edge onto the IP top / IP
         // end top (y 0.925), closing the A-pillar root above the IP end (hinge pillar top, drain tube, harness)
         named('aPillar', group(
-          region([[SV.cowlRear + 0.02, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
-          region([[SV.cowlRear + 0.02, 1.675, 3.0, 3.86]], {
+          // (its door-side edge ends just under the door seal's top run, on the pinch flange)
+          region([[SV.cowlRear + 0.02, SV.roof[0], 3.905, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
+          // glass-side lip turned out to the windshield, closing the pillar section (drain tube, harness) from the cabin
+          skinStrip(sd, SV.cowlRear + 0.02, SV.roof[0], [4.07, -0.03], [4.072, -0.006], 'fabric'),
+          region([[SV.cowlRear + 0.02, 1.675, 3.0, 3.905]], {
             side: sd, offset: -0.03, mat: 'fabric', edges: false,
             field: (q, s, v) => 3.0 + (s - (SV.frontDoor[0] + 0.01)) * 18 + 0.02 - v, // edge tucked behind the door seal's A-pillar run
           }),
@@ -672,7 +675,16 @@ export function buildInterior(reg) {
     });
   }
   // the headliner dips under the two pano roof drive motors at the front of the roof opening
-  const panoMotors = [2.35, 2.445, 4.38, 4.53];
+  // (the dip sits under the motor blocks bolted under the roof cassette, pano-drive, with side walls back up to the
+  // headliner)
+  const panoMotors = [2.36, 2.455, 4.165, 4.295];
+  const pocketWalls = SIDES.flatMap(({ sd }) => {
+    const [s0, s1, v0, v1] = panoMotors;
+    return [
+      ...[v0, v1].map((v) => skinStrip(sd, s0, s1, [v, -0.035], [v, -0.055], 'fabric')),
+      ...[s0, s1].map((sx) => vStrip(sd, sx, v0, v1, -0.035, -0.055, 'fabric')),
+    ];
+  });
   reg.add({
     id: 'headliner', ko: '헤드라이닝', en: 'Headliner',
     groups: ['headlining'],
@@ -683,6 +695,7 @@ export function buildInterior(reg) {
       // C-pillar tops up over the liftgate seal
       region([[SV.roof[0] - 0.02, 3.3, 3.888, 5], [3.3, 3.72, 3.888, 3.995]], { offset: -0.035, exclude: [panoMotors], mat: 'fabric', edges: false }),
       region([panoMotors], { offset: -0.055, mat: 'fabric', edges: false }),
+      ...pocketWalls,
       // (the rail between its edge and the body side skin is closed by the door opening pinch flange under the door
       // seals, body-side-*#pinchFlange)
     ),
@@ -690,8 +703,13 @@ export function buildInterior(reg) {
   reg.add({
     id: 'liftgate-trim', ko: '리프트게이트 실내 트림', en: 'Liftgate interior trim',
     groups: ['liftgate-interior-trim'],
-    // cut out round the latch at the bottom edge
-    object: region([[4.42, 4.93, 3.1, 5], [3.3, 4.42, 4.04, 4.12]], { offset: -0.035, exclude: [[4.865, 4.93, 4.76, 5]], mat: 'greyPlastic', edges: false }),
+    // cut out round the latch at the bottom edge; its side bands (side trims #13/#14) run from the headliner's C-pillar
+    // top strip up to the glass edge, where a lip turns out to the glass and closes the frame from the cabin (the
+    // liftgate harness runs behind it)
+    object: group(
+      region([[4.42, 4.93, 3.1, 5], [3.3, 4.42, 3.995, 4.12]], { offset: -0.035, exclude: [[4.865, 4.93, 4.76, 5]], mat: 'greyPlastic', edges: false }),
+      named('lip', group(...SIDES.map(({ sd }) => skinStrip(sd, 3.305, 4.42, [4.118, -0.035], [4.118, -0.006], 'greyPlastic')))),
+    ),
   });
   reg.add({
     id: 'trunk-sill-trim', ko: '트렁크 실(문턱) 트림', en: 'Trunk sill trim',
@@ -808,7 +826,7 @@ export function buildInterior(reg) {
     id: 'pods', ko: '탑승자 감지 매트(PODS, 조수석)', en: 'Passenger occupant detection (PODS)', tags: 'R',
     groups: ['passenger-presence-detection'],
     object: group(
-      box([0.38, 0.006, 0.36], [SEAT.x + 0.03 - 0.052 * Math.sin(0.08), 0.445 + 0.052 * Math.cos(0.08), SEAT.z], 'foam', [0, 0, 0.08]), // mat under the cushion cover
+      box([0.38, 0.006, 0.36], [SEAT.x + 0.03 - 0.0485 * Math.sin(0.08), 0.445 + 0.0485 * Math.cos(0.08), SEAT.z], 'foam', [0, 0, 0.08]), // mat in the cushion foam 3.5 mm under the cover
       // PODS unit (#1) screwed (trim studs #2) under the cushion pan, flush with the cushion's underside
       (() => {
         const [c, s] = [Math.cos(0.08), Math.sin(0.08)];
@@ -822,6 +840,9 @@ export function buildInterior(reg) {
     '2nd-row-seat-assemblies-premium-trim', '2nd-row-seat-assemblies-signature-trim', '2nd-row-seat-frame',
   ];
   const rx = REAR_SEAT.x;
+  const REAR_BUCKLES = [-0.19, 0.165, 0.215]; // 2nd-row buckle positions (z)
+  // underside of the cushion structure's pan (tilted 0.06 with the cushion), less a flange thickness
+  const panUnder = (x) => 0.535 + (x - rx) * Math.tan(0.06) - 0.0665 / Math.cos(0.06) - 0.004;
   // 2nd-row seat back: 0.54 tall, reclined 0.3 rad, its top and the head restraints under the backlite
   const RB = { x: rx - 0.35, y: 0.84, rot: 0.3, t: 0.12 };
   const tr = Math.tan(RB.rot);
@@ -844,20 +865,45 @@ export function buildInterior(reg) {
     groups: rearGroups, match: /CUSHION|BOLSTER|HEATER|SBR|REMINDER|PATCH HARNESS|ADAPTOR|RSC/,
     object: group(
       named('cushion', rbox([0.48, 0.13, 1.14], [rx, 0.535, 0], 'leather', { r: 0.045, rot: [0, 0, 0.06] })), // between the rear rail nodes
-      // cushion frame pan (cushion assy #4) under the foam, from just ahead of its front edge (under the carpet's
-      // turned-back lip) back over the chargers, between the rear rail fronts the cushion rests on: closes the
-      // space under the seat from above
+      // pan of the cushion structure (ASY - CUSHION STRUCTURE 2nd SEAT, 2nd row seat frame #1) under the foam, from
+      // just ahead of its front edge (under the carpet's turned-back lip) back over the chargers: closes the space under
+      // the seat from above
       named('pan', (() => {
         const [c, s] = [Math.cos(0.06), Math.sin(0.06)];
         const at = (lx, ly, z) => [rx + lx * c - ly * s, 0.535 + lx * s + ly * c, z];
         return quadPlate([at(0.245, -0.0665, -0.49), at(0.245, -0.0665, 0.49), at(-0.2, -0.0665, 0.49), at(-0.2, -0.0665, -0.49)], 0.004, 'darkMetal');
       })()),
-      // rear trim flap of the cushion cover, tucked back under the seat back's lower edge: closes the crease
-      // between cushion and seat back from below
-      named('rearFlap', quadPlate([[-1.165, 0.561, -0.55], [-1.165, 0.561, 0.55], [-1.285, 0.561, 0.55], [-1.285, 0.561, -0.55]], 0.004, 'carpet')),
-      // cushion frame wire hooks (part of cushion assy #4) from the frame pan down into the rear floor (floor-pan#rearFloor),
-      // in front of the chargers, on which the cushion stands
-      named('hooks', group(...[-0.475, 0.475].map((z) => bar([-0.712, 0.3765, z], [-0.712, 0.481, z], 0.012, 0.012, 'steel')))),
+      // the cushion structure stands on two leg brackets at its outboard ends, bolted to the rear floor (BLT M10x22 /
+      // M8x16) behind the coolant hose and HV cable holes: foot flange on the floor, upright web, top flange under the
+      // pan's outboard edge
+      named('legs', plates([-1, 1].flatMap((sg) => {
+        const q = (pts) => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'steel');
+        return [
+          q([[-0.97, 0.379, 0.5], [-0.89, 0.379, 0.5], [-0.89, 0.379, 0.55], [-0.97, 0.379, 0.55]]),
+          q([[-0.97, 0.377, 0.5], [-0.89, 0.377, 0.5], [-0.89, panUnder(-0.89), 0.5], [-0.97, panUnder(-0.97), 0.5]]),
+          q([[-0.97, panUnder(-0.97), 0.45], [-0.89, panUnder(-0.89), 0.45], [-0.89, panUnder(-0.89), 0.502], [-0.97, panUnder(-0.97), 0.502]]),
+        ];
+      }), 'steel')),
+      // and its rear tube's end brackets on the rear seat crossmember over the rail fronts: top flange under the pan, web,
+      // foot on the crossmember
+      ...SIDES.map(({ sd, sg }) => named(`rearBracket${sd}`, (() => {
+        const q = (pts) => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'steel');
+        const railY = (x) => 0.437 - (x + 1.116) * 0.263 + 0.001;
+        return plates([
+          q([[-1.14, panUnder(-1.14), 0.47], [-1.1, panUnder(-1.1), 0.47], [-1.1, panUnder(-1.1), 0.494], [-1.14, panUnder(-1.14), 0.494]]),
+          q([[-1.14, railY(-1.14), 0.492], [-1.1, railY(-1.1), 0.492], [-1.1, panUnder(-1.1), 0.492], [-1.14, panUnder(-1.14), 0.492]]),
+          q([[-1.14, railY(-1.14), 0.49], [-1.1, railY(-1.1), 0.49], [-1.1, railY(-1.1), 0.52], [-1.14, railY(-1.14), 0.52]]),
+        ], 'steel');
+      })())),
+      // buckle brackets on the rear tube (the nut brackets the 2nd-row buckles are bolted to), rising from the pan's
+      // rear edge to the buckle eyes inside the cushion
+      named('buckleBrackets', plates(REAR_BUCKLES.map((z) => quadPlate([[-1.13, 0.4575, z - 0.012], [-1.13, 0.4575, z + 0.012],
+        [-1.13, 0.546, z + 0.012], [-1.13, 0.546, z - 0.012]], 0.004, 'steel')), 'steel')),
+      // the cushion cover's rear flap rises back under the seat backs' lower edge and is pinched against it, out to the
+      // lower C-pillar trims, closing the crease from below (the body kick-up between the seat crossmember and the
+      // trunk front floor is not drawn: the large rear drive unit's inverter and motor fill that space up to 13 mm
+      // under the flap)
+      named('rearFlap', quadPlate([[-1.165, 0.561, -0.567], [-1.165, 0.561, 0.567], [-1.258, 0.574, 0.567], [-1.258, 0.574, -0.567]], 0.004, 'carpet')),
     ),
   });
   reg.add({
@@ -883,7 +929,7 @@ export function buildInterior(reg) {
     // shown stowed, folded flat (the parcel shelf can only be fitted with the 3rd row folded): the seat back
     // folded down over the cushion, its carpeted back panel flush with the load floor in the trunk carpet's
     // cut-out and the head restraints folded flat on it; drawn without the floor well the real seat folds into, as
-    // a slab standing on the trunk floor, with its pivot brackets (bolted to the floor) inside it
+    // a slab lying on the trunk floor, its pivot brackets (bolted to the floor, #6/#5) not drawn separately but inside it
     object: group(
       named('seat', rbox([0.42, 0.024, 0.9], [-1.875, 0.632, 0], 'carpet', { r: 0.006 })),
       ...[-0.2, 0.2].map((z) => rbox([0.12, 0.012, 0.18], [-2.02, 0.647, z], 'leather', { r: 0.005 })),
@@ -937,13 +983,10 @@ export function buildInterior(reg) {
       named('centreRetractor', rbox([0.06, 0.06, 0.07], backRear(0.92, 0), 'blackPlastic', { r: 0.01, rot: [0, 0, RB.rot] })), // on the seat back frame
       ...[-1, 1].map((sg) => pipe([[-1.465, 0.96, sg * 0.53], [-1.462, 1.04, sg * 0.53], [-1.445, 1.14, sg * 0.52], [-1.315, 1.145, sg * 0.51],
         backFront(1.06, 0.012, sg * 0.49), backFront(0.85, 0.012, sg * 0.42), backFront(0.66, 0.012, sg * 0.35)], 0.007, 'fabric', { bend: 0.03 })),
-      // buckles (#4) at the crease between the cushion and the seat back, on the cushion's rear edge; their stalks
-      // go down through the cushion to the anchor bolts (#5) on the rear seat crossmember (floor-pan#seatCrossmember)
-      ...[-0.24, -0.08, 0.08, 0.24].map((z) => named(`buckle${Math.round((z + 0.24) / 0.16)}`, group(
-        rbox([0.04, 0.09, 0.03], [-1.13, 0.6355, z], 'blackPlastic', { r: 0.008 }),
-        pipe([[-1.13, 0.592, z], [-1.13, 0.4455, z]], 0.006, 'fabric'),
-        cyl(0.009, 0.006, 'y', [-1.13, 0.4453, z], 'steel', { seg: 12 }),
-      ))),
+      // the three buckles (#4, each bolted with its #5): a single one LH outboard and a pair (centre and RH outboard),
+      // each a compact head with its bolt eye at the base on a bracket of the cushion structure's rear tube, standing
+      // up through the two slots at the rear edge of the cushion cover
+      ...REAR_BUCKLES.map((z, i) => named(`buckle${i}`, rbox([0.04, 0.1, 0.03], [-1.13, 0.59, z], 'blackPlastic', { r: 0.008 }))),
     ),
   });
   // 3rd row harness belts anchored on the (folded) seat back, stowed flat on it
@@ -1004,7 +1047,8 @@ export function buildInterior(reg) {
     // and ends at the rear edge of the rear door glass.
     const bagPts = [[2.38, 4.0], [2.49, 4.0], [2.6, 4.0], [2.75, 4.0], [2.9, 4.0], [3.05, 4.0], [3.15, 3.998], [3.24, 3.993]]
       .map(([s, v]) => skinAt(s, v, sd, -0.0145));
-    const frontPts = [[2.06, 3.98], [2.14, 3.98], [2.22, 3.98], [2.3, 3.982], [2.36, 3.99], [2.42, 4.0]].map(([s, v]) => skinAt(s, v, sd, -0.012));
+    // (its first point pressed outboard onto the pillar: the tether's top is sewn under the bag's front end)
+    const frontPts = [[2.06, 3.98, -0.0095], [2.14, 3.98], [2.22, 3.98], [2.3, 3.982], [2.36, 3.99], [2.42, 4.0]].map(([s, v, o = -0.012]) => skinAt(s, v, sd, o));
     const rearPts = [[3.17, 3.995, -0.0145], [3.22, 3.975, -0.022], [3.26, 3.945, -0.029], [3.3, 3.93, -0.03], [3.4, 3.93, -0.03], [3.48, 3.93, -0.03]]
       .map(([s, v, o]) => skinAt(s, v, sd, o));
     reg.add({
