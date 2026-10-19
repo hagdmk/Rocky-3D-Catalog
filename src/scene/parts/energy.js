@@ -91,8 +91,12 @@ export function buildEnergy(reg) {
   reg.add({
     id: 'hv-cable-chargeport', ko: '고전압 케이블: HVJB → 충전 포트', en: 'HV cable: HVJB to charge port',
     groups: hvGroups, match: /CHRG PORT|CP|CHARGE|INLET|DATA-GND/,
-    // from the master charger, under the trunk floor, up to the inlet in the LH quarter
-    object: named('cable', pipe([[-1.04, 0.41, -0.42], [-1.19, 0.43, -0.44], [-1.22, 0.46, -0.47], [-1.29, 0.48, -0.47], [-1.37, 0.5, -0.49], [-1.41, 0.52, -0.52], [-1.44, 0.53, -0.53], [-1.57, 0.53, -0.53], [-1.8, 0.59, -0.58], [-2.0, 0.8, -0.72], [-2.07, 0.91, -0.74], [-2.07, 0.91, -0.79]], 0.014, 'hv')),
+    // from the master charger, under the trunk floor and the floor extension, out under the extension's outer
+    // edge over the back of the wheelhouse, then up behind (outboard of) the trunk side trim, below the air
+    // suspension ECU, and in a loop under the inlet into the back (inboard face) of the inlet in the LH quarter
+    object: named('cable', pipe([[-1.04, 0.41, -0.42], [-1.19, 0.43, -0.44], [-1.22, 0.46, -0.47], [-1.29, 0.48, -0.47], [-1.37, 0.5, -0.49], [-1.41, 0.52, -0.52], [-1.44, 0.53, -0.53], [-1.57, 0.53, -0.53],
+      [-1.835, 0.585, -0.575], [-1.84, 0.585, -0.625], [-1.84, 0.59, -0.885], [-1.855, 0.645, -0.912], [-1.993, 0.757, -0.915], [-1.993, 0.83, -0.915],
+      [-2.045, 0.831, -0.915], [-2.05, 0.831, -0.758], [-2.05, 0.885, -0.758], [-2.05, 0.885, -0.8]], 0.014, 'hv')),
   });
   reg.add({
     id: 'hv-cable-inverter', ko: '고전압 케이블: HVJB → 리어 인버터', en: 'HV cable: HVJB to rear drive inverter',
@@ -102,9 +106,11 @@ export function buildEnergy(reg) {
   reg.add({
     id: 'hv-cable-front', ko: '고전압 케이블: HVJB → 프론트(DC-DC/FJB, 사이드 실 경유)', en: 'HV cable: HVJB to front (DC-DC / FJB, along sill)',
     groups: hvGroups, match: /DC\/DC|DCDC|FJB|FRONT SILL|HVIL ONLY/,
-    // along the RH sill, beside the battery pack, to the DC-DC converter, with a branch to the front junction box
+    // along the RH sill, beside the battery pack, to the DC-DC converter, with a branch to the front junction box.
+    // Under the 2nd-row seat it runs over the slave charger, below the cushion, and drops behind the carpet riser
+    // (x -0.68) into the channel beside the pack, below the rear footwell corner closeout (y 0.46)
     object: group(
-      named('cable', pipe([[-0.79, 0.415, 0.08], [-0.76, 0.465, 0.135], [-0.76, 0.465, 0.52], [-0.735, 0.3, 0.725], [-0.735, 0.272, 0.745], [1.04, 0.272, 0.745], [1.1, 0.272, 0.745], [1.1, 0.275, 0.6], [1.38, 0.48, 0.58], [1.4, 0.5, 0.56], [1.645, 0.52, 0.5]], 0.013, 'hv')),
+      named('cable', pipe([[-0.79, 0.415, 0.08], [-0.76, 0.46, 0.135], [-0.76, 0.46, 0.49], [-0.735, 0.3, 0.725], [-0.735, 0.272, 0.745], [1.04, 0.272, 0.745], [1.1, 0.272, 0.745], [1.1, 0.275, 0.6], [1.38, 0.48, 0.58], [1.4, 0.5, 0.56], [1.645, 0.52, 0.5]], 0.013, 'hv')),
       named('toFjb', pipe([[1.7, 0.5, 0.46], [1.65, 0.45, 0.36], [1.65, 0.44, 0.24]], 0.013, 'hv')),
     ),
   });
@@ -231,8 +237,9 @@ export function buildThermal(reg) {
       // 3-way valve (#16): radiator outlet in (#22 3WVLV TO RAD), bypass in (#20), out to the 4-way valve (#21)
       named('valve3ToRad', pipe([[1.83, 0.395, -0.075], [1.84, 0.46, -0.01], [1.85, 0.47, 0], [2.01, 0.49, 0.27], [2.11, 0.51, 0.37], [2.152, 0.51, 0.365]], 0.013, 'coolant')),
       named('valve3To4wv', pipe([[1.8, 0.395, -0.05], [1.76, 0.42, -0.01], [1.76, 0.4, 0.07], [1.78, 0.43, 0.11]], 0.013, 'coolant')),
-      // pump -> rocker LH (#7 PUMP TO ROCKER, #8 ROCKER LEFT SIDE, beside the battery pack) -> charger (#9)
-      named('pumpToCharger', pipe([[1.72, 0.33, -0.275], [1.68, 0.35, -0.31], [1.58, 0.34, -0.41], [1.55, 0.31, -0.44], [1.1, 0.25, -0.6], [1.105, 0.252, -0.745], [1.04, 0.255, -0.745], [-0.9, 0.255, -0.745], [-0.9, 0.29, -0.74], [-0.9, 0.31, -0.72], [-0.85, 0.41, -0.465]], 0.013, 'coolant')),
+      // pump -> rocker LH (#7 PUMP TO ROCKER, #8 ROCKER LEFT SIDE, beside the battery pack) -> charger (#9); behind
+      // the carpet riser it climbs low over the pack top into the charger's outboard face, under the seat cushion
+      named('pumpToCharger', pipe([[1.72, 0.33, -0.275], [1.68, 0.35, -0.31], [1.58, 0.34, -0.41], [1.55, 0.31, -0.44], [1.1, 0.25, -0.6], [1.105, 0.252, -0.745], [1.04, 0.255, -0.745], [-0.9, 0.255, -0.745], [-0.9, 0.3, -0.738], [-0.875, 0.305, -0.6], [-0.855, 0.4, -0.5], [-0.85, 0.41, -0.465]], 0.013, 'coolant')),
       // charger -> drive unit (#12 CHARGER TO MOTOR / RDU)
       named('chargerToDu', pipe([[-1.05, 0.4, -0.3], [-1.12, 0.37, -0.17], [-1.17, 0.37, -0.03], [-1.2, 0.36, 0], [-1.24, 0.36, 0]], 0.013, 'coolant')),
       // drive unit inverter -> rocker RH (#13 INVERTER TO ROCKER, #14 ROCKER RIGHT SIDE) -> radiator inlet

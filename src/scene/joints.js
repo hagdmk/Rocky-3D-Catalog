@@ -188,7 +188,6 @@ export const JOINTS = [
   J('motor-coolant-loop#bypass@start', 'motor-coolant-loop#rockerR', 'ASY - HOSE (PT) - RKR TO BYPASS 3 WAY VLV (motor cooling #20) teed off the RH rocker hose'),
   J('motor-coolant-loop#bypass@end', 'motor-coolant-loop#valve3', 'ASY - HOSE (PT) - RKR TO BYPASS 3 WAY VLV (motor cooling #20) on the 3-way valve'),
   J('hvac-drain-hose#hose@start', 'hvac-unit', 'HVAC DRAIN HOSE on the HVAC case'),
-  J('hvac-drain-hose#hose', 'sound-insulation', 'drain tube through its GROMMET, HVAC DRAIN TUBE (heater assembly #6) in the dash insulator'),
   J('hvac-drain-hose#grommet', 'sound-insulation', 'GROMMET, HVAC DRAIN TUBE (heater assembly #6) in the dash insulator'),
   J('ptc-heater', 'hvac-unit#case', 'CORE COMPLETE ASSY - PTC AIR HEATER (heater core #1) in the heater core slot of the HVAC UNIT - NO PTC HEATER (heater assembly #1)', { inset: 'the heater core slides into its slot in the HVAC case' }),
   J('hvac-blower#outlet', 'hvac-unit#case', 'blower scroll outlet bolted to the RH side of the HVAC case'),
@@ -200,7 +199,6 @@ export const JOINTS = [
   J('ac-lines#liquid@end', 'ac-lines#txv', 'ASY AC LINE SUCTION LIQUID WITH TXV (#1): liquid line into the TXV'),
   J('ac-lines#suction@start', 'ac-lines#txv', 'ASY AC LINE SUCTION LIQUID WITH TXV (#1): suction line out of the TXV'),
   J('ac-lines#txv', 'hvac-unit#evapPipes', 'VALVE ASY - TXV - EVAPORATOR (#11) bolted to the evaporator pipes (BLT M6x60 #12)'),
-  J('hvac-unit#evapPipes', 'sound-insulation', 'evaporator pipes through the bulkhead seal in the dash insulator to the TXV'),
   J('ac-lines#suction@end', 'ac-compressor', 'suction line to the compressor'),
 
   // --- high voltage
@@ -449,6 +447,8 @@ export const PASS_OK = [
   { a: 'dash-harness#ip', b: 'dash-panel', reason: 'the IP harness leaves the instrument panel through the side cover openings at the A-pillars' },
   { a: 'roof-harness#header', b: 'dash-panel', reason: 'the headliner harness drops behind the IP side cover at the A-pillar' },
   { a: 'door-harness-*B#lead', b: 'b-pillar-*', reason: 'the lower B-pillar is a closed section drawn as a solid block: the rear door harness enters it through a grommeted hole in its inboard wall and leaves through the rear door harness grommet (#2/#4) in its rear face below the lower hinge' },
+  { a: 'hvac-drain-hose#hose', b: 'sound-insulation', reason: 'the dash insulator is drawn without the hole for the drain tube grommet (heater assembly #6); the drain tube passes through the grommet there' },
+  { a: 'hvac-unit#evapPipes', b: 'sound-insulation', reason: 'the dash insulator is drawn without its opening for the evaporator pipes, which pass through the bulkhead to the TXV (A/C pipes #11) on the motor-bay side' },
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).
