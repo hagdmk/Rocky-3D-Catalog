@@ -473,7 +473,6 @@ export const PASS_OK = [
   { a: 'hvac-unit#evapPipes', b: 'sound-insulation', reason: 'the dash insulator is drawn without its opening for the evaporator pipes, which pass through the bulkhead to the TXV (A/C pipes #11) on the motor-bay side' },
   ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier through the opening in its front closeout (#14) and runs under it to its outlet in the carrier's side wall; the tunnel trim is drawn as a closed shell` })),
   { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness leaves the trunk through it in its grommet (rear-subframe-harness#grommet)' },
-  ...['L', 'R'].map((s) => ({ a: `door-harness-${s}B#lead`, b: `rocker-${s}`, reason: 'the sloped inboard flank of the scuff plate (rocker panel trim #6) is drawn without its slot under the foot of the B-pillar lower trim (#14), where the plate top is already cut out: the rear door harness rises through it from the body harness under the scuff plate into the pillar, hidden by the trim foot' })),
   { a: 'hood-latch#cable', b: 'dash-panel', reason: 'the lower instrument panel is drawn without the opening for the hood release handle (#1) in its LH lower edge: the release cable (#2) runs inside the panel along its LH end cover and reaches the handle through that opening' },
 ];
 
