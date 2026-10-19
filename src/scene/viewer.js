@@ -218,6 +218,8 @@ export class Viewer {
         else if (o.isLineSegments && o.userData.isEdge) it.edges.push(o);
       });
     }
+    // parts carried by another component (tape on a door) move with it in the exploded view
+    for (const it of items) if (it.explodeWith) it.explodeDir = this.byId.get(it.explodeWith).explodeDir.clone();
     this.applyMaterials();
     this.applyVisibility();
   }

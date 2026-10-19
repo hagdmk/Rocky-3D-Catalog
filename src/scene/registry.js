@@ -17,6 +17,7 @@ export class Registry {
    *   match: /regex/,          // optional: which part rows belong to this instance
    *   shell: bool,             // exterior skin (affected by X-ray mode)
    *   variant: {drive:'rwd'|'dm', susp:'air'|'coil'},
+   *   explodeWith: id,         // optional: share that component's exploded-view offset
    *   object: THREE.Object3D,
    * }
    */
