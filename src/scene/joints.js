@@ -475,7 +475,6 @@ export const PASS_OK = [
   { a: 'interior-ducts#console', b: 'center-console', reason: 'CENTER CONSOLE AIR DUCT (#13-#15) enters the console carrier (center tunnel trim #1) through the opening in its front face, below the front closeout panel (#14), runs inside it and rises out of its top at the rear into the rear console outlet (#19); the carrier is drawn as a closed shell' },
   { a: 'brake-pedal#arm', b: 'dash-panel', reason: 'the pedal arm passes the cut-out in the LH footwell cover of the instrument panel' },
   { a: 'dash-harness#ip', b: 'dash-panel', reason: 'the IP harness leaves the instrument panel through the side cover openings at the A-pillars' },
-  { a: 'roof-harness#header', b: 'dash-panel', reason: 'the headliner harness drops behind the IP side cover at the A-pillar' },
   ...['L', 'R'].map((s) => ({ a: `door-harness-${s}B#lead`, b: `b-pillar-${s}`, reason: 'the lower B-pillar is a closed section drawn as a solid block: the rear door harness enters it through a grommeted hole in its inboard wall and leaves through the rear door harness grommet (#2/#4) in its rear face below the lower hinge' })),
   { a: 'hvac-drain-hose#hose', b: 'sound-insulation', reason: 'the dash insulator is drawn without the hole for the drain tube grommet (heater assembly #6); the drain tube passes through the grommet there' },
   { a: 'hvac-unit#evapPipes', b: 'sound-insulation', reason: 'the dash insulator is drawn without its opening for the evaporator pipes, which pass through the bulkhead to the TXV (A/C pipes #11) on the motor-bay side' },
