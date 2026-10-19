@@ -464,30 +464,33 @@ if (want('clash')) {
 if (want('float')) {
   // Every separate piece of every component must touch another component in each configuration where
   // it is shown. A component's meshes are grouped into pieces by mutual contact (<= 2 mm, a hollow
-  // block counts by its shell). A joint row proves contact for the pieces its reference covers,
-  // because the joints section measures it; other pieces are measured here.
-  if (!want('joints')) warnings.push('the float section trusts joint rows; run it together with the joints section');
+  // block counts by its shell). A joint row proves contact only for the piece that really touches the
+  // row's partner (measured here: a row on a whole component or a named group says nothing about its
+  // other pieces); every other piece is measured against all parts near it.
   const okIds = new Set(FLOAT_OK.map((f) => f.id));
   const meshShape = new Map();
   const shapeOfMeshes = (key, ms) => { if (!meshShape.has(key)) meshShape.set(key, M.shapeOf(key, ms)); return meshShape.get(key); };
   const touch = (A, B) => M.boxGap(A.box, B.box) <= 0.002 && M.shapeDist(A, B, { coarse: 0.008, hollowSurface: true }).d <= 0.002;
-  // joint references that prove contact: mesh -> partner component ids
+  // joint references: mesh -> the partner references of the rows naming it
   const proven = new Map();
   for (const j of JOINTS) {
     if (j.known || (j.max ?? 2) > 2) continue;
     const A = refOf(j.a);
     const B = refOf(j.b);
     if (A.error || B.error || A.it === B.it) continue;
-    for (const [x, y] of [[A, B], [B, A]]) {
+    for (const [x, y] of [[A, j.b], [B, j.a]]) {
       for (const m of x.meshes) {
-        if (!proven.has(m)) proven.set(m, new Set());
-        proven.get(m).add(y.it.id);
+        if (!proven.has(m)) proven.set(m, []);
+        if (!proven.get(m).includes(y)) proven.get(m).push(y);
       }
     }
   }
   let pieces = 0;
   let measured = 0;
+  let rowTested = 0;
+  let rowMissed = 0;
   const touchCache = new Map();
+  const touchOnce = (key, P, S) => { if (!touchCache.has(key)) touchCache.set(key, touch(P, S)); return touchCache.get(key); };
   for (const a of reg.items) {
     if (okIds.has(a.id)) continue;
     const ms = M.meshesOf(a.root);
@@ -508,19 +511,23 @@ if (want('float')) {
     for (const idx of groups.values()) {
       pieces++;
       const pms = idx.map((i) => ms[i]);
-      const byJoint = new Set(pms.flatMap((m) => [...(proven.get(m) || [])]));
       const P = idx.length === ms.length ? A : shapeOfMeshes(`${a.id}/piece${idx[0]}`, pms);
       const label = `${a.id}${groups.size > 1 ? ` (piece ${partName(pms[0]) ? `#${partName(pms[0])}` : `with mesh ${idx[0]}`})` : ''}`;
+      // a joint row naming one of the piece's meshes counts only if its partner touches this piece
+      const byJoint = new Set();
+      for (const ref of new Set(pms.flatMap((m) => proven.get(m) || []))) {
+        const y = refOf(ref);
+        if (byJoint.has(y.it.id)) continue;
+        rowTested++;
+        const whole = y.shape === shapeOfItem(y.it);
+        if (touchOnce(`${a.id}/${idx[0]}|${whole ? y.it.id : ref}`, P, y.shape)) byJoint.add(y.it.id);
+        else rowMissed++;
+      }
       for (const cfg of CONFIGS) {
         if (!visibleIn(a, cfg)) continue;
         if ([...byJoint].some((id) => visibleIn(reg.byId.get(id), cfg))) continue;
         measured++;
-        const ok = near.some((b) => {
-          if (!visibleIn(b, cfg)) return false;
-          const k = `${a.id}/${idx[0]}|${b.id}`;
-          if (!touchCache.has(k)) touchCache.set(k, touch(P, shapeOfItem(b)));
-          return touchCache.get(k);
-        });
+        const ok = near.some((b) => visibleIn(b, cfg) && touchOnce(`${a.id}/${idx[0]}|${b.id}`, P, shapeOfItem(b)));
         if (ok) continue;
         errors.push(`floating: ${label} touches no other part in ${cfgName(cfg)}`);
         break;
@@ -528,7 +535,8 @@ if (want('float')) {
     }
   }
   for (const id of okIds) if (!reg.byId.has(id)) warnings.push(`FLOAT_OK entry ${id} is not a component`);
-  info.push(`floating: every piece of every component touches another part (${pieces} pieces, ${measured} piece/configuration cases measured, ${okIds.size} allow-listed)`);
+  info.push(`floating: every piece of every component touches another part (${pieces} pieces, ${measured} piece/configuration cases measured, ${okIds.size} allow-listed; `
+    + `${rowTested} joint-row partners tested on the pieces they name, ${rowMissed} of them do not touch that piece)`);
 }
 if (want('pass') && want('clash')) for (const r of PASS_OK) if (!usedPassOk.has(r)) warnings.push(`PASS_OK entry ${r.a} / ${r.b} is not needed any more`);
 
