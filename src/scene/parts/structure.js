@@ -626,8 +626,9 @@ export function buildStructure(reg) {
 
   // --- NVH plugs and patches (floor pan plugs, door inner panel tapes) ----------------
   const plugs = [];
-  // in the floor pan, and the rearmost pair in the rear floor under the 2nd-row seat (floor-pan#rearFloor)
-  for (const [x, y] of [[0.6, 0.3], [0.1, 0.3], [-0.4, 0.3], [-0.93, 0.376]]) {
+  // in the floor pan, and the rearmost pair in the rear floor under the 2nd-row seat (floor-pan#rearFloor), on the
+  // same |z| 0.55 line, between the heel kick (x -0.703) and the cushion leg brackets' foot flanges (x -0.97..-0.89)
+  for (const [x, y] of [[0.6, 0.3], [0.1, 0.3], [-0.4, 0.3], [-0.8, 0.376]]) {
     for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, y, z], 'rubber', { seg: 14 }));
   }
   reg.add({

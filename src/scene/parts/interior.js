@@ -888,7 +888,7 @@ export function buildInterior(reg) {
       // foot on the crossmember
       ...SIDES.map(({ sd, sg }) => named(`rearBracket${sd}`, (() => {
         const q = (pts) => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'steel');
-        const railY = (x) => 0.437 - (x + 1.116) * 0.263 + 0.001;
+        const railY = (x) => 0.437 - (x + 1.116) * 0.263 + 0.0038; // foot on the crossmember top (its mid-plane is at the rail top)
         return plates([
           q([[-1.14, panUnder(-1.14), 0.47], [-1.1, panUnder(-1.1), 0.47], [-1.1, panUnder(-1.1), 0.494], [-1.14, panUnder(-1.14), 0.494]]),
           q([[-1.14, railY(-1.14), 0.492], [-1.1, railY(-1.1), 0.492], [-1.1, panUnder(-1.1), 0.492], [-1.14, panUnder(-1.14), 0.492]]),
