@@ -7,7 +7,7 @@ import { xOf, sOf } from '../profile.js';
 import { region, SV } from './exterior.js';
 import { STEER } from './chassis.js';
 import {
-  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, pipe, quadPlate, disc, mesh,
+  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, pipe, quadPlate, disc, mesh, faceTo, plates,
 } from '../geom.js';
 
 const SIDES = [
@@ -68,6 +68,20 @@ function capZ(pts, z, mat) {
   g.computeVertexNormals();
   return mesh(g, mat);
 }
+
+/** Strip between two lines on the skin, (v0, offset o0) and (v1, o1), over s0..s1, as one mesh. */
+function skinStrip(sd, s0, s1, [v0, o0], [v1, o1], mat, t = 0.002) {
+  const k = Math.max(2, Math.ceil((s1 - s0) / 0.04));
+  const list = [];
+  for (let i = 0; i < k; i++) {
+    const [a, b] = [s0 + ((s1 - s0) * i) / k, s0 + ((s1 - s0) * (i + 1)) / k];
+    list.push(quadPlate([skinAt(a, v0, sd, o0), skinAt(b, v0, sd, o0), skinAt(b, v1, sd, o1), skinAt(a, v1, sd, o1)], t, mat));
+  }
+  return plates(list, mat);
+}
+// edge of the headliner / A-pillar trim folded over the roof rail flange just above the door seal, out to the
+// edge of the body side skin: closes the roof rail from the door openings
+const RAIL_FLANGE = [[3.945, -0.0335], [3.952, -0.0015]];
 
 function dashShell() {
   const face = (b) => [...IP_TOP, b];
@@ -317,7 +331,12 @@ export function buildInterior(reg) {
       id: `pillar-trim-${sd}`, ko: `A·B·C 필러 실내 트림 (${ko})`, en: `A/B/C pillar interior trim ${en}`, tags: sd,
       groups: ['a-b-and-c-post-interior-trim'],
       object: group(
-        named('aPillar', region([[SV.cowlRear + 0.02, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false })),
+        named('aPillar', group(
+          region([[SV.cowlRear + 0.02, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
+          // its outer edge folded over the door opening flange (open where the drain tube crosses it)
+          skinStrip(sd, 1.7, 1.87, ...RAIL_FLANGE, 'fabric'),
+          skinStrip(sd, 1.925, SV.roof[0], ...RAIL_FLANGE, 'fabric'),
+        )),
         named('bPillar', group(
           region([[b0, b1, 0.95, 1.85]], { side: sd, offset: -0.13, mat: 'greyPlastic', edges: false }),
           region([[b0, b1, 2.85, 4.0]], { side: sd, offset: -0.1, exclude: [[bm - 0.03, bm + 0.03, 3.27, 3.45]], mat: 'greyPlastic', edges: false }),
@@ -509,8 +528,16 @@ export function buildInterior(reg) {
     id: 'headliner', ko: '헤드라이닝', en: 'Headliner',
     groups: ['headlining'],
     object: group(
-      region([[SV.roof[0] - 0.02, 3.72, 3.95, 5]], { offset: -0.035, exclude: [panoMotors], mat: 'fabric', edges: false }),
+      // down behind the inner lips of the door seals over the door openings (closing the roof rails, with the curtain
+      // airbags on them, from the cabin and the door openings);
+      // over the roof it ends at the rear header, at the liftgate opening seal, and behind that it covers only the
+      // C-pillar tops up over the liftgate seal
+      region([[SV.roof[0] - 0.02, 3.3, 3.888, 5], [3.3, 3.72, 3.888, 3.995]], { offset: -0.035, exclude: [panoMotors], mat: 'fabric', edges: false }),
       region([panoMotors], { offset: -0.055, mat: 'fabric', edges: false }),
+      // (along the straight top runs of the door seals, short of their rounded corners)
+      ...SIDES.flatMap(({ sd }) => [[SV.roof[0], 2.6], [2.86, 3.2]].map(([s0, s1]) => skinStrip(sd, s0, s1, ...RAIL_FLANGE, 'fabric'))),
+      // and higher across the B-pillar, over the seals' corners
+      ...SIDES.map(({ sd }) => skinStrip(sd, 2.59, 2.87, [3.963, -0.0335], [3.969, -0.0015], 'fabric')),
     ),
   });
   reg.add({
@@ -822,14 +849,32 @@ export function buildInterior(reg) {
           named('bracket', beam([0.545, 0.495, 0.55], [0.704, 0.7, 0.55], 0.008, 'steel')),
         ),
     });
-    // folded along the roof rail above the door openings, against the body side inner and above the headliner
-    // edge (hidden behind the headliner, like on the car); between the A-pillar drain tube and headliner harness
-    // in front and the front corner of the liftgate opening (its seal, liftgate-seal) behind
-    const pts = [2.39, 2.53, 2.67, 2.81, 2.95, 3.09, 3.24].map((s) => skinAt(s, 4.0, sd, -0.011));
+    // CURTAIN AIRBAG ASSY (#1 LH / #2 RH): the folded bag (24 mm) runs along the roof rail above both door
+    // openings, against the body side inner (clipped to the rail, CLIP M6 #*), hidden behind the headliner, whose
+    // edge comes down behind the door seals and folds over the rail flange above them. Its narrower front end
+    // (16 mm) runs down the A-pillar behind the pillar trim, between the door seal and the headliner harness (LH),
+    // and its front tether strap carries on down the pillar under the drain tube to above the tweeter pocket. Its
+    // thin rear end (8 mm) drops behind the headliner, between the rear door seal and the liftgate opening seal,
+    // and ends at the rear edge of the rear door glass.
+    const bagPts = [[2.38, 4.0], [2.49, 4.0], [2.6, 4.0], [2.75, 4.0], [2.9, 4.0], [3.05, 4.0], [3.15, 3.998], [3.24, 3.993]]
+      .map(([s, v]) => skinAt(s, v, sd, -0.0145));
+    const frontPts = [[2.06, 3.98], [2.14, 3.98], [2.22, 3.98], [2.3, 3.982], [2.36, 3.99], [2.42, 4.0]].map(([s, v]) => skinAt(s, v, sd, -0.012));
+    const rearPts = [[3.17, 3.995, -0.0145], [3.22, 3.975, -0.022], [3.26, 3.945, -0.029], [3.3, 3.93, -0.03], [3.4, 3.93, -0.03], [3.48, 3.93, -0.03]]
+      .map(([s, v, o]) => skinAt(s, v, sd, o));
     reg.add({
       id: `curtain-airbag-${sd}`, ko: `커튼 에어백 (${ko})`, en: `Curtain airbag ${en}`, tags: sd,
       groups: ['side-air-bags'], match: /CURTAIN/,
-      object: tube(pts, 0.009, 'fabric'),
+      object: group(
+        named('bag', group(
+          tube(bagPts, 0.012, 'fabric'), tube(frontPts, 0.008, 'fabric'), tube(rearPts, 0.004, 'fabric'),
+          // mounting tabs on the M6 clips in the roof rail
+          ...[[2.27, 3.982], [2.5, 4.0], [2.68, 4.0], [2.92, 4.0], [3.12, 3.994]].map(([s, v]) => {
+            const p = skinAt(s, v, sd, -0.0065);
+            return faceTo(cyl(0.007, 0.01, 'y', [0, 0, 0], 'blackPlastic'), p, skinAt(s, v, sd, 0).sub(p), 'y');
+          }),
+        )),
+        named('tether', region([[1.75, 2.08, 3.955, 3.99]], { side: sd, offset: -0.0015, mat: 'fabric', edges: false })),
+      ),
     });
   }
 

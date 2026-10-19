@@ -420,6 +420,7 @@ export const JOINTS = [
     J(`front-belt-${s}#buckle`, `front-seat-${s}`, 'BUCKLE SWITCH ASY, 1ST ROW (front seat belts #3 LH / #4 RH) on its stalk bolted to the inboard side of the seat cushion frame'),
     J(`pretensioner-${s}#anchor`, `sill-${s}`, 'outboard lap pretensioner anchor bolted to the sill'),
     J(`front-seat-switch-${s}`, `front-seat-${s}`, 'seat switch bezel on the cushion side shield'),
+    J(`curtain-airbag-${s}#bag`, `body-side-${s}`, 'CURTAIN AIRBAG ASSY (side air bags #1 LH / #2 RH) clipped (CLIP M6 BUR100015) to the roof rail of the body side'),
     J(`side-airbag-${s}`, `front-seat-${s}#back`, 'SIDE AIRBAG ASSY (side air bags #3/#4) bolted to the seat back frame in the outboard bolster', { inset: 'the airbag module is inside the seat back bolster' }),
   ]),
   J('rear-belts#centreRetractor', 'rear-seat-back-60', '2nd row centre seatbelt retractor (#3) bolted in the 60% seat back frame (#9 BOLT, 2ND ROW CENTER RETRACTOR)', { inset: 'the retractor is inside the seat back' }),
