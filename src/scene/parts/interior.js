@@ -265,7 +265,7 @@ export function buildInterior(reg) {
       ...SIDES.map(({ sd, sg }) => duct(`centre${sd}`, [[0.565, 0.715, sg * 0.145], [0.5, 0.77, sg * 0.158], [0.455, 0.79, sg * 0.168]], 0.02)),
       ...SIDES.map(({ sd, sg }) => duct(`floor${sd}`, [[0.7, 0.445, sg * 0.14], [0.7, 0.41, sg * 0.135], [0.62, 0.345, sg * 0.11],
         [0.47, 0.33, sg * 0.1], [0.3, 0.33, sg * 0.1], [0.17, 0.384, sg * 0.09], [-0.15, 0.384, sg * 0.09], [-0.212, 0.338, sg * 0.1],
-        [-0.25, 0.335, sg * 0.102], [-0.256, 0.335, sg * 0.118]], 0.017)),
+        [-0.25, 0.335, sg * 0.102], [-0.256, 0.335, sg * 0.112], [-0.256, 0.335, sg * 0.1325]], 0.017)), // end square into the floor outlet
       // their outlets in the base of the console side walls, under the front seat cushions
       ...SIDES.map(({ sd, sg }) => named(`floorOutlet${sd}`, rbox([0.046, 0.04, 0.004], [-0.256, 0.335, sg * 0.1335], 'blackPlastic', { r: 0.0015 }))),
       duct('console', [[0.65, 0.45, 0.035], [0.63, 0.4, 0.035], [0.5, 0.365, 0.04], [0.43, 0.367, 0.04], [-0.32, 0.37, 0.04],
