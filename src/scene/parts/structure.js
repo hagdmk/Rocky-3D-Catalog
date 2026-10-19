@@ -256,7 +256,8 @@ export function buildStructure(reg) {
           ...[0.563, 0.677].map((z) => box([0.2, 0.32, 0.006], [XR - 0.06, 0.82, sg * z], 'aluminum')),
           ...[XR + 0.037, XR - 0.157].map((x) => box([0.006, 0.32, 0.12], [x, 0.82, sg * 0.62], 'aluminum')),
         )),
-        // wheelhouse inner wall (#1/#2 wheel arch panel, inboard side) under the arch band at |z| 0.6,
+        // wheelhouse inner wall (trunk side of the REAR WHEELHOUSE ASSY, rear end panels #20/#21; quarter
+        // inner #1/#2 are the outer arch panels) under the arch band at |z| 0.6,
         // ahead of and behind the shock tower: on the rail node in front (stepped up over the upper
         // link and the air line behind the node) and on the rail behind; open only under the tower
         named('innerWall', group(
@@ -292,10 +293,10 @@ export function buildStructure(reg) {
       named('floor', box([0.86, 0.01, 1.08], [-1.98, 0.615, 0], 'aluminum')),
       // front section of the trunk floor assembly (#1) over the drive unit and the upper links, under the load
       // floor carpet up to the 2nd-row seat back; beside the seat back its flanges reach out to the wheelhouse
-      // inner walls
+      // inner walls (|z| 0.6)
       named('frontFloor', group(
         box([0.25, 0.01, 1.08], [-1.425, 0.615, 0], 'aluminum'),
-        ...[-1, 1].map((sg) => box([0.085, 0.01, 0.058], [-1.3425, 0.615, sg * 0.569], 'aluminum')),
+        ...[-1, 1].map((sg) => box([0.085, 0.01, 0.06], [-1.3425, 0.615, sg * 0.57], 'aluminum')),
       )),
       // rear body panel (#4): its lower edge sits on the bumper beam
       named('rearPanel', box([0.02, 0.225, 1.3], [-2.36, 0.6575, 0], 'aluminum')),

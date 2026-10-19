@@ -226,7 +226,9 @@ export const JOINTS = [
   J('four-way-valve#bracket', 'frunk', 'BRKT - 4 WAY VALVE (battery cooling #13 = motor cooling #24) bolted under the frunk tub (BLT M6x20 #14)'),
   J('four-way-valve#valve', 'four-way-valve#bracket', 'VALVE 4-WAY (battery cooling #12 = motor cooling #23) on its bracket'),
   J('ambient-temp-sensor', 'cooling-duct', 'SENSOR ASSEMBLY AMBIENT AIR TEMPERATURE (ducting #11 = radiator #2) clipped under the front ducting'),
-  ...each((s) => [J(`active-louvre-${s}#tabs`, 'front-fascia', 'ASY - ACTIVE LOUVRE #2/#3 bolted to the fascia (U NUT M6 LH LOUVER TO FASCIA)')]),
+  ...each((s) => [J(`active-louvre-${s}#tabs`, 'front-fascia', s === 'L'
+    ? 'ASY - ACTIVE LOUVRE #2 bolted to the fascia (U NUT M6 LH LOUVER TO FASCIA)'
+    : 'ASY - ACTIVE LOUVRE #3 bolted to the fascia (U-nut: LH part number listed, RH not separately listed)')]),
   J('hvac-filter', 'hvac-blower', 'HVAC FILTER HOUSING #2 (BLT HF M6x18 #4) on the blower inlet of the HVAC unit'),
   J('ac-compressor#bracket', 'front-subframe#frontCross', 'BRKT - AC BRKT-TO-CHASSIS SUPPORT (compressor #3) bolted to the front subframe (NUT M8 #4A/#4B)'),
   J('ac-compressor#bracket', 'ac-compressor#body', 'BRKT AC COMP TO AC BRKT (compressor #2) with the diagonal isolators #5/#7 (BLT M8x100 #6)'),

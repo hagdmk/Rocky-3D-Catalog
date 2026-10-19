@@ -98,9 +98,9 @@ export function buildClosures(reg) {
           named('motor', cyl(0.04, 0.03, 'z', skinAt(sm, 1.15, sd, -0.05).toArray(), 'darkMetal')),
         ),
       });
-      // flush handle in the vertical side of the door just below the shoulder; its mechanism sits
-      // in the door cavity between the outer skin and the inner panel (offset -0.04), clear of the
-      // glass regulator rails
+      // flush handle in the vertical side of the door just below the shoulder; its mechanism is bolted
+      // to the inside of the outer skin round the handle pocket, in the door cavity between the outer
+      // skin and the inner panel (offset -0.04), clear of the glass regulator rails
       const hs = fr === 'F' ? 2.47 : 3.33;
       const hv = 1.78;
       const hn = skinNormal(hs, hv);
@@ -110,7 +110,7 @@ export function buildClosures(reg) {
         groups: [fr === 'F' ? 'front-exterior-door-handle' : 'rear-exterior-door-handle'],
         object: group(
           faceTo(rbox([0.2, 0.03, 0.01], [0, 0, 0], 'chrome', { r: 0.004 }), skinAt(hs, hv, sd, 0.002), hn, 'z'),
-          faceTo(rbox([0.17, 0.045, 0.024], [0, 0, 0], 'darkMetal', { r: 0.006 }), skinAt(hs, hv, sd, -0.018), hn, 'z'),
+          faceTo(rbox([0.17, 0.045, 0.024], [0, 0, 0], 'darkMetal', { r: 0.006 }), skinAt(hs, hv, sd, -0.0125), hn, 'z'),
         ),
       });
       // latch on the inner panel at the rear edge of the door, ahead of the B-pillar / lock pillar
@@ -165,7 +165,9 @@ export function buildClosures(reg) {
     groups: ['liftgate-handle-and-emergency-release'],
     object: group(
       onFace('rear', 0.835, 0, [0.02, 0.03, 0.12], 'chrome', 0.0),
-      onFace('rear', 0.82, 0.05, [0.03, 0.03, 0.05], 'lensRed', -0.06),
+      // emergency release handle (#4) clipped on the inboard face of the liftgate latch, above the
+      // rear body panel, reached from inside the trunk
+      onFace('rear', 0.81, 0.04, [0.03, 0.03, 0.05], 'lensRed', -0.047),
     ),
   });
   for (const { sd, sg, ko, en } of SIDES) {
@@ -276,13 +278,14 @@ export function buildClosures(reg) {
   });
 
   // --- Labels ----------------------------------------------------------------------------
-  const bx = xOf((SV.bPillar[0] + SV.bPillar[1]) / 2);
   reg.add({
     id: 'labels-b-pillar', ko: '라벨 - B필러(타이어·제조 인증)', en: 'Labels - B-pillar (tyre & certification)', tags: 'L',
     groups: ['labels'], match: /TIRE|MANUFACTURING|CERT|LOADING|Supplemental|Op\.Tires|AIRBAG WARNING|REGISTRATION|3RD ROW SEAT/i,
+    // on the LH B-pillar's front (door shut) face (b-pillar-L#lower, x -0.205), seen with the driver's
+    // door open
     object: group(
-      box([0.06, 0.09, 0.002], [bx, 0.62, -0.905], 'paper'),
-      box([0.06, 0.06, 0.002], [bx, 0.5, -0.905], 'paper'),
+      box([0.002, 0.09, 0.034], [-0.204, 0.62, -0.933], 'paper'),
+      box([0.002, 0.06, 0.034], [-0.204, 0.5, -0.933], 'paper'),
     ),
   });
   reg.add({
@@ -320,10 +323,15 @@ export function buildClosures(reg) {
     groups: ['panoramic-roof-assembly'],
     object: region([[R0 - 0.03, R1 + 0.03, VS - 0.06, 4.32]], { offset: -0.022, mat: 'darkMetal', edges: false }),
   });
+  // tracks (#22/#23) on the cassette side rails (cassette underside at offset -0.022); the roof motors
+  // (#1/#2, on their motor blocks #3/#4) bolted under the front corners of the cassette at the front
+  // ends of the tracks
   const tracks = [];
   for (const { sd } of SIDES) {
-    tracks.push(tube(skinPath([[R0, VS - 0.02], [R1, VS - 0.02]], sd, -0.012, 8), 0.007, 'aluminum'));
-    tracks.push(rbox([0.07, 0.03, 0.05], skinAt(R0 - 0.03, 4.45, sd, -0.03).toArray(), 'darkMetal', { r: 0.008 }));
+    tracks.push(tube(skinPath([[R0, VS - 0.02], [R1, VS - 0.02]], sd, -0.015, 8), 0.007, 'aluminum'));
+    const n = skinNormal(R0 - 0.012, VS + 0.01);
+    if (sd === 'R') n.z = -n.z;
+    tracks.push(faceTo(rbox([0.07, 0.022, 0.05], [0, 0, 0], 'darkMetal', { r: 0.008 }), skinAt(R0 - 0.012, VS + 0.01, sd, -0.033), n, 'y'));
   }
   reg.add({
     id: 'pano-drive', ko: '루프 구동 모터·케이블·트랙', en: 'Roof drive motors, cables & tracks',
@@ -361,7 +369,7 @@ export function buildClosures(reg) {
   reg.add({
     id: 'roof-seals', ko: '루프 실·끼임 방지 센서', en: 'Roof seals & anti-pinch sensors',
     groups: ['roof-seals-and-anti-pinch-sensors'],
-    object: group(loop(sealPts, 'L', -0.0075, 0.006, 'rubber'), loop(sealPts, 'R', -0.0075, 0.006, 'rubber')),
+    object: group(loop(sealPts, 'L', -0.006, 0.006, 'rubber'), loop(sealPts, 'R', -0.006, 0.006, 'rubber')),
   });
   reg.add({
     id: 'wind-deflector', ko: '윈드 디플렉터', en: 'Wind deflector',
