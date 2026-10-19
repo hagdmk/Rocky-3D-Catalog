@@ -276,7 +276,9 @@ export function buildExterior(reg) {
         // sill top (y 0.36) from the inner top edge (|z| 0.80) to |z| 0.905, where it steps down onto the sill
         // and runs on flat to the doors' inner panels (|z| 0.94, under the door speakers); from the hinge
         // pillar (x 0.873) back to the C-pillar lower trim (x -0.93), cut out under the B-pillar, its trim
-        // foot and the belt anchor (x -0.19 .. -0.315).
+        // foot and the belt anchor (x -0.19 .. -0.315; outboard of the trim foot, |z| >= 0.855, it closes
+        // round the B-pillar and the anchor).  Its sloped inboard flank has a slot under the trim foot
+        // (x -0.292 .. -0.316, |z| >= 0.752) where the rear door harness rises into the B-pillar.
         // Its inner flank runs down over the carpet edge (y 0.311, |z| 0.74) between the kick panel foot and
         // the rear carpet corner (x 0.75 .. -0.70), the cabin harness under it along the sill; notched at
         // the B-pillar foot round the pillar impact sensor (top edge at |z| 0.784 there).
@@ -284,9 +286,9 @@ export function buildExterior(reg) {
           const sg = sd === 'L' ? -1 : 1;
           const P = (x, za) => [x, 0.311 + ((za - 0.74) / 0.06) * 0.059, sg * za];
           const [yT, zO] = [0.3715, 0.905];
-          const flank = [[0.75, -0.21, 0.8], [-0.21, -0.28, 0.784], [-0.28, -0.7, 0.8]].map(([x0, x1, top]) => (
-            quadPlate([P(x0, top), P(x1, top), P(x1, 0.74), P(x0, 0.74)], 0.003, 'blackPlastic')));
-          const top = [[0.873, 0.75, 0.795], [0.75, -0.19, 0.8], [-0.315, -0.93, 0.8]].flatMap(([x0, x1, zi]) => [
+          const flank = [[0.75, -0.21, 0.8], [-0.21, -0.28, 0.784], [-0.28, -0.292, 0.8], [-0.316, -0.7, 0.8], [-0.292, -0.316, 0.752]]
+            .map(([x0, x1, top]) => quadPlate([P(x0, top), P(x1, top), P(x1, 0.74), P(x0, 0.74)], 0.003, 'blackPlastic'));
+          const top = [[0.873, 0.75, 0.795], [0.75, -0.19, 0.8], [-0.19, -0.205, 0.855], [-0.28, -0.315, 0.855], [-0.315, -0.93, 0.8]].flatMap(([x0, x1, zi]) => [
             quadPlate([[x0, yT, sg * zi], [x1, yT, sg * zi], [x1, yT, sg * zO], [x0, yT, sg * zO]], 0.003, 'blackPlastic'),
             quadPlate([[x0, 0.36, sg * zO], [x1, 0.36, sg * zO], [x1, yT + 0.0015, sg * zO], [x0, yT + 0.0015, sg * zO]], 0.003, 'blackPlastic'),
             quadPlate([[x0, 0.3615, sg * zO], [x1, 0.3615, sg * zO], [x1, 0.3615, sg * 0.94], [x0, 0.3615, sg * 0.94]], 0.003, 'blackPlastic'),
