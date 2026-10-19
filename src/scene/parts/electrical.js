@@ -89,22 +89,22 @@ export function buildElectrical(reg) {
   reg.add({
     id: 'liftgate-ecu', ko: '파워 리프트게이트·전자식 주차브레이크 ECU', en: 'Power liftgate & EPB controller', tags: 'RB',
     groups: ['door-controllers-and-sensors', 'park-brake-calipers-and-pads'], match: /LIFT ?GATE|ECU|PARK BRAKE CONTROLLER|CHIME|NUT|BLT/,
-    // on the shared park brake / liftgate ECU bracket (#4) behind the RH trunk side trim, a plate
-    // standing on the top of the wheelhouse
+    // the power liftgate module (#3) and the park brake controller side by side on their shared bracket
+    // (#4), bolted to the RH rear quarter inner panel above the wheelhouse, behind the trunk side trim
     object: group(
-      named('ecu', rbox([0.15, 0.1, 0.035], [-1.545, 0.855, 0.8975], 'darkMetal', { r: 0.008 })),
-      rbox([0.12, 0.08, 0.035], [-1.4, 0.86, 0.8975], 'darkMetal', { r: 0.008 }),
-      named('bracket', box([0.3, 0.13, 0.006], [-1.48, 0.835, 0.918], 'steel')),
+      named('ecu', rbox([0.15, 0.1, 0.025], [-1.64, 0.885, 0.9275], 'darkMetal', { r: 0.006 })),
+      rbox([0.12, 0.08, 0.025], [-1.795, 0.885, 0.9275], 'darkMetal', { r: 0.006 }),
+      named('bracket', box([0.3, 0.11, 0.006], [-1.71, 0.885, 0.943], 'steel')),
     ),
   });
   reg.add({
     id: 'park-assist-ecu', ko: '주차 보조 ECU', en: 'Park assist ECU', tags: 'RB',
     groups: ['module-park-assist'],
-    // on its bracket (#3) next to the liftgate ECU, behind the RH trunk side trim, down to the
-    // wheelhouse
+    // on its bracket (#3) on the RH rear quarter inner panel, below the park brake controller, behind
+    // the trunk side trim
     object: group(
-      named('ecu', rbox([0.13, 0.09, 0.035], [-1.7, 0.845, 0.8975], 'darkMetal', { r: 0.008 })),
-      named('bracket', box([0.1, 0.18, 0.006], [-1.7, 0.78, 0.918], 'steel')),
+      named('ecu', rbox([0.13, 0.08, 0.025], [-1.795, 0.78, 0.9275], 'darkMetal', { r: 0.006 })),
+      named('bracket', box([0.1, 0.1, 0.006], [-1.795, 0.78, 0.943], 'steel')),
     ),
   });
 
@@ -113,20 +113,34 @@ export function buildElectrical(reg) {
   // controller (LH) to the cabin fuse box (RH).  The body, motor bay and console harnesses
   // plug into it; they start on its control points (a Catmull-Rom tube passes through them).
   const LD = [[0.84, 0.562, -0.66], [0.89, 0.5, -0.6], [0.9, 0.47, -0.45], [0.9, 0.465, 0], [0.9, 0.47, 0.45], [0.88, 0.49, 0.6], [0.82, 0.52, 0.655]];
+  const toe = (x) => 0.2975 + (x - 0.72) * 0.456 + W + 0.0045; // harness centre lying on the toe board
   for (const { sd, sg, ko, en } of SIDES) {
-    // off the main harness, down the kick panel above the toe board and carpet, along the sill,
-    // up in front of the rear wheelhouse and over it to the trunk-side modules, outboard of the
-    // trunk side trim (LH: air suspension ECU, where the rear bumper harness plugs in; RH: liftgate
-    // ECU and park assist ECU)
-    const rear = sg < 0
-      ? [[-1.4, 0.815, -0.885], [-1.6, 0.81, -0.886], [-1.9, 0.8, -0.886]]
-      : [[-1.4, 0.815, 0.885], [-1.52, 0.794, 0.897], [-1.7, 0.793, 0.897]];
+    // #lead: off the main harness, down into the front outboard corner of the footwell beside the
+    // hinge pillar (behind the A-pillar lower trim on the car), back along the outboard edge of the toe
+    // board, then along the sill under the scuff plate (rocker-*#scuff), outboard of the carpet edge,
+    // to the B-pillar foot, where the rear door harness plugs in.
+    // #rearLead: on under the scuff plate and the rear footwell corner, up the front of the rear
+    // wheelhouse just behind the rear door (inboard of its seal), against the lock pillar and over the
+    // wheelhouse near the body side, behind the C-pillar lower trim and the trunk side trim: LH to the
+    // air suspension ECU (the rear bumper harness plugs in there); RH to the junction above the
+    // wheelhouse where the rear subframe harness plugs in, and #trunkLead on under the liftgate / park
+    // brake ECU to the park assist ECU.
+    const zs = sg * 0.765;
+    const floor = [sg < 0 ? LD[1] : LD[5], [0.94, 0.46, sg * 0.72], [0.945, toe(0.945), sg * 0.772], [0.84, toe(0.84), sg * 0.767],
+      [0.76, toe(0.76), sg * 0.766], [0.7, 0.312, zs], [0.2, 0.312, zs], [-0.32, 0.312, zs]];
+    const climb = [[-0.32, 0.312, zs], [-0.7, 0.312, zs], [-0.9, 0.318, sg * 0.766], [-0.945, 0.335, sg * 0.766],
+      [-0.952, 0.392, sg * 0.767], [-0.962, 0.425, sg * 0.82], [-0.975, 0.48, sg * 0.872], [-1.005, 0.55, sg * 0.884],
+      [-1.05, 0.62, sg * 0.888], [-1.1, 0.672, sg * 0.897], [-1.2, 0.758, sg * 0.91], [-1.32, 0.806, sg * 0.915], [-1.48, 0.815, sg * 0.915]];
+    const toAirEcu = [[-1.62, 0.822, -0.915], [-1.76, 0.812, -0.915], [-1.834, 0.8, -0.915]];
     reg.add({
       id: `cabin-harness-${sd}`, ko: `캐빈(보디) 하네스 (${ko})`, en: `Cabin (body) harness ${en}`, tags: sd,
       groups: ['cabin-harness'],
-      object: named('lead', tube([sg < 0 ? LD[1] : LD[5], [0.882, 0.445, sg * 0.705], [0.84, 0.4, sg * 0.77], [0.76, 0.36, sg * 0.768],
-        [0.6, 0.35, sg * 0.766], [0.2, 0.347, sg * 0.765], [-0.2, 0.346, sg * 0.765], [-0.55, 0.345, sg * 0.765],
-        [-0.85, 0.42, sg * 0.79], [-0.97, 0.66, sg * 0.82], [-1.22, 0.84, sg * 0.835], ...rear], W, 'wire')),
+      object: group(
+        named('lead', pipe(floor, W, 'wire', { bend: 0.04 })),
+        named('rearLead', pipe(sg < 0 ? [...climb, ...toAirEcu] : climb, W, 'wire', { bend: 0.04 })),
+        ...(sg > 0 ? [named('trunkLead', pipe([[-1.48, 0.815, 0.915], [-1.6, 0.826, 0.915], [-1.69, 0.8, 0.915], [-1.729, 0.785, 0.915]],
+          W, 'wire', { bend: 0.03 }))] : []),
+      ),
     });
     // through the bulkhead grommet (ASY, PLATE A / PLATE B, BULKHEAD GROMMET) and along the top of
     // the front rail; the RH one runs along the inboard top edge of the rail, under the frunk tub
@@ -142,7 +156,14 @@ export function buildElectrical(reg) {
         named('dashLead', tube([sg < 0 ? LD[2] : LD[4], [0.94, 0.48, sg * 0.45], [0.973, 0.49, sg * 0.45]], W, 'wire')),
         // the grommet fills the hole through the bulkhead and its dash insulation
         named('grommet', cyl(0.02, 0.024, 'x', [0.986, 0.49, sg * 0.45], 'rubber')),
-        named('lead', pipe([[0.999, 0.49, sg * 0.45], [1.1, 0.477, sg * 0.462], ...rail, [2.06, 0.652, sg * 0.455]], W, 'wire', { bend: 0.05 })),
+        // RH: #lead ends on the rail top ahead of the DC-DC converter and #frontLead carries on, so the
+        // converter's LV pigtail plugs into a short piece
+        ...(sg < 0
+          ? [named('lead', pipe([[0.999, 0.49, sg * 0.45], [1.1, 0.477, sg * 0.462], ...rail, [2.06, 0.652, sg * 0.455]],
+            W, 'wire', { bend: 0.05 }))]
+          : [named('lead', pipe([[0.999, 0.49, sg * 0.45], [1.1, 0.477, sg * 0.462], ...rail.slice(0, 2), [1.88, 0.519, 0.432]],
+            W, 'wire', { bend: 0.05 })),
+            named('frontLead', pipe([[1.88, 0.519, 0.432], ...rail.slice(2), [2.06, 0.652, sg * 0.455]], W, 'wire', { bend: 0.05 }))]),
       ),
     });
   }
@@ -174,9 +195,9 @@ export function buildElectrical(reg) {
   });
   // Door harnesses with grommet.  Front: from the IP harness near the A-pillar through the hinge
   // pillar between the two hinges into the door, then between the door inner panel and the trim pad
-  // to the door controller.  Rear: from the body harness on the sill behind the belt retractor into
-  // the foot of the B-pillar below its trim, out of the pillar below the lower hinge into the rear
-  // door, then between the inner panel and the trim pad to the latch.
+  // to the door controller.  Rear: from the end of the body harness under the scuff plate, up behind
+  // the belt retractor into the foot of the B-pillar below its trim, out of the pillar below the lower
+  // hinge into the rear door, then between the inner panel and the trim pad to the latch.
   for (const { sd, sg, ko, en } of SIDES) {
     const [r0, r1] = SV.rearDoor;
     reg.add({
@@ -188,22 +209,29 @@ export function buildElectrical(reg) {
     reg.add({
       id: `door-harness-${sd}B`, ko: `뒤 도어 하네스 (${ko})`, en: `Rear door harness ${en}`, tags: `${sd}B`,
       groups: ['doors-and-liftgate-harnesses'], match: /DOOR|EDGE CLIP/,
-      object: named('lead', pipe([[-0.32, 0.347, sg * 0.766], [-0.31, 0.46, sg * 0.8], [-0.265, 0.468, sg * 0.86], [-0.262, 0.468, sg * 0.928],
+      object: named('lead', pipe([[-0.305, 0.312, sg * 0.765], [-0.303, 0.372, sg * 0.767], [-0.295, 0.43, sg * 0.8], [-0.278, 0.466, sg * 0.845],
+        [-0.265, 0.468, sg * 0.86], [-0.262, 0.468, sg * 0.928],
         [-0.3, 0.5, sg * 0.928], [-0.4, 0.62, sg * 0.932], skinAt(r0 + 0.12, 1.45, sd, -0.05), skinAt((r0 + r1) / 2, 1.6, sd, -0.05),
         [-0.95, 0.89, sg * 0.946], [-0.99, 0.905, sg * 0.946]], 0.008, 'wire', { bend: 0.04 })),
     });
     // liftgate harnesses: from the headliner harness T at the rear header (above the headliner),
-    // inboard of the liftgate hinge, past the AM/FM amplifier and down the liftgate frame between
-    // its panel and the trim to the rear camera (LH) or the latch (RH)
-    const lg = [skinAt(3.24, 4.65, sd, -0.018), skinAt(3.33, 4.65, sd, -0.018), skinAt(3.39, 4.4, sd, -0.018), skinAt(3.46, 4.33, sd, -0.018),
-      skinAt(3.6, 4.3, sd, -0.018)];
+    // inboard of the liftgate hinge, over the opening seal where it crosses the header (between the
+    // seal and the roof / glass, clear of both), past the AM/FM amplifier and down the liftgate frame
+    // between its panel and the trim to the rear camera (LH) or the latch (RH)
+    const t0 = skinAt(3.24, 4.65, sd, -0.018);
+    const lg = [t0, V(-0.79, 1.3905, t0.z), V(-0.81, 1.3905, t0.z), V(-0.83, 1.387, t0.z), skinAt(3.39, 4.4, sd, -0.018),
+      skinAt(3.46, 4.33, sd, -0.018), skinAt(3.6, 4.3, sd, -0.018)];
     for (const s of [3.8, 4.1, 4.4, 4.7, 4.85]) lg.push(skinAt(s, 4.15, sd, -0.02));
     if (sg < 0) lg.push(skinAt(4.85, 4.6, sd, -0.02), findOnFace('rear', 0.86, -0.06, -0.022).p, findOnFace('rear', 0.864, -0.004, -0.024).p);
     else lg.push(findOnFace('rear', 0.84, 0.3, -0.022).p, findOnFace('rear', 0.795, 0.15, -0.022).p, findOnFace('rear', 0.782, 0.06, -0.022).p);
     reg.add({
       id: `liftgate-harness-${sd}`, ko: `리프트게이트 하네스 (${ko})`, en: `Liftgate harness ${en}`, tags: sd,
       groups: ['doors-and-liftgate-harnesses'], match: /LIFTGATE/,
-      object: named('lead', tube(lg, 0.008, 'wire')),
+      object: group(
+        named('lead', tube(lg, 0.008, 'wire')),
+        // connector lead to the AM/FM antenna amplifier beside the harness
+        named('ampLead', tube([skinAt(3.4, 4.38, sd, -0.02), skinAt(3.38, 4.36, sd, -0.021)], 0.005, 'wire')),
+      ),
     });
   }
   reg.add({
@@ -240,19 +268,28 @@ export function buildElectrical(reg) {
   reg.add({
     id: 'rear-bumper-harness', ko: '뒤 범퍼 하네스', en: 'Rear bumper harness',
     groups: ['rear-bumper-and-subframe-harness'], match: /BUMP|BUMPER|PKA|SENSOR/,
-    // from the LH body harness at the air suspension ECU, outboard of the trunk side trim, down past
-    // the charge port to the bumper and just behind the six park assist sensors
-    object: named('lead', tube([[-1.9, 0.8, -0.886], [-1.98, 0.72, -0.875], [-2.15, 0.56, -0.79], [-2.3, 0.475, -0.725], [-2.376, 0.47, -0.71],
+    // from the LH body harness at the front face of the air suspension ECU, down behind (outboard of)
+    // the trunk side trim and inboard of the charge-port cable, past the charge port to the bumper and
+    // just behind the six park assist sensors
+    object: named('lead', tube([[-1.834, 0.8, -0.915], [-1.83, 0.765, -0.905], [-1.86, 0.715, -0.886], [-1.95, 0.66, -0.883],
+      [-2.05, 0.6, -0.86], [-2.15, 0.56, -0.79], [-2.3, 0.475, -0.725], [-2.376, 0.47, -0.71],
       [-2.446, 0.478, -0.454], [-2.45, 0.477, -0.169], [-2.45, 0.477, 0.169], [-2.446, 0.478, 0.454], [-2.376, 0.47, 0.71]], 0.008, 'wire')),
   });
   reg.add({
     id: 'rear-subframe-harness', ko: '리어 서브프레임 하네스', en: 'Rear subframe harness',
     groups: ['rear-bumper-and-subframe-harness'], match: /SUBFRAME|FEP/,
-    // from the RH body harness over the wheelhouse, down behind the shock tower between the
-    // wheelhouse and the trunk floor extension, inboard of the rail to the subframe, across on top
-    // of the rear cross member behind the drive unit
-    object: named('lead', pipe([[-1.45, 0.81, 0.89], [-1.48, 0.845, 0.84], [-1.7, 0.72, 0.67], [-1.77, 0.65, 0.6], [-1.77, 0.63, 0.58],
-      [-1.76, 0.49, 0.48], [-1.72, 0.33, 0.42], [-1.73, 0.345, 0], [-1.74, 0.321, -0.42]], 0.009, 'wire', { bend: 0.05 })),
+    // from the RH body harness junction above the wheelhouse, down over the back of the wheelhouse
+    // behind the trunk side trim, below the park assist ECU, then inboard just above the trunk floor
+    // extension shelf and out of the trunk through a grommet in the shelf, inboard under the shelf and
+    // over the wheelhouse inner wall, down inboard of the rail to the subframe, across on top of the
+    // rear cross member behind the drive unit
+    object: group(
+      named('lead', pipe([[-1.4815, 0.805, 0.908], [-1.58, 0.785, 0.905], [-1.68, 0.745, 0.905], [-1.75, 0.715, 0.9],
+        [-1.8, 0.712, 0.895], [-1.81, 0.715, 0.86], [-1.805, 0.715, 0.826], [-1.8, 0.635, 0.822], [-1.795, 0.632, 0.7],
+        [-1.785, 0.632, 0.61], [-1.78, 0.62, 0.58], [-1.76, 0.49, 0.48], [-1.72, 0.33, 0.42], [-1.73, 0.345, 0], [-1.74, 0.321, -0.42]],
+      0.009, 'wire', { bend: 0.03 })),
+      named('grommet', cyl(0.015, 0.014, 'y', [-1.8, 0.676, 0.823], 'rubber')),
+    ),
   });
   // --- Parking sensors, radar, cameras ---------------------------------------------------
   const sensorGroupsF = ['parking-sensors-park-assist', 'parking-sensors-driver-assist', 'front-end-and-front-bumper-harness'];
@@ -385,25 +422,54 @@ export function buildElectrical(reg) {
     ),
   });
   {
-    const bladeL = [skinAt(1.66, 3.95, 'L', 0.02), skinAt(1.64, 4.6, 'L', 0.02), skinAt(1.63, 5, 'L', 0.02)];
-    const bladeR = [skinAt(1.63, 4.85, 'R', 0.02), skinAt(1.64, 4.3, 'R', 0.02), skinAt(1.66, 3.98, 'R', 0.02)];
+    // Wiper module (#1) in the cowl plenum (floor-pan#plenum) under the cowl screen: its tube frame
+    // runs from the LH pivot to the motor crank housing at the RH (inboard) pivot, with the drive link
+    // to the LH pivot.  Three BOLT M6x25 (#2) hold it on the plenum: at the LH pivot end, under the
+    // motor crank housing and through the WIPER MOUNTING BRACKET COWL PLENUM (#3) at the motor end.
+    // The pivot spindles rise through the cowl screen openings; on each the arm (#6 LH, #7 RH) is held
+    // by its cap nut (#8) and runs over the windshield base to the clip in the middle of its blade
+    // (#4 LH, #5 RH), which rests on the glass.
+    const pn = new THREE.Vector3(0.061, 0.09, 0).normalize(); // plenum (upper dash insulator) normal
+    const PLANE = -0.5955; // plenum slope about z
+    const above = (p) => pn.dot(V(p[0] - 0.99, p[1] - 0.86, 0)) - 0.01; // height over the plenum top along its normal
+    // a pad on the plenum top under a point, `top` along the normal (rotated with the plenum)
+    const pad = (p, top, w, d, mat = 'steel') => {
+      const base = V(...p).addScaledVector(pn, -above(p));
+      return box([w, top, d], base.addScaledVector(pn, top / 2).toArray(), mat, [0, 0, PLANE]);
+    };
+    const onPlenum = (x, z, h) => { // centre of a body standing h along the normal at plenum point (x, z)
+      const p = V(x, 0.86 + (0.99 - x) * (0.061 / 0.09), z).addScaledVector(pn, 0.01 + h);
+      return p.toArray();
+    };
+    const fr = [0.947, 0.924]; // frame tube axis
+    const mc = [0.955, 0.924]; // motor axis
+    const blade = (sd, pts) => tube(pts.map(([s, v]) => skinAt(s, v, sd, 0.009)), 0.007, 'rubber');
+    const arm = (zp, sd, s1, v1, s2, v2) => group(
+      cyl(0.006, 0.016, 'y', [0.947, 0.956, zp], 'darkMetal'), // spindle through the cowl screen
+      cyl(0.011, 0.012, 'y', [0.947, 0.968, zp], 'blackPlastic'), // arm head with the cap nut (#8)
+      pipe([[0.947, 0.97, zp], skinAt(s1, v1, sd, 0.024), skinAt(s2, v2, sd, 0.019)], 0.005, 'paintDark', { bend: 0.03 }),
+    );
     reg.add({
       id: 'wipers', ko: '와이퍼 암·블레이드·모터', en: 'Wiper arms, blades & motor', tags: 'F',
       groups: ['windshield-wipers-and-motor'],
-      // wiper module (#1) in the plenum under the cowl screen, ahead of the windshield base and above
-      // the cowl top: its tube frame spans the plenum and is bolted (#2) at both cowl sides; the
-      // pivots sit under the cowl screen openings, the motor on its bracket (#3) at the RH (inboard)
-      // pivot and the drive link runs to the LH pivot
       object: group(
-        tube(bladeL, 0.007, 'rubber'),
-        tube(bladeR, 0.007, 'rubber'),
-        named('frame', beam([0.947, 0.924, -0.79], [0.947, 0.924, 0.79], 0.009, 'steel')),
+        named('bladeL', blade('L', [[1.66, 3.95], [1.645, 4.55], [1.63, 5]])),
+        named('bladeR', blade('R', [[1.63, 4.85], [1.645, 4.45], [1.66, 3.98]])),
+        named('armL', arm(-0.6, 'L', 1.6, 4.18, 1.645, 4.55)),
+        named('armR', arm(0.06, 'R', 1.6, 4.86, 1.645, 4.45)),
+        named('frame', beam([...fr, -0.632], [...fr, 0.11], 0.009, 'steel')),
+        named('footL', pad([...fr, -0.618], above(fr) - 0.009 + 0.003, 0.035, 0.03)),
         named('pivotL', cyl(0.013, 0.026, 'y', [0.947, 0.937, -0.6], 'darkMetal')),
         named('pivotR', cyl(0.013, 0.026, 'y', [0.947, 0.937, 0.06], 'darkMetal')),
         named('link', beam([0.935, 0.938, 0.06], [0.935, 0.938, -0.6], 0.004, 'steel')),
+        // crank housing standing on the plenum (bolt #2 from below), the motor along the plenum
         named('motor', group(
-          rbox([0.045, 0.032, 0.08], [0.947, 0.925, 0.13], 'darkMetal', { r: 0.008 }),
-          cyl(0.02, 0.1, 'z', [0.951, 0.918, 0.22], 'darkMetal'),
+          box([0.04, 0.026, 0.08], onPlenum(0.948, 0.13, 0.014), 'darkMetal', [0, 0, PLANE]),
+          cyl(0.018, 0.1, 'z', [...mc, 0.22], 'darkMetal'),
+        )),
+        named('bracket', group(
+          pad([...mc, 0.295], 0.004, 0.04, 0.04),
+          box([0.03, 0.024, 0.004], onPlenum(0.952, 0.273, 0.016), 'steel', [0, 0, PLANE]),
         )),
       ),
     });
@@ -476,11 +542,18 @@ export function buildInfotainment(reg) {
       groups: spk, match: /MID RANGE|80MM/,
       object: disc(0.04, 0.03, 'y', [0.6, 0.93, sg * 0.6], 'darkMetal'),
     });
+    // 30 mm tweeter ('use on A-Pillar') in a pocket at the foot of the A-pillar trim, ahead of the end of
+    // the curtain airbag: the speaker set into the trim face (the door seal and, LH, the headliner
+    // harness run behind it), its grille in the face, aimed into the cabin
+    const tw = (off) => skinAt(1.645, 3.9, sd, off);
+    const twN = tw(-0.05).sub(tw(-0.03)).normalize();
     reg.add({
-      id: `tweeter-${sd}`, ko: `트위터 (A필러 아래 대시 모서리 ${ko})`, en: `Tweeter (dash corner at the A-pillar ${en})`, tags: sd,
+      id: `tweeter-${sd}`, ko: `트위터 (A필러 ${ko})`, en: `Tweeter (A-pillar ${en})`, tags: sd,
       groups: ['audio-speakers-premium'], match: /TWEETER/,
-      // in the dash top corner at the foot of the A-pillar, below the end of the curtain airbag
-      object: disc(0.018, 0.02, 'y', [0.78, 0.942, sg * 0.65], 'darkMetal'),
+      object: group(
+        faceTo(cyl(0.014, 0.012, 'y', [0, 0, 0], 'darkMetal'), tw(-0.024), twN, 'y'),
+        faceTo(cyl(0.016, 0.002, 'y', [0, 0, 0], 'blackPlastic'), tw(-0.031), twN, 'y'),
+      ),
     });
   }
   reg.add({
