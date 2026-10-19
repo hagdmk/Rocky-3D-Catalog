@@ -69,15 +69,21 @@ function capZ(pts, z, mat) {
   return mesh(g, mat);
 }
 
-/** Strip between two lines on the skin, (v0, offset o0) and (v1, o1), over s0..s1, as one mesh. */
-function skinStrip(sd, s0, s1, [v0, o0], [v1, o1], mat, t = 0.002) {
+/** Smooth surface strip between two lines on the skin, (v0, offset o0) and (v1, o1), over s0..s1. */
+function skinStrip(sd, s0, s1, [v0, o0], [v1, o1], mat) {
   const k = Math.max(2, Math.ceil((s1 - s0) / 0.04));
-  const list = [];
-  for (let i = 0; i < k; i++) {
-    const [a, b] = [s0 + ((s1 - s0) * i) / k, s0 + ((s1 - s0) * (i + 1)) / k];
-    list.push(quadPlate([skinAt(a, v0, sd, o0), skinAt(b, v0, sd, o0), skinAt(b, v1, sd, o1), skinAt(a, v1, sd, o1)], t, mat));
+  const pos = [];
+  const idx = [];
+  for (let i = 0; i <= k; i++) {
+    const a = s0 + ((s1 - s0) * i) / k;
+    for (const p of [skinAt(a, v0, sd, o0), skinAt(a, v1, sd, o1)]) pos.push(p.x, p.y, p.z);
+    if (i < k) idx.push(2 * i, 2 * i + 2, 2 * i + 1, 2 * i + 1, 2 * i + 2, 2 * i + 3);
   }
-  return plates(list, mat);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return mesh(g, mat);
 }
 // edge of the headliner / A-pillar trim folded over the roof rail flange just above the door seal, out to the
 // edge of the body side skin: closes the roof rail from the door openings
@@ -337,16 +343,20 @@ export function buildInterior(reg) {
   for (const { sd, sg, ko, en } of SIDES) {
     // Lower part (map pocket, speaker grille) on the door inner panel; the upper part (armrest bolster,
     // window-sill cap) stands further inboard, so the latch release cable runs behind it to the interior
-    // handle mounted in it.  Both stop short of the latch on the shut face and above the sill.
+    // handle mounted in it.  They cover the whole inner panel: from just above the sill (over the speaker
+    // basket) up to the window sill and back over the latch to the shut face; the front door trim starts at
+    // the IP end
     const doorTrim = (s0, s1) => [
-      region([[s0, s1, 0.75, 1.62]], { side: sd, offset: -0.07, mat: 'leather', edges: false }),
-      region([[s0, s1, 1.58, 2.95]], { side: sd, offset: -0.113, mat: 'leather', edges: false }),
+      region([[s0, s1, 0.66, 1.62]], { side: sd, offset: -0.07, mat: 'leather', edges: false }),
+      region([[s0, s1, 1.58, 2.99]], { side: sd, offset: -0.113, mat: 'leather', edges: false }),
+      // window-sill cap from the top of the bolster out to the glass, over the top of the inner panel
+      skinStrip(sd, s0, s1, [2.99, -0.113], [3.02, -0.012], 'leather'),
     ];
     reg.add({
       id: `door-trim-${sd}F`, ko: `앞 도어 트림 패드 (${ko})`, en: `Front door trim pad ${en}`, tags: `${sd}F`,
       groups: ['front-door-trim-pad'],
       object: group(
-        doorTrim(SV.frontDoor[0] + 0.03, SV.frontDoor[1] - 0.075),
+        doorTrim(SV.frontDoor[0] + 0.03, SV.frontDoor[1] - 0.025),
         rbox([0.26, 0.04, 0.06], [0.0, 0.67, skinAt(sOf(0.0), 1.33, sd, -0.1).z], 'leather', { r: 0.015 }),
       ),
     });
@@ -354,7 +364,7 @@ export function buildInterior(reg) {
       id: `door-trim-${sd}B`, ko: `뒤 도어 트림 패드 (${ko})`, en: `Rear door trim pad ${en}`, tags: `${sd}B`,
       groups: ['rear-door-trim-pad'],
       object: group(
-        doorTrim(SV.rearDoor[0] + 0.02, SV.rearDoor[1] - 0.075),
+        doorTrim(SV.rearDoor[0] + 0.02, SV.rearDoor[1] - 0.025),
         rbox([0.22, 0.04, 0.06], [-0.85, 0.68, skinAt(sOf(-0.85), 1.35, sd, -0.1).z], 'leather', { r: 0.015 }),
       ),
     });
