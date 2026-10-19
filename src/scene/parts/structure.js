@@ -387,7 +387,11 @@ export function buildStructure(reg) {
   });
   // Trunk floor extension panels (#2/#3, also quarter inner #5/#6): the sloped side flanges that
   // join the trunk floor to the wheelhouse inner wall and the shock tower, and behind them the shelf
-  // that closes the trunk over the low rear part of the wheelhouse, out to the trunk side trim.
+  // that closes the trunk over the low rear part of the wheelhouse.  The shelf is drawn only out to the trunk side
+  // finisher's lower edge (|z| 0.84); the real panels close to the rear quarter inner on both sides, and the LH
+  // charge-port cable and rear bumper harness pass down through openings that are not drawn.  On the RH side a flange
+  // runs on out to the quarter inner behind the finisher bracket and carries the rear subframe harness grommet (its
+  // position is a placement assumption: neither the grommet nor its hole is in the catalog).
   for (const { sd, sg, ko, en } of SIDES) {
     reg.add({
       id: `trunk-floor-ext-${sd}`, ko: `트렁크 플로어 익스텐션 (${ko})`, en: `Trunk floor extension panel ${en}`, tags: sd,
@@ -396,8 +400,9 @@ export function buildStructure(reg) {
         quadPlate([[-1.95, 0.615, sg * 0.535], [-1.56, 0.615, sg * 0.535], [-1.56, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6]], 0.006, 'aluminum'),
         named('shelf', group(
           quadPlate([[SHELF_X0, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.84], [SHELF_X0, SHELF_Y, sg * 0.84]], 0.004, 'aluminum'),
-          // RH: flange out under the trunk side finisher behind its bracket, with the rear subframe harness grommet
-          ...(sd === 'R' ? [quadPlate([[-1.845, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.91], [-1.845, SHELF_Y, 0.91]], 0.004, 'aluminum')] : []),
+          // RH: flange out under the trunk side finisher behind its bracket to the rear quarter inner, joined to it,
+          // with the rear subframe harness grommet
+          ...(sd === 'R' ? [quadPlate([[-1.845, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.934], [-1.845, SHELF_Y, 0.941]], 0.004, 'aluminum')] : []),
         )),
         // behind the wheelhouse the extension closes the trunk's rear corner back to the rear body panel,
         // inboard of the liftgate drain tube; on the RH side it leaves room for the subwoofer enclosure,
