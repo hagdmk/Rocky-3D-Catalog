@@ -428,9 +428,12 @@ export function buildInterior(reg) {
           const zi = x0 > -1.585 ? 0.685 : 0.605;
           hump.push(q([[x0, archY(x0) + 0.012, zi], [x1, archY(x1) + 0.012, zi], [x1, archY(x1) + 0.012, ZP], [x0, archY(x0) + 0.012, ZP]]));
         }
-        // lower edge onto the edge of the shelf over the back of the wheelhouse (trunk floor extension)
-        const edge = (notch ? [[-1.723, notch[0]], [notch[1], -1.987]] : [[-1.723, -1.987]])
-          .map(([x0, x1]) => q([[x0, 0.679, 0.836], [x1, 0.679, 0.836], [x1, 0.678, ZP], [x0, 0.682, ZP]]));
+        // lower edge onto the edge of the shelf over the back of the wheelhouse and of the rear corner shelf
+        // behind it (trunk floor extension)
+        const edge = [
+          ...(notch ? [[-1.723, notch[0]], [notch[1], -1.95]] : [[-1.723, -1.95]]).map(([x0, x1]) => q([[x0, 0.679, 0.836], [x1, 0.679, 0.836], [x1, 0.682, ZP], [x0, 0.682, ZP]])),
+          q([[-1.95, 0.679, 0.81], [-2.115, 0.679, 0.81], [-2.115, 0.677, ZP], [-1.95, 0.682, ZP]]),
+        ];
         // rear end: returned inboard of the liftgate drain and closed to the quarter
         const rear = [
           q([[-2.115, 0.675, ZP], [-2.115, 0.675, 0.815], [-2.115, top(-2.1), 0.815], [-2.115, top(-2.1), ZP]]),
