@@ -438,15 +438,15 @@ export function buildInterior(reg) {
           // foot of the lower trim down onto the scuff plate and the sill: covers the belt retractor, the pillar
           // impact sensor and the rear door harness rising from under the scuff plate into the pillar
           plates([
-            [[-0.19, 0.325, 0.752], [-0.315, 0.325, 0.752], [-0.315, 0.483, 0.752], [-0.19, 0.483, 0.752]],
+            [[-0.19, 0.337, 0.752], [-0.315, 0.337, 0.752], [-0.315, 0.483, 0.752], [-0.19, 0.483, 0.752]],
             // top, with the slot the belt webbing leaves the retractor through
             [[-0.19, 0.483, 0.752], [-0.315, 0.483, 0.752], [-0.315, 0.483, 0.872], [-0.19, 0.483, 0.872]],
             [[-0.19, 0.483, 0.872], [-0.235, 0.483, 0.872], [-0.235, 0.483, 0.898], [-0.19, 0.483, 0.898]],
             [[-0.257, 0.483, 0.872], [-0.315, 0.483, 0.872], [-0.315, 0.483, 0.898], [-0.257, 0.483, 0.898]],
             [[-0.19, 0.483, 0.898], [-0.315, 0.483, 0.898], [-0.315, 0.483, 0.908], [-0.19, 0.483, 0.908]],
             ...[-0.19, -0.315].flatMap((x) => [
-              [[x, 0.323, 0.752], [x, 0.37, 0.8], [x, 0.483, 0.8], [x, 0.483, 0.752]],
-              [[x, 0.362, 0.8], [x, 0.362, 0.908], [x, 0.483, 0.908], [x, 0.483, 0.8]],
+              [[x, 0.337, 0.752], [x, 0.375, 0.772], [x, 0.483, 0.772], [x, 0.483, 0.752]],
+              [[x, 0.362, 0.772], [x, 0.362, 0.908], [x, 0.483, 0.908], [x, 0.483, 0.772]],
             ]),
             // outboard face down onto the sill, just inside the pillar and the door trims, closing the foot round the
             // belt retractor and the pillar impact sensor; notched at its top for the rear door harness going into the
