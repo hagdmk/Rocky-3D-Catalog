@@ -417,6 +417,7 @@ export const JOINTS = [
   // seats, restraints, instrument panel
   ...each((s) => [
     J(`front-seat-track-${s}#feet`, 'floor-pan', 'seat tracks bolted to the floor (BLT M10x28.4 / M8x27)'),
+    J(`front-belt-${s}#buckle`, `front-seat-${s}`, 'BUCKLE SWITCH ASY, 1ST ROW (front seat belts #3 LH / #4 RH) on its stalk bolted to the inboard side of the seat cushion frame'),
     J(`pretensioner-${s}#anchor`, `sill-${s}`, 'outboard lap pretensioner anchor bolted to the sill'),
     J(`front-seat-switch-${s}`, `front-seat-${s}`, 'seat switch bezel on the cushion side shield'),
     J(`side-airbag-${s}`, `front-seat-${s}#back`, 'SIDE AIRBAG ASSY (side air bags #3/#4) bolted to the seat back frame in the outboard bolster', { inset: 'the airbag module is inside the seat back bolster' }),
@@ -435,7 +436,11 @@ export const JOINTS = [
   J('rearview-mirror', 'windshield', 'mirror base on its button bonded to the windshield'),
   J('rear-seat-cushion#hooks', 'floor-pan', 'rear cushion frame wire hooks (cushion assy #4) clipped to the rear edge of the floor pan'),
   J('rear-seat-cushion#hooks', 'rear-seat-cushion#cushion', 'hooks on the cushion frame'),
-  ...each((s) => [J(`pedestrian-protection#actuator${s}`, `hood-hinge-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 under the rear of the hood hinge it lifts')]),
+  ...each((s) => [
+    J(`pedestrian-protection#actuator${s}`, `hood-hinge-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 under the rear of the hood hinge it lifts'),
+    J(`pedestrian-protection#actuator${s}`, `front-inner-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 bracket bolted (BLT HF M6x20 #8) to the shotgun rail beside the hood hinge'),
+  ]),
+  J('pedestrian-protection#sensor', 'front-bumper-beam#beam', 'PEDESTRIAN PROTECTION SENSING SYSTEM (#9) clipped along the front face of the bumper beam'),
   ...['bracket0', 'bracket1'].map((n) => J(`instrument-cluster#${n}`, 'dash-support-frame#beam', 'cluster bracket bolted to the cross-car beam')),
   ...['bracket0', 'bracket1'].map((n) => J(`passenger-airbag#${n}`, 'dash-support-frame#beam', 'passenger airbag module bracket bolted to the cross-car beam (BOLT HF)')),
   ...each((s) => [J(`knee-airbag-${s}#bracket`, 'dash-support-frame#beam', 'knee airbag bracket bolted to the cross-car beam')]),

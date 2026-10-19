@@ -603,8 +603,14 @@ export function buildInterior(reg) {
       object: group(
         bar([0.28, 0.33, z - 0.19], [-0.32, 0.33, z - 0.19], 0.04, 0.03, 'steel'),
         bar([0.28, 0.33, z + 0.19], [-0.32, 0.33, z + 0.19], 0.04, 0.03, 'steel'),
-        // motor and gearbox on the rails, under the cushion pan
-        cyl(0.02, 0.12, 'z', [0.05, 0.365, z], 'darkMetal'),
+        // slide motor (#5) between the rails on its bracket (#19/#20), its flex drives (#6-#8) out to the
+        // gearbox housings (#23) on the inner faces of the two rails
+        named('slideMotor', group(
+          cyl(0.02, 0.12, 'z', [0.05, 0.335, z], 'darkMetal'),
+          ...[-1, 1].map((k) => cyl(0.005, 0.116, 'z', [0.05, 0.335, z + k * 0.1175], 'darkMetal')),
+          ...[-1, 1].map((k) => box([0.03, 0.03, 0.012], [0.05, 0.335, z + k * 0.169], 'blackPlastic')),
+        )),
+        // lift / tilt motor (#14-#17) under the cushion pan
         rbox([0.1, 0.03, 0.08], [-0.15, 0.36, z + sg * 0.1], 'blackPlastic', { r: 0.008 }),
         // track feet bolted through the carpet to the floor pan (M10 / M8 bolts)
         named('feet', group([0.25, -0.29].flatMap((x) => [-0.19, 0.19].map((dz) => box([0.05, 0.018, 0.04], [x, 0.303, z + dz], 'steel'))))),
@@ -630,7 +636,12 @@ export function buildInterior(reg) {
     groups: ['passenger-presence-detection'],
     object: group(
       box([0.38, 0.006, 0.36], [SEAT.x + 0.03 - 0.052 * Math.sin(0.08), 0.445 + 0.052 * Math.cos(0.08), SEAT.z], 'foam', [0, 0, 0.08]), // mat under the cushion cover
-      rbox([0.08, 0.03, 0.06], [SEAT.x - 0.15, 0.355, SEAT.z], 'darkMetal', { r: 0.006 }),
+      // PODS unit (#1) screwed (trim studs #2) under the cushion pan, flush with the cushion's underside
+      (() => {
+        const [c, s] = [Math.cos(0.08), Math.sin(0.08)];
+        const [lx, ly] = [-0.16, -0.055 - 0.015 + 0.001];
+        return rbox([0.08, 0.03, 0.06], [SEAT.x + 0.03 + lx * c - ly * s, 0.445 + lx * s + ly * c, SEAT.z], 'darkMetal', { r: 0.006, rot: [0, 0, 0.08] });
+      })(),
     ),
   });
   const rearGroups = [
@@ -660,6 +671,17 @@ export function buildInterior(reg) {
     groups: rearGroups, match: /CUSHION|BOLSTER|HEATER|SBR|REMINDER|PATCH HARNESS|ADAPTOR|RSC/,
     object: group(
       named('cushion', rbox([0.48, 0.13, 1.14], [rx, 0.535, 0], 'leather', { r: 0.045, rot: [0, 0, 0.06] })), // between the rear rail nodes
+      // cushion frame pan (cushion assy #4) under the foam, from just ahead of its front edge (under the carpet's
+      // turned-back lip) back over the chargers, between the rear rail fronts the cushion rests on: closes the
+      // space under the seat from above
+      named('pan', (() => {
+        const [c, s] = [Math.cos(0.06), Math.sin(0.06)];
+        const at = (lx, ly, z) => [rx + lx * c - ly * s, 0.535 + lx * s + ly * c, z];
+        return quadPlate([at(0.245, -0.0665, -0.49), at(0.245, -0.0665, 0.49), at(-0.2, -0.0665, 0.49), at(-0.2, -0.0665, -0.49)], 0.004, 'darkMetal');
+      })()),
+      // rear trim flap of the cushion cover, tucked back under the seat back's lower edge: closes the crease
+      // between cushion and seat back from below
+      named('rearFlap', quadPlate([[-1.19, 0.561, -0.55], [-1.19, 0.561, 0.55], [-1.285, 0.561, 0.55], [-1.285, 0.561, -0.55]], 0.004, 'carpet')),
       // cushion frame wire hooks (part of cushion assy #4) clipped to the rear edge of the floor pan
       named('hooks', group(...[-0.5, 0.5].map((z) => bar([-0.735, 0.5, z], [-0.69, 0.3, z], 0.012, 0.012, 'steel')))),
     ),
@@ -714,7 +736,12 @@ export function buildInterior(reg) {
         rbox([0.06, 0.035, 0.016], skinAt(bm, 3.37, sd, -0.108).toArray(), 'blackPlastic', { r: 0.005 }),
         tube([dRing, [SEAT.x - 0.22, 1.0, sg * (SEAT.z + 0.1)], [SEAT.x - 0.05, 0.8, sg * SEAT.z],
           [SEAT.x - 0.18, 0.52, sg * (SEAT.z - 0.2)]], 0.007, 'fabric'),
-        rbox([0.05, 0.12, 0.03], [SEAT.x - 0.2, 0.5, sg * (SEAT.z - 0.27)], 'blackPlastic', { r: 0.008 }),
+        // buckle switch (#3 LH / #4 RH) on its short stalk strap, bolted to the inboard side of the seat cushion frame
+        named('buckle', group(
+          rbox([0.05, 0.12, 0.03], [SEAT.x - 0.2, 0.5, sg * (SEAT.z - 0.27)], 'blackPlastic', { r: 0.008 }),
+          quadPlate([[SEAT.x - 0.212, 0.446, sg * 0.1], [SEAT.x - 0.188, 0.446, sg * 0.1],
+            [SEAT.x - 0.168, 0.425, sg * 0.1215], [SEAT.x - 0.192, 0.425, sg * 0.1215]], 0.004, 'blackPlastic'),
+        )),
       ),
     });
     reg.add({
@@ -737,8 +764,13 @@ export function buildInterior(reg) {
       named('centreRetractor', rbox([0.06, 0.06, 0.07], backRear(0.92, 0), 'blackPlastic', { r: 0.01, rot: [0, 0, RB.rot] })), // on the seat back frame
       ...[-1, 1].map((sg) => pipe([[-1.465, 0.96, sg * 0.53], [-1.462, 1.04, sg * 0.53], [-1.445, 1.14, sg * 0.52], [-1.315, 1.145, sg * 0.51],
         backFront(1.06, 0.012, sg * 0.49), backFront(0.85, 0.012, sg * 0.42), backFront(0.66, 0.012, sg * 0.35)], 0.007, 'fabric', { bend: 0.03 })),
-      // buckles (#4) at the crease between the cushion and the seat back
-      ...[-0.24, -0.08, 0.08, 0.24].map((z) => rbox([0.04, 0.09, 0.03], [-1.13, 0.64, z], 'blackPlastic', { r: 0.008 })),
+      // buckles (#4) at the crease between the cushion and the seat back, on the cushion's rear edge; their straps
+      // run back into the crease and down behind the cushion, through the slots in its rear flap to the anchors
+      ...[-0.24, -0.08, 0.08, 0.24].map((z) => named(`buckle${Math.round((z + 0.24) / 0.16)}`, group(
+        rbox([0.04, 0.09, 0.03], [-1.13, 0.6355, z], 'blackPlastic', { r: 0.008 }),
+        quadPlate([[-1.13, 0.5925, z - 0.0125], [-1.13, 0.5925, z + 0.0125], [-1.198, 0.5855, z + 0.0125], [-1.198, 0.5855, z - 0.0125]], 0.003, 'fabric'),
+        quadPlate([[-1.198, 0.5855, z - 0.0125], [-1.198, 0.5855, z + 0.0125], [-1.198, 0.562, z + 0.0125], [-1.198, 0.562, z - 0.0125]], 0.003, 'fabric'),
+      ))),
     ),
   });
   // 3rd row harness belts anchored on the (folded) seat back, stowed flat on it
@@ -832,10 +864,15 @@ export function buildInterior(reg) {
     id: 'pedestrian-protection', ko: '보행자 보호 센서·후드 액추에이터(EU/APAC)', en: 'Pedestrian protection sensors & hood actuators (EU/APAC)',
     groups: ['impact-and-acceleration-sensors-eu-and-apac'], match: /PEDESTRIAN|PED-PRO|SCREW PF/,
     object: group(
-      tube([[2.37, 0.53, -0.6], [2.42, 0.53, -0.3], [2.43, 0.53, 0], [2.42, 0.53, 0.3], [2.37, 0.53, 0.6]], 0.008, 'darkMetal'),
-      // hood actuators (#7) under the rear of the hood hinges, which they lift
-      named('actuatorL', cyl(0.02, 0.05, 'y', [1.11, 0.797, -0.592], 'darkMetal')),
-      named('actuatorR', cyl(0.02, 0.05, 'y', [1.11, 0.797, 0.592], 'darkMetal')),
+      // sensing system (#9): its tube clipped along the front edge of the bumper beam, in the energy absorber
+      named('sensor', tube([[2.39, 0.47, -0.6], [2.425, 0.47, -0.3], [2.432, 0.47, 0], [2.425, 0.47, 0.3], [2.39, 0.47, 0.6]], 0.008, 'darkMetal')),
+      // hood actuators (#7) under the rear of the hood hinges, which they lift, each bolted (#8 BLT HF M6x20) on
+      // its bracket to the inner face of the shotgun rail outboard of the hinge
+      ...SIDES.map(({ sd, sg }) => named(`actuator${sd}`, group(
+        cyl(0.02, 0.05, 'y', [1.11, 0.797, sg * 0.592], 'darkMetal'),
+        box([0.03, 0.008, 0.139], [1.11, 0.816, sg * 0.6715], 'steel'),
+        box([0.03, 0.033, 0.004], [1.11, 0.8285, sg * 0.739], 'steel'),
+      ))),
     ),
   });
   void bar; void beam; void V;
