@@ -342,7 +342,10 @@ export const JOINTS = [
   ...each((s) => [
     J(`hood-hinge-${s}#strutBracket`, `hood-hinge-${s}#strut@end`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of its body bracket BRKT-GAS PROP BODY (#2)'),
     J(`hood-hinge-${s}#strutBracket`, `front-inner-${s}#tower`, 'BRKT-GAS PROP LH/RH BODY (hood hinges #2) bolted (BLT HF M6x15 #3) to the rear face of the shock tower'),
-    J(`hood-hinge-${s}#base`, `front-inner-${s}`, 'HOOD HINGE (#6) body flange bolted from above (BLT HEX FLG M8x20 #7, NUT M8 #5) to the top of the shotgun upper at the cowl side (side underhood aprons #2/#3 have holes for the hinges)'),
+    J(`hood-hinge-${s}#base`, `front-inner-${s}`, 'HOOD HINGE (#6) body leaf bolted from above (2 x BLT HEX FLG M8x20 #7) to the top of the shotgun upper at the cowl side (side underhood aprons #2/#3 have holes for the hinges)'),
+    J(`hood-hinge-${s}#hoodLeaf`, 'hood', 'HOOD HINGE (#6) hood leaf on the hood underside, on the hood studs with 3 x NUT M8 #5'),
+    J(`hood-hinge-${s}#strut@start`, `hood-hinge-${s}#hoodBracket`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of BRKT-GAS PROP HOOD SIDE (#4)'),
+    J(`hood-hinge-${s}#hoodBracket`, 'hood', 'BRKT-GAS PROP LH/RH HOOD (#4) on the hood underside, on the hood studs with 2 x NUT M8 #5'),
   ]),
   // rear structure and bumper
   ...each((s) => [

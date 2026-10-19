@@ -65,18 +65,28 @@ export function buildClosures(reg) {
       id: `hood-hinge-${sd}`, ko: `후드 힌지·가스 스트럿 (${ko})`, en: `Hood hinge & gas strut ${en}`, tags: sd,
       groups: ['hood-hinges-and-fittings'],
       object: group(
-        // body leaf: a horizontal flange on the rail top, bolted from above with 2 vertical M8 bolts (BLT HEX FLG
-        // M8x20 #7) into the rail, nuts (NUT M8 #5) underneath; the side aprons (underhood trim #2/#3) have holes for it
+        // body leaf: a flange on the rail top, bolted from above with 2 vertical M8 bolts (BLT HEX FLG M8x20 #7) into
+        // the rail; the side aprons (underhood trim #2/#3) have holes for it
         named('base', railPlate(1.12, 1.0, 0.023, 0.006, 0.045)),
-        // hinge body on the leaf (its hood leaf reaches up to the hood underside), with the active hinge's large inboard
-        // flange over the pedestrian protection actuator's plunger
-        railPlate(1.125, 1.005, 0.046, 0.04, 0.03),
+        // hinge body: the closed 4-bar links, from the body leaf up to the hood leaf, with the active hinge's large
+        // inboard flange over the pedestrian protection actuator's plunger
+        railPlate(1.125, 1.005, 0.053, 0.054, 0.03),
         box([0.04, 0.005, 0.078], [1.03, 0.8945, sg * 0.731], 'steel'),
-        // gas strut (#1) from an inboard arm of the hinge forward, inboard of the rail and under the side apron, to its
-        // body bracket (#2, BLT HF M6x15 #3) on the rear face of the shock tower
-        box([0.02, 0.008, 0.045], [1.12, 0.869, sg * 0.7395], 'steel'),
+        // hood leaf: a flat plate on the hood underside, on top of the links, held on the 3 hood studs by NUT M8 (#5);
+        // the rail runs parallel to the hood here and the plate is rolled 0.0475 rad about the rail axis to the hood's
+        // cross slope, so it lies flat 0.4-0.8 mm under the skin
+        named('hoodLeaf', (() => { const m = railPlate(1.125, 1.005, 0.0824, 0.006, 0.04); m.rotateY(sg * 0.0475); return m; })()),
+        // gas strut (#1) from the ball stud of BRKT-GAS PROP HOOD SIDE (#4) forward, inboard of the rail and under the
+        // side apron, to the ball stud of its body bracket (#2, BLT HF M6x15 #3) on the rear face of the shock tower
         named('strut', beam([1.12, 0.862, sg * 0.722], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
         named('strutBracket', rbox([0.02, 0.04, 0.04], [1.345, 0.815, sg * 0.615], 'steel', { r: 0.004 })),
+        // BRKT-GAS PROP HOOD SIDE (#4): its flange on the hood underside (2 x NUT M8 #5 on the hood studs), inboard of the
+        // hinge, and a web down between the side and rear underhood aprons to the strut's ball stud; the web's drop
+        // stands for the hood inner panel's deep section there (the inner panel is not drawn) plus the bracket
+        named('hoodBracket', group(
+          box([0.05, 0.004, 0.034], [1.112, 0.9314, sg * 0.722], 'steel', [0, 0, -0.12]),
+          box([0.004, 0.078, 0.03], [1.1165, 0.891, sg * 0.722], 'steel'),
+        )),
       ),
     });
     reg.add({
