@@ -40,8 +40,8 @@ export function buildEnergy(reg) {
     id: 'labels-hv-battery', ko: '고전압 배터리 라벨', en: 'HV battery labels',
     groups: ['labels-hv-battery'],
     object: group(
-      box([0.12, 0.002, 0.08], [0.95, PACK.y1 + 0.004, -0.35], 'paper'),
-      box([0.08, 0.002, 0.06], [0.95, PACK.y1 + 0.004, 0.35], 'paper'),
+      box([0.12, 0.002, 0.08], [0.95, PACK.y1 + 0.001, -0.35], 'paper'),
+      box([0.08, 0.002, 0.06], [0.95, PACK.y1 + 0.001, 0.35], 'paper'),
     ),
   });
 
@@ -330,7 +330,8 @@ export function buildThermal(reg) {
     id: 'hvac-controller', ko: '공조 컨트롤러·실내 온습도 센서', en: 'HVAC controller & cabin temp/humidity sensor',
     groups: ['heating-and-ventilation-controllers'],
     object: group(
-      rbox([0.12, 0.03, 0.1], [0.58, 0.42, -0.12], 'darkMetal', { r: 0.008 }),
+      // controller on the LH side wall of the HVAC case, below the heater core slot
+      rbox([0.12, 0.1, 0.03], [0.75, 0.52, -0.205], 'darkMetal', { r: 0.008 }),
       rbox([0.03, 0.02, 0.04], [0.47, 0.9, 0.12], 'blackPlastic', { r: 0.005 }),
     ),
   });

@@ -98,7 +98,7 @@ function rotorMesh(c) {
 }
 
 /**
- * Dust shield (#6): an annulus behind the disc with a cut-out where the caliper and its
+ * Dust shield (#6, screwed to the knuckle with #7): an annulus behind the disc with a cut-out where the caliper and its
  * bracket sit (`cut` = centre angle, `half` = half width) and optional notches from the rim
  * down to radius `r` (the parking brake bracket).
  */
@@ -120,7 +120,7 @@ function shieldMesh(c, cut, half, notches = []) {
     const a = a0 + ((a1 - a0) * i) / n;
     pts.push([Math.cos(a) * ri, Math.sin(a) * ri]);
   }
-  return named('shield', extrude(pts, 0.003, 'xy', [c.x, WY, c.z - c.sg * 0.075], 'steel', { bevel: 0 }));
+  return named('shield', extrude(pts, 0.003, 'xy', [c.x, WY, c.z - c.sg * 0.0785], 'steel', { bevel: 0 }));
 }
 
 function caliperMesh(c, scale = 1, angle = 2.6, matKey = 'paintDark') {

@@ -121,6 +121,7 @@ export const JOINTS = [
   ...corners((k) => [
     J(`brake-rotor-${k}#hat`, `knuckle-${k}#hub`, 'rotor hat on the hub flange'),
     J(`brake-rotor-${k}#hat`, `wheel-${k}#centre`, 'wheel mounting face on the rotor hat'),
+    J(`brake-rotor-${k}#shield`, `knuckle-${k}#upright`, 'dust shield #6 screwed to the knuckle (BOLT TRX BTNHD M6x16 #7)'),
     J(`brake-caliper-${k}#bracket@end`, `knuckle-${k}#upright`, 'caliper bracket bolted to the knuckle'),
     J(`brake-caliper-${k}#bracket@start`, `brake-caliper-${k}#caliper`, 'caliper on its bracket'),
     J(`wheel-speed-sensor-${k}#head`, `knuckle-${k}`, 'wheel speed sensor in the knuckle'),
@@ -225,7 +226,9 @@ export const JOINTS = [
   J('four-way-valve#bracket', 'frunk', 'BRKT - 4 WAY VALVE (battery cooling #13 = motor cooling #24) bolted under the frunk tub (BLT M6x20 #14)'),
   J('four-way-valve#valve', 'four-way-valve#bracket', 'VALVE 4-WAY (battery cooling #12 = motor cooling #23) on its bracket'),
   J('ambient-temp-sensor', 'cooling-duct', 'SENSOR ASSEMBLY AMBIENT AIR TEMPERATURE (ducting #11 = radiator #2) clipped under the front ducting'),
-  ...each((s) => [J(`active-louvre-${s}#tabs`, 'front-fascia', 'ASY - ACTIVE LOUVRE #2/#3 bolted to the fascia (U NUT M6 LH LOUVER TO FASCIA)')]),
+  ...each((s) => [J(`active-louvre-${s}#tabs`, 'front-fascia', s === 'L'
+    ? 'ASY - ACTIVE LOUVRE #2 bolted to the fascia (U NUT M6 LH LOUVER TO FASCIA)'
+    : 'ASY - ACTIVE LOUVRE #3 bolted to the fascia (U-nut: LH part number listed, RH not separately listed)')]),
   J('hvac-filter', 'hvac-blower', 'HVAC FILTER HOUSING #2 (BLT HF M6x18 #4) on the blower inlet of the HVAC unit'),
   J('ac-compressor#bracket', 'front-subframe#frontCross', 'BRKT - AC BRKT-TO-CHASSIS SUPPORT (compressor #3) bolted to the front subframe (NUT M8 #4A/#4B)'),
   J('ac-compressor#bracket', 'ac-compressor#body', 'BRKT AC COMP TO AC BRKT (compressor #2) with the diagonal isolators #5/#7 (BLT M8x100 #6)'),
@@ -331,12 +334,14 @@ export const JOINTS = [
   J('hood-latch#latch', 'front-bumper-carrier#upper', 'hood latch #5 bolted to the carrier upper beam (BLT M8x24 #4)'),
   J('hood-latch#cable@start', 'hood-latch#latch', 'release cable #2 hooked into the latch'),
   J('hood-latch#cable@end', 'hood-latch#handle', 'release cable #2 on the release handle #1'),
+  J('hood-latch#grommet', 'floor-pan#dashCorners', 'release cable #2 through the bulkhead in its grommet, seated in the LH dash panel corner'),
   J('hood-latch#handle', 'dash-panel', 'release handle #1 on the LH lower instrument panel'),
   J('hood-seal', 'frunk', 'SEAL - HOOD on the frunk tub rim (frunk #19 = hood seals #1)'),
   J('hood-cowl-seal', 'underhood-apron-rear', 'SEAL - HOOD TO COWL #2 on the rear underhood apron'),
   ...each((s) => [
     J(`hood-hinge-${s}#strutBracket`, `hood-hinge-${s}#strut@end`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of its body bracket BRKT-GAS PROP BODY (#2)'),
     J(`hood-hinge-${s}#strutBracket`, `front-inner-${s}#tower`, 'BRKT-GAS PROP LH/RH BODY (hood hinges #2) bolted (BLT HF M6x15 #3) to the rear face of the shock tower'),
+    J(`hood-hinge-${s}#base`, 'floor-pan#cowlFront', 'HOOD HINGE (#6) body leaf bolted (BLT HEX FLG M8x20 #7, NUT M8 #5) to the cowl front wall of the body'),
   ]),
   // rear structure and bumper
   ...each((s) => [
@@ -350,6 +355,7 @@ export const JOINTS = [
   ...each((s) => [
     J(`rear-quarter-inner-${s}#cPillar`, `body-side-${s}`, 'ASY REINF C-PILLAR (quarter inner #23/#24, 1014652/1014648) bonded to the body side outer C-pillar (#9)'),
     J(`rear-quarter-inner-${s}#lampHousing`, `body-side-${s}`, 'REINF - RR LAMP HOUSING (quarter inner #15/#16 = body side #4, 1003096/1003097) bonded behind the body side outer at the tail lamp pocket'),
+    J(`rear-quarter-inner-${s}#quarterInner`, `body-side-${s}`, 'ASSY - RR QTR INR (#13/#14) joined (riveted and bonded) to the body side outer by its upper and rear flanges'),
   ]),
   // pillars and floor
   ...each((s) => [
@@ -357,10 +363,10 @@ export const JOINTS = [
     J(`hinge-pillar-${s}`, `front-inner-${s}`, 'cowl side #6 joined to the upper (shotgun) rail'),
     J(`hinge-pillar-${s}`, `body-side-${s}`, 'body side outer A-pillar #7 bonded over the hinge pillar'),
     J(`b-pillar-${s}#lower`, `sill-${s}`, 'A / B pillar comp #13 joined to the side sill'),
-    J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE)', { inset: 'the floor pan and toe board flanges are welded into the sill section' }),
+    J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE): its flanges welded to the sill inner walls'),
   ]),
   J('nvh-plugs', 'floor-pan', 'body plugs in the floor pan openings'),
-  ...corners((k) => [J(`nvh-plugs#doorTape${k}`, `door-${k}#inner`, 'TAPE, DOOR, D44 (NVH damping #9) over an access hole in the door inner panel, behind the trim pad')]),
+  ...corners((k) => [J(`door-tape-${k}`, `door-${k}#inner`, 'TAPE, DOOR, D44 (NVH damping #9) over an access hole in the door inner panel, behind the trim pad')]),
   ...each((s) => [
     J(`rocker-${s}#brackets`, `sill-${s}`, 'rocker moulding brackets #7/#8 bolted to the sill (BLT HF M8x20 #11)'),
     J(`rocker-${s}#scuff`, `sill-${s}`, 'SCUFF PLATE, PLASTIC (rocker panel trim #6) taped (TAPE, DBL SIDED ADHESIVE, SCUFF PLATE #16) on the sill inner top edge'),

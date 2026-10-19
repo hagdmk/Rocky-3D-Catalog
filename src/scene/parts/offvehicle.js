@@ -17,7 +17,7 @@ export function buildOffVehicle(reg) {
       // looped down from the unit (the car is shown with the charge port door closed)
       named('cable', pipe([[-3.28, 0.895, -1.9], [-3.24, 0.55, -1.86], [-3.2, 0.28, -1.76], [-3.26, 0.3, -1.68], [-3.3, 0.6, -1.71],
         [-3.3, 0.905, -1.765]], 0.012, 'rubber', { bend: 0.08 })),
-      named('handle', rbox([0.045, 0.13, 0.035], [-3.3, 0.97, -1.77], 'blackPlastic', { r: 0.012 })),
+      named('handle', rbox([0.045, 0.13, 0.035], [-3.3, 0.97, -1.7725], 'blackPlastic', { r: 0.012 })),
       named('holster', rbox([0.06, 0.06, 0.03], [-3.3, 1.0, -1.805], 'greyPlastic', { r: 0.006 })),
       rbox([0.34, 0.12, 0.24], [-2.75, 0.06, -1.05], 'blackPlastic', { r: 0.03 }),
       rbox([0.08, 0.05, 0.05], [-2.55, 0.025, -1.32], 'darkMetal', { r: 0.01 }),
