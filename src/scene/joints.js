@@ -255,7 +255,7 @@ export const JOINTS = [
   J('cabin-harness-R#ecuLead@end', 'liftgate-ecu#ecu', 'RH body harness branch into its connector on the power liftgate / park brake ECU'),
   J('rear-bumper-harness#lead@start', 'cabin-harness-L#rearLead@end', 'rear bumper harness (#1) plugs into the LH body harness at the trunk side'),
   J('rear-subframe-harness#lead@start', 'cabin-harness-R#rearLead@end', 'REAR SUBFRAME HARNESS (#2) plugs into the RH body harness above the wheelhouse'),
-  J('rear-subframe-harness#grommet', 'trunk-floor-ext-R#shelf', 'rear subframe harness grommet in the outboard flange of the trunk floor extension shelf, under the trunk side finisher (grommet not listed in the catalog)'),
+  J('rear-subframe-harness#grommet', 'trunk-floor-ext-R#shelf', 'rear subframe harness grommet in the outboard flange of the trunk floor extension shelf, under the trunk side finisher (placement assumption: neither the grommet nor its hole is in the catalog, and the rear end panels view shows no such flange)'),
   J('rear-subframe-harness#lead@end', 'rear-subframe#sideL', 'rear subframe harness clipped to the LH subframe side member'),
   J('dcdc-pigtail#lead@start', 'dc-dc-converter#case', 'ASY,HRN,PGTL (DC-DC group *) at the converter signal connector'),
   J('dcdc-pigtail#lead@end', 'motor-bay-harness-R#frontLead', 'ASY,HRN,PGTL (harness group *) into the RH front body harness'),
@@ -342,13 +342,14 @@ export const JOINTS = [
   ...each((s) => [
     J(`hood-hinge-${s}#strutBracket`, `hood-hinge-${s}#strut@end`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of its body bracket BRKT-GAS PROP BODY (#2)'),
     J(`hood-hinge-${s}#strutBracket`, `front-inner-${s}#tower`, 'BRKT-GAS PROP LH/RH BODY (hood hinges #2) bolted (BLT HF M6x15 #3) to the rear face of the shock tower'),
-    J(`hood-hinge-${s}#base`, 'floor-pan#cowlFront', 'HOOD HINGE (#6) body leaf bolted (BLT HEX FLG M8x20 #7, NUT M8 #5) to the cowl front wall of the body'),
+    J(`hood-hinge-${s}#base`, `front-inner-${s}`, 'HOOD HINGE (#6) body flange bolted from above (BLT HEX FLG M8x20 #7, NUT M8 #5) to the top of the shotgun upper at the cowl side (side underhood aprons #2/#3 have holes for the hinges)'),
   ]),
   // rear structure and bumper
   ...each((s) => [
     J(`trunk-floor-ext-${s}`, 'trunk-floor#floor', 'trunk floor extension #2/#3 joined to the trunk floor #1'),
     J(`trunk-floor-ext-${s}`, `rear-quarter-inner-${s}#tower`, 'trunk floor extension (quarter inner #5/#6) joined to the shock tower'),
     J(`trunk-floor-ext-${s}`, `rear-quarter-inner-${s}#innerWall`, 'trunk floor extension (quarter inner #5/#6) outboard flange joined to the wheelhouse inner wall'),
+    ...(s === 'R' ? [J('trunk-floor-ext-R#shelf', 'rear-quarter-inner-R#quarterInner', 'RH trunk floor extension (#3/#6) shelf flange joined to the rear quarter inner (#14) behind the trunk side finisher')] : []),
     J('trunk-floor#frontFloor', `rear-quarter-inner-${s}#innerWall`, 'ASY - RR TRUNK FLOOR (#1) front section: its flange beside the 2nd-row seat back joined to the wheelhouse inner wall (rear wheelhouse assy #20/#21)'),
     J('rear-bumper-beam#beam', `rear-rail-${s}#rail`, 'rear bumper beam #1 bolted to the rail ends (NUT M10 #2)'),
     J('rear-bumper-beam#crossmember', `rear-rail-${s}#rail`, 'rear crossmember #3 bolted under the rail ends'),
@@ -452,7 +453,7 @@ export const JOINTS = [
     { inset: 'the cushion is drawn as a solid block without the buckle slots in its cover (2nd row seat assy #4 view): the buckle head stands up through its slot' })),
   ...each((s) => [J('floor-pan#seatCrossmember', `rear-rail-${s}#railFront`, 'rear seat crossmember of the body in white (ECOAT BODY IN WHITE) welded across the rear rail fronts (rear end panels #5/#6)')]),
   ...each((s) => [
-    J(`pedestrian-protection#actuator${s}`, `front-inner-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 bracket bolted (BLT HF M6x20 #8) to the shotgun rail beside the hood hinge'),
+    J(`pedestrian-protection#flange${s}`, `front-inner-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 flange bolted from above (BLT HF M6x20 #8) to the shotgun rail top beside the hinge base'),
   ]),
   J('pedestrian-protection#sensor', 'front-bumper-beam#beam', 'PEDESTRIAN PROTECTION SENSING SYSTEM (#9) clipped along the front face of the bumper beam'),
   ...['bracket0', 'bracket1'].map((n) => J(`instrument-cluster#${n}`, 'dash-support-frame#beam', 'cluster bracket bolted to the cross-car beam')),

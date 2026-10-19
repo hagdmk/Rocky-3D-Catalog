@@ -3,10 +3,10 @@
 
 import * as THREE from 'three';
 import { skinAt, skinNormal, skinPath, findOnFace } from '../body.js';
-import { region, SV } from './exterior.js';
+import { region, SV, skinRibbon } from './exterior.js';
 import { xOf } from '../profile.js';
 import {
-  V, group, named, rbox, box, cyl, beam, tube, pipe, faceTo, mesh, quadPlate,
+  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, faceTo, mesh, quadPlate,
 } from '../geom.js';
 
 const SIDES = [
@@ -48,17 +48,34 @@ export function buildClosures(reg) {
         rbox([0.05, 0.05, 0.036], [xr, 0.86, sg * 0.935], 'steel', { r: 0.008 }),
       ),
     });
+    // The hood hinge (#6) sits on top of the rear end of the shotgun upper rail (front-inner-*, structure.js), at the
+    // cowl side: plates following the rail top, built along the rail's own axis (A -> B) and its top-face normal
+    const RA = new THREE.Vector3(1.85, 0.758, sg * 0.72);
+    const RB = new THREE.Vector3(0.98, 0.863, sg * 0.785);
+    const railQ = bar(RA, RB, 0.04, 0.07, 'steel').quaternion;
+    const nTop = new THREE.Vector3(1, 0, 0).applyQuaternion(railQ);
+    if (nTop.y < 0) nTop.negate();
+    const onRail = (x, off) => RA.clone().lerp(RB, (1.85 - x) / 0.87).addScaledVector(nTop, off); // rail top face at off 0.02
+    const railPlate = (x0, x1, off, t, w) => {
+      const m = bar(onRail(x0, off), onRail(x1, off), t, w, 'steel'); // a plate along the rail, not a linear member
+      delete m.userData.span;
+      return m;
+    };
     reg.add({
       id: `hood-hinge-${sd}`, ko: `후드 힌지·가스 스트럿 (${ko})`, en: `Hood hinge & gas strut ${en}`, tags: sd,
       groups: ['hood-hinges-and-fittings'],
       object: group(
-        // ahead of the firewall, under the rear underhood apron (the hinge arm reaches the hood
-        // through the apron slot); gas strut (#1) from the hinge forward to its body bracket (#2,
-        // BLT HF M6x15 #3) on the rear face of the shock tower, below the tower top and the apron
-        rbox([0.12, 0.06, 0.03], [1.065, 0.85, sg * 0.58], 'steel', { r: 0.008 }),
-        // body leaf of the hinge, bolted (BLT M8 #7, NUT M8 #5) to the cowl front wall (floor-pan#cowlFront)
-        named('base', rbox([0.008, 0.06, 0.045], [1.003, 0.835, sg * 0.58], 'steel', { r: 0.003 })),
-        named('strut', beam([1.11, 0.86, sg * 0.565], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
+        // body leaf: a horizontal flange on the rail top, bolted from above with 2 vertical M8 bolts (BLT HEX FLG
+        // M8x20 #7) into the rail, nuts (NUT M8 #5) underneath; the side aprons (underhood trim #2/#3) have holes for it
+        named('base', railPlate(1.12, 1.0, 0.023, 0.006, 0.045)),
+        // hinge body on the leaf (its hood leaf reaches up to the hood underside), with the active hinge's large inboard
+        // flange over the pedestrian protection actuator's plunger
+        railPlate(1.125, 1.005, 0.046, 0.04, 0.03),
+        box([0.04, 0.005, 0.078], [1.03, 0.8945, sg * 0.731], 'steel'),
+        // gas strut (#1) from an inboard arm of the hinge forward, inboard of the rail and under the side apron, to its
+        // body bracket (#2, BLT HF M6x15 #3) on the rear face of the shock tower
+        box([0.02, 0.008, 0.045], [1.12, 0.869, sg * 0.7395], 'steel'),
+        named('strut', beam([1.12, 0.862, sg * 0.722], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
         named('strutBracket', rbox([0.02, 0.04, 0.04], [1.345, 0.815, sg * 0.615], 'steel', { r: 0.004 })),
       ),
     });
@@ -78,6 +95,8 @@ export function buildClosures(reg) {
     object: group(
       region([[4.585, 4.66, 4.1, 5]], { offset: 0.008, mat: 'carbon' }),
       region([[4.585, 4.66, 4.1, 5]], { offset: 0.001, mat: 'carbon', edges: false }), // underside on the adhesive tape
+      // its rounded edges closing the shell between the two skins: front edge, outboard ends and trailing edge
+      ...SIDES.map(({ sd }) => loop([[4.585, 5], [4.585, 4.1], [4.66, 4.1], [4.66, 5]], sd, 0.0045, 0.0035, 'carbon')),
     ),
   });
 
@@ -85,7 +104,7 @@ export function buildClosures(reg) {
   for (const { sd, sg, ko, en } of SIDES) {
     for (const [fr, range, frKo, frEn] of [['F', SV.frontDoor, '앞', 'front'], ['B', SV.rearDoor, '뒤', 'rear']]) {
       const sm = (range[0] + range[1]) / 2;
-      const vTop = SV.vSill + 0.01;
+      const vTop = SV.vSill + 0.005; // the rail tops end just inside the glass clamp, under the inner belt seal
       // rail from the inner panel up along the outer skin (clear of the door harness) to the glass edge
       const rail = (d0, d1) => pipe([[1.0, -0.036], [1.6, -0.019], [2.1, -0.017], [2.5, -0.017], [vTop, -0.012]]
         .map(([v, o]) => skinAt(sm + d0 + (d1 - d0) * ((v - 1.0) / (vTop - 1.0)), v, sd, o)), 0.008, 'steel');
@@ -188,7 +207,10 @@ export function buildClosures(reg) {
   // --- Seals -------------------------------------------------------------------------
   // Body side primary seals round the door openings, and the margin seals that fill the shut lines just
   // under the skin: A-pillar margin (front door seals #6) between the fender / cowl and the front door,
-  // B-pillar margin (rear door seals #5) between the front and the rear door, below the belt moulding.
+  // B-pillar margin (rear door seals #5) between the front and the rear door, below the belt moulding.  The belt
+  // seals close both sides of the door glass's lower edge: the inner belt seal (front #2 / rear #3 SEAL - DOOR FR/RR INR
+  // BELT) from the trim pad's window-sill cap to the glass, the outer belt seal (front #3 / rear #4 OTR BELT) from the
+  // bright belt moulding to the glass.
   for (const { sd, ko, en } of SIDES) {
     const f = SV.frontDoor;
     const r = SV.rearDoor;
@@ -199,6 +221,8 @@ export function buildClosures(reg) {
       object: group(
         loop([[f[0] + 0.01, 0.32], [f[1] - 0.01, 0.32], [f[1] - 0.01, 3.9], [f[0] + 0.06, 3.9], [f[0] + 0.01, 3.0], [f[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
         named('aPillarMargin', margin(SV.fenderRear, f[0], SV.vSill)),
+        named('innerBelt', skinRibbon(sd, f[0] + 0.03, f[1] - 0.025, [3.02, -0.012], [3.03, -0.0045], 'rubber')),
+        named('outerBelt', skinRibbon(sd, SV.frontGlass[0], SV.frontGlass[1], [SV.vSill, 0.002], [3.015, -0.0035], 'rubber')),
       ),
     });
     reg.add({
@@ -207,6 +231,8 @@ export function buildClosures(reg) {
       object: group(
         loop([[r[0] + 0.01, 0.32], [r[1] - 0.01, 0.32], [r[1] - 0.01, 3.0], [r[1] - 0.06, 3.9], [r[0] + 0.01, 3.9], [r[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
         named('bPillarMargin', margin(f[1], r[0], SV.vBelt)),
+        named('innerBelt', skinRibbon(sd, r[0] + 0.02, SV.rearGlass[1] - 0.005, [3.02, -0.012], [3.03, -0.0045], 'rubber')),
+        named('outerBelt', skinRibbon(sd, SV.rearGlass[0], SV.rearGlass[1], [SV.vSill, 0.002], [3.015, -0.0035], 'rubber')),
       ),
     });
   }
@@ -308,7 +334,7 @@ export function buildClosures(reg) {
     object: group(
       // on the hood underside, above the frunk
       box([0.1, 0.002, 0.07], [1.95, 0.7985, 0.35], 'paper'),
-      box([0.08, 0.002, 0.05], [1.95, 0.7985, -0.35], 'paper'),
+      box([0.08, 0.002, 0.05], [1.95, 0.801, -0.35], 'paper'),
     ),
   });
   reg.add({
@@ -353,18 +379,23 @@ export function buildClosures(reg) {
   });
   // Drain tubes from the cassette corner spouts, between the outer skin and the
   // pillar trims (outboard of the liftgate harness, clear of the ends of the curtain airbags): the front
-  // ones down the A-pillar ahead of the door hinges, the rear ones down the C-pillar.  The rear ones stay
+  // ones down the A-pillar and the hinge pillar ahead of the door hinges, the rear ones down the C-pillar.  The rear ones stay
   // on the body: outboard over the rear header ahead of the liftgate harness, over the rear end of the
   // curtain airbag and under the harness where it turns onto the liftgate, down in front of the liftgate
   // opening seal (s 3.3), back along the roof rail between that seal (v 3.97) and the rear door seal
   // (v 3.9), and down the C-pillar behind the rear door opening.
   const drains = [];
   for (const { sd } of SIDES) {
-    // (front: off the spout outboard under the headliner, then down the A-pillar at v <= 4.04 behind the pillar trim)
+    // (front: off the spout outboard under the headliner, then down the A-pillar inside its section the whole way, behind
+    // the pillar trim: at v 4.03 on the windshield side of the headliner harness (LH, v 4.02 further in), round the
+    // pillar root ahead of the harness, the tweeter pocket and the door seal's corner, across the sail under the harness
+    // where it lies against the skin (s 1.625, v 3.74), on the door seal side of it down to the hinge pillar and down
+    // inside the hinge pillar to its outlet; it no longer passes through the door opening)
     drains.push(named(`drainF${sd}`, tube([skinAt(R0 - 0.02, 4.17, sd, -0.022), skinAt(2.37, 4.095, sd, -0.016), skinAt(2.33, 4.04, sd, -0.01),
-      skinAt(2.2, 4.035, sd, -0.009), skinAt(2.1, 4.03, sd, -0.011), skinAt(1.95, 3.97, sd, -0.015), skinAt(1.873, 3.913, sd, -0.015),
-      skinAt(1.72, 3.8, sd, -0.015), skinAt(1.6652, 3.645, sd, -0.0119), skinAt(1.6, 3.3, sd, -0.015), skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02),
-      skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
+      skinAt(2.2, 4.035, sd, -0.009), skinAt(2.1, 4.03, sd, -0.011), ...[[1.95, 4.032, -0.0095], [1.8, 4.033, -0.0095], [1.7, 4.036, -0.0105],
+        [1.65, 4.025, -0.013], [1.622, 3.98, -0.016], [1.615, 3.88, -0.019], [1.62, 3.78, -0.021], [1.63, 3.7, -0.021], [1.64, 3.6, -0.019],
+        [1.632, 3.45, -0.016], [1.6, 3.3, -0.015]].map(([s, v, o]) => skinAt(s, v, sd, o)),
+      skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02), skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
     drains.push(named(`drainR${sd}`, pipe([[R1 + 0.02, 4.17, -0.022], [3.215, 4.1, -0.016], [3.225, 4.06, -0.012], [3.268, 4.06, -0.012],
       [3.268, 3.94, -0.008], [3.5, 3.94, -0.008], [3.58, 3.86, -0.015], [3.62, 3.5, -0.015], [3.64, 3.0, -0.015], [3.64, 2.4, -0.02],
       [3.64, 1.5, -0.02], [3.64, 0.8, -0.02]].map(([s, v, o]) => skinAt(s, v, sd, o)), 0.005, 'rubber', { bend: 0.02 })));

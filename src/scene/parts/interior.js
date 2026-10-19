@@ -441,15 +441,15 @@ export function buildInterior(reg) {
           // foot of the lower trim down onto the scuff plate and the sill: covers the belt retractor, the pillar
           // impact sensor and the rear door harness rising from under the scuff plate into the pillar
           plates([
-            [[-0.19, 0.325, 0.752], [-0.315, 0.325, 0.752], [-0.315, 0.483, 0.752], [-0.19, 0.483, 0.752]],
+            [[-0.19, 0.337, 0.752], [-0.315, 0.337, 0.752], [-0.315, 0.483, 0.752], [-0.19, 0.483, 0.752]],
             // top, with the slot the belt webbing leaves the retractor through
             [[-0.19, 0.483, 0.752], [-0.315, 0.483, 0.752], [-0.315, 0.483, 0.872], [-0.19, 0.483, 0.872]],
             [[-0.19, 0.483, 0.872], [-0.235, 0.483, 0.872], [-0.235, 0.483, 0.898], [-0.19, 0.483, 0.898]],
             [[-0.257, 0.483, 0.872], [-0.315, 0.483, 0.872], [-0.315, 0.483, 0.898], [-0.257, 0.483, 0.898]],
             [[-0.19, 0.483, 0.898], [-0.315, 0.483, 0.898], [-0.315, 0.483, 0.908], [-0.19, 0.483, 0.908]],
             ...[-0.19, -0.315].flatMap((x) => [
-              [[x, 0.323, 0.752], [x, 0.37, 0.8], [x, 0.483, 0.8], [x, 0.483, 0.752]],
-              [[x, 0.362, 0.8], [x, 0.362, 0.908], [x, 0.483, 0.908], [x, 0.483, 0.8]],
+              [[x, 0.337, 0.752], [x, 0.375, 0.772], [x, 0.483, 0.772], [x, 0.483, 0.752]],
+              [[x, 0.362, 0.772], [x, 0.362, 0.908], [x, 0.483, 0.908], [x, 0.483, 0.772]],
             ]),
             // outboard face down onto the sill, just inside the pillar and the door trims, closing the foot round the
             // belt retractor and the pillar impact sensor; notched at its top for the rear door harness going into the
@@ -1101,12 +1101,12 @@ export function buildInterior(reg) {
     object: group(
       // sensing system (#9): its tube clipped along the front edge of the bumper beam, in the energy absorber
       named('sensor', tube([[2.39, 0.47, -0.6], [2.425, 0.47, -0.3], [2.432, 0.47, 0], [2.425, 0.47, 0.3], [2.39, 0.47, 0.6]], 0.008, 'darkMetal')),
-      // hood actuators (#7) under the rear of the hood hinges, which they lift, each bolted (#8 BLT HF M6x20) on
-      // its bracket to the inner face of the shotgun rail outboard of the hinge
+      // hood actuators (#7) under the rear of the hood hinges, which they lift: the cylinder stands just inboard of the
+      // shotgun rail's inner face, its plunger under the hinge's inboard flange, and its own horizontal flange (no
+      // bracket) lies on the rail top beside the hinge's body leaf, bolted from above with 2 vertical bolts (#8 BLT HF M6x20)
       ...SIDES.map(({ sd, sg }) => named(`actuator${sd}`, group(
-        cyl(0.02, 0.05, 'y', [1.11, 0.797, sg * 0.592], 'darkMetal'),
-        box([0.03, 0.008, 0.139], [1.11, 0.816, sg * 0.6715], 'steel'),
-        box([0.03, 0.033, 0.004], [1.11, 0.8285, sg * 0.739], 'steel'),
+        cyl(0.02, 0.06, 'y', [1.03, 0.862, sg * 0.715], 'darkMetal'),
+        named(`flange${sd}`, box([0.03, 0.004, 0.044], [1.03, 0.879, sg * 0.735], 'steel')),
       ))),
     ),
   });

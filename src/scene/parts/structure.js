@@ -270,8 +270,7 @@ export function buildStructure(reg) {
         ]), 'aluminum');
       })()),
       // dash panel upper edge (cowl front wall) in front of the dash insulator, under the plenum front edge,
-      // outboard of the insulator's upper strip (|z| 0.54) to the shotgun rail ends: the hood hinges are
-      // bolted to it (hood-hinge-*#base)
+      // outboard of the insulator's upper strip (|z| 0.54) to the shotgun rail ends: closes the bulkhead's cowl corners
       named('cowlFront', plates(SIDES.map(({ sg }) => quadPlate([[0.997, 0.8, sg * 0.54], [0.997, 0.8, sg * 0.75], [0.997, 0.867, sg * 0.75], [0.997, 0.867, sg * 0.54]], 0.004, 'aluminum')), 'aluminum')),
       // between the hinge pillars (|z| 0.79); its outboard front corners stop short of the shotgun
       // rail ends (x 0.975, |z| 0.75-0.82)
@@ -402,7 +401,11 @@ export function buildStructure(reg) {
   });
   // Trunk floor extension panels (#2/#3, also quarter inner #5/#6): the sloped side flanges that
   // join the trunk floor to the wheelhouse inner wall and the shock tower, and behind them the shelf
-  // that closes the trunk over the low rear part of the wheelhouse, out to the trunk side trim.
+  // that closes the trunk over the low rear part of the wheelhouse.  The shelf is drawn only out to the trunk side
+  // finisher's lower edge (|z| 0.84); the real panels close to the rear quarter inner on both sides, and the LH
+  // charge-port cable and rear bumper harness pass down through openings that are not drawn.  On the RH side a flange
+  // runs on out to the quarter inner behind the finisher bracket and carries the rear subframe harness grommet (its
+  // position is a placement assumption: neither the grommet nor its hole is in the catalog).
   for (const { sd, sg, ko, en } of SIDES) {
     reg.add({
       id: `trunk-floor-ext-${sd}`, ko: `트렁크 플로어 익스텐션 (${ko})`, en: `Trunk floor extension panel ${en}`, tags: sd,
@@ -411,8 +414,9 @@ export function buildStructure(reg) {
         quadPlate([[-1.95, 0.615, sg * 0.535], [-1.56, 0.615, sg * 0.535], [-1.56, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6]], 0.006, 'aluminum'),
         named('shelf', group(
           quadPlate([[SHELF_X0, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.84], [SHELF_X0, SHELF_Y, sg * 0.84]], 0.004, 'aluminum'),
-          // RH: flange out under the trunk side finisher behind its bracket, with the rear subframe harness grommet
-          ...(sd === 'R' ? [quadPlate([[-1.845, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.91], [-1.845, SHELF_Y, 0.91]], 0.004, 'aluminum')] : []),
+          // RH: flange out under the trunk side finisher behind its bracket to the rear quarter inner, joined to it,
+          // with the rear subframe harness grommet
+          ...(sd === 'R' ? [quadPlate([[-1.845, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.934], [-1.845, SHELF_Y, 0.941]], 0.004, 'aluminum')] : []),
         )),
         // behind the wheelhouse the extension closes the trunk's rear corner back to the rear body panel,
         // inboard of the liftgate drain tube; on the RH side it leaves room for the subwoofer enclosure,
@@ -499,7 +503,8 @@ export function buildStructure(reg) {
     id: 'rear-undertray', ko: '리어 언더트레이(미드 에어로 실드·스트레이크)', en: 'Rear undertray (mid aero shield & strakes)',
     groups: ['rear-undertray-and-diffuser'],
     object: group(
-      quadPlate([[-1.18, 0.165, -0.66], [-1.18, 0.165, 0.66], [-2.1, 0.2, 0.62], [-2.1, 0.2, -0.62]], 0.008, 'blackPlastic'),
+      // (front edge at the battery pack's rear edge, x -1.035, so it closes the underside under the 2nd-row seat)
+      quadPlate([[-1.035, 0.162, -0.66], [-1.035, 0.162, 0.66], [-2.1, 0.2, 0.62], [-2.1, 0.2, -0.62]], 0.008, 'blackPlastic'),
       ...[-0.56, -0.3, 0.3, 0.56].map((z) => quadPlate([[-1.6, 0.17, z], [-2.08, 0.2, z], [-2.08, 0.14, z], [-1.7, 0.155, z]], 0.006, 'blackPlastic')),
       // stand-off brackets up to the rear subframe side members (#8 BLT HF M6x18)
       ...SIDES.map(({ sd, sg }) => named(`mount${sd}`, box([0.04, 0.052, 0.04], [-1.72, 0.21, sg * 0.42], 'blackPlastic'))),
@@ -621,8 +626,9 @@ export function buildStructure(reg) {
 
   // --- NVH plugs and patches (floor pan plugs, door inner panel tapes) ----------------
   const plugs = [];
-  for (const x of [0.6, 0.1, -0.4, -0.9]) {
-    for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.3, z], 'rubber', { seg: 14 })); // in the floor pan
+  // in the floor pan, and the rearmost pair in the rear floor under the 2nd-row seat (floor-pan#rearFloor)
+  for (const [x, y] of [[0.6, 0.3], [0.1, 0.3], [-0.4, 0.3], [-0.93, 0.376]]) {
+    for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, y, z], 'rubber', { seg: 14 }));
   }
   reg.add({
     id: 'nvh-plugs', ko: 'NVH 댐핑 패치·바디 플러그 (여러 위치)', en: 'NVH damping patches & body plugs (various)',

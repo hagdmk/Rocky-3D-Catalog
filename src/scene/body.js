@@ -244,13 +244,16 @@ export function skinPatch(opts) {
       // Outline along rectangular cuts (quads fully inside next to excluded quads).
       const at = (i, j) => vtx(base + i * nv + j);
       const k = (i, j) => i >= 0 && j >= 0 && i < ns - 1 && j < nv - 1 && keep[i][j];
+      // with both halves built, the panel continues across the centreline (v = -1 / v = 5): no outline there
+      const seamLo = side === 'both' && vs[0] <= V_MIN + 1e-9;
+      const seamHi = side === 'both' && vs[nv - 1] >= V_MAX - 1e-9;
       for (let i = 0; i < ns - 1; i++) {
         for (let j = 0; j < nv - 1; j++) {
           if (keep[i][j] !== true) continue;
           if (!k(i - 1, j)) edgePos.push(...at(i, j), ...at(i, j + 1));
           if (!k(i + 1, j)) edgePos.push(...at(i + 1, j), ...at(i + 1, j + 1));
-          if (!k(i, j - 1)) edgePos.push(...at(i, j), ...at(i + 1, j));
-          if (!k(i, j + 1)) edgePos.push(...at(i, j + 1), ...at(i + 1, j + 1));
+          if (!k(i, j - 1) && !(seamLo && j === 0)) edgePos.push(...at(i, j), ...at(i + 1, j));
+          if (!k(i, j + 1) && !(seamHi && j === nv - 2)) edgePos.push(...at(i, j + 1), ...at(i + 1, j + 1));
         }
       }
     }

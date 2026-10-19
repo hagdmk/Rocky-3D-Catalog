@@ -93,6 +93,8 @@ const notFrontParts = (q, s, v) => max(-FRONT.nose(q, s), -FRONT.fog(q, s), -FRO
 
 // --- Rear face --------------------------------------------------------------
 const BACKLITE = [3.29, 4.42, 4.12, 5];
+// the liftgate's hole for it runs on past the top centreline, so its cut is not traced along v = 5
+const BACKLITE_HOLE = [BACKLITE[0], BACKLITE[1], BACKLITE[2], 6];
 const fasciaTop = (s) => 0.6 + 0.1 * smooth(4.45, 4.78, s);
 export const REAR = {
   lamp: (q, s) => max(4.4 - s, 0.875 - q.y, q.y - 0.975, 0.3 - q.za),
@@ -104,7 +106,7 @@ export const REAR = {
   gateFace: (q, s) => max(4.55 - s, q.za - 0.62, fasciaTop(s) - q.y),
   liftgate: (q, s, v) => {
     const top = max(SV.vRoof - 0.12 - v, SV.liftgateFront - s, -max(4.55 - s, q.y - fasciaTop(s)));
-    return max(min(top, REAR.gateFace(q, s)), -REAR.lamp(q, s), -0.1 * rectF(s, v, BACKLITE));
+    return max(min(top, REAR.gateFace(q, s)), -REAR.lamp(q, s), -0.1 * rectF(s, v, BACKLITE_HOLE));
   },
   bodySide: (q, s, v) => max(-REAR.fascia(q, s), -REAR.lamp(q, s), -REAR.liftgate(q, s, v), -REAR.charge(q, s)),
 };
@@ -114,7 +116,7 @@ export const REAR = {
 const LG_EDGE = 3.965;
 
 /** Surface ribbon between two lines on the skin, (v0, offset o0) and (v1, o1), over s0..s1 (fraction t0..t1 across). */
-function skinRibbon(sd, s0, s1, [v0, o0], [v1, o1], mat, t0 = 0, t1 = 1) {
+export function skinRibbon(sd, s0, s1, [v0, o0], [v1, o1], mat, t0 = 0, t1 = 1) {
   const k = Math.max(2, Math.ceil((s1 - s0) / 0.04));
   const pos = [];
   const idx = [];
@@ -288,19 +290,14 @@ export function buildExterior(reg) {
           field: (q, s, v) => (s < 4.3 ? -v : REAR.bodySide(q, s, v)),
         }),
         // pinch flange along the top of the door openings: from the edge of the skin over the window frame
-        // moulding (v 3.93) in to the door seals' top runs (v 3.9, offset -0.025), which are clamped on it; with a
-        // hole where the front roof drain tube comes through it down the A-pillar (s 1.873, 0.675 across)
+        // moulding (v 3.93) in to the door seals' top runs (v 3.9, offset -0.025), which are clamped on it
         named('pinchFlange', (() => {
           const F = [[SV.vFrameTop, -0.0015], [3.905, -0.0215]];
           return plates([
-            skinRibbon(sd, SV.frontDoor[0] + 0.06, 1.856, ...F, 'paint'),
-            skinRibbon(sd, 1.856, 1.892, ...F, 'paint', 0, 0.42),
-            skinRibbon(sd, 1.856, 1.892, ...F, 'paint', 0.93, 1),
-            skinRibbon(sd, 1.892, 3.505, ...F, 'paint'),
+            skinRibbon(sd, SV.frontDoor[0] + 0.06, 3.505, ...F, 'paint'),
             // and down the A-pillar edge of the door opening (skin edge at s 1.67, over the door glass's front edge) in
-            // to the seal's A-pillar run, which closes the A-pillar from the door side; with a hole where the front
-            // roof drain tube comes through it (v 3.645, half way across)
-            ...[[SV.vSill, 3.63, 0, 1], [3.63, 3.66, 0, 0.47], [3.63, 3.66, 0.57, 1], [3.66, 3.9, 0, 1]].map(([va, vb, t0, t1]) => {
+            // to the seal's A-pillar run, which closes the A-pillar from the door side
+            ...[[SV.vSill, 3.9, 0, 1]].map(([va, vb, t0, t1]) => {
               const k = Math.max(2, Math.ceil((vb - va) / 0.05));
               const pos = [];
               const idx = [];
@@ -328,22 +325,23 @@ export function buildExterior(reg) {
         // moulding brackets (#7 front, #8 rear support) from the trim to the sill
         named('brackets', group([0.75, 0, -0.75].map((x) => box([0.06, 0.04, 0.025], [x, 0.23, (sd === 'L' ? -1 : 1) * 0.9525], 'blackPlastic')))),
         // scuff plate (#6, taped on with #16): the sill trim in the door openings.  Its raised top covers the
-        // sill top (y 0.36) from the inner top edge (|z| 0.80) to |z| 0.905, where it steps down onto the sill
+        // sill top (y 0.36) from its inner top edge (|z| 0.772, inboard of the sill's top corner at |z| 0.775; the
+        // front segment from 0.795, under the kick panel foot) to |z| 0.905, where it steps down onto the sill
         // and runs on flat to the doors' inner panels (|z| 0.94, under the door speakers); from the hinge
         // pillar (x 0.873) back to the C-pillar lower trim (x -0.93), cut out under the B-pillar, its trim
         // foot and the belt anchor (x -0.19 .. -0.315; outboard of the trim foot, |z| >= 0.855, it closes
         // round the B-pillar and the anchor).  Its sloped inboard flank has a slot under the trim foot
         // (x -0.292 .. -0.316, |z| >= 0.752) where the rear door harness rises into the B-pillar.
-        // Its inner flank runs down over the carpet edge (y 0.311, |z| 0.74) between the kick panel foot and
-        // the rear carpet corner (x 0.75 .. -0.70), the cabin harness under it along the sill; notched at
-        // the B-pillar foot round the pillar impact sensor (top edge at |z| 0.784 there).
+        // Its inner flank runs steeply down from that edge (y 0.3715) over the sill's inner face to the carpet edge
+        // (y 0.311, |z| 0.74), clear of the sill corner, between the kick panel foot and the rear carpet corner
+        // (x 0.75 .. -0.70), the cabin harness under it along the sill.
         named('scuff', (() => {
           const sg = sd === 'L' ? -1 : 1;
-          const P = (x, za) => [x, 0.311 + ((za - 0.74) / 0.06) * 0.059, sg * za];
+          const P = (x, za) => [x, 0.311 + ((za - 0.74) / 0.032) * 0.0605, sg * za];
           const [yT, zO] = [0.3715, 0.905];
-          const flank = [[0.75, -0.21, 0.8], [-0.21, -0.28, 0.784], [-0.28, -0.292, 0.8], [-0.316, -0.7, 0.8], [-0.292, -0.316, 0.752]]
+          const flank = [[0.75, -0.292, 0.772], [-0.316, -0.7, 0.772], [-0.292, -0.316, 0.752]]
             .map(([x0, x1, top]) => quadPlate([P(x0, top), P(x1, top), P(x1, 0.74), P(x0, 0.74)], 0.003, 'blackPlastic'));
-          const top = [[0.873, 0.75, 0.795], [0.75, -0.19, 0.8], [-0.19, -0.205, 0.855], [-0.28, -0.315, 0.855], [-0.315, -0.93, 0.8]].flatMap(([x0, x1, zi]) => [
+          const top = [[0.873, 0.75, 0.795], [0.75, -0.19, 0.772], [-0.19, -0.205, 0.855], [-0.28, -0.315, 0.855], [-0.315, -0.93, 0.772]].flatMap(([x0, x1, zi]) => [
             quadPlate([[x0, yT, sg * zi], [x1, yT, sg * zi], [x1, yT, sg * zO], [x0, yT, sg * zO]], 0.003, 'blackPlastic'),
             quadPlate([[x0, 0.36, sg * zO], [x1, 0.36, sg * zO], [x1, yT + 0.0015, sg * zO], [x0, yT + 0.0015, sg * zO]], 0.003, 'blackPlastic'),
             quadPlate([[x0, 0.3615, sg * zO], [x1, 0.3615, sg * zO], [x1, 0.3615, sg * 0.94], [x0, 0.3615, sg * 0.94]], 0.003, 'blackPlastic'),
