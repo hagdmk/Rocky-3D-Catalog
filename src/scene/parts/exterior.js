@@ -290,19 +290,14 @@ export function buildExterior(reg) {
           field: (q, s, v) => (s < 4.3 ? -v : REAR.bodySide(q, s, v)),
         }),
         // pinch flange along the top of the door openings: from the edge of the skin over the window frame
-        // moulding (v 3.93) in to the door seals' top runs (v 3.9, offset -0.025), which are clamped on it; with a
-        // hole where the front roof drain tube comes through it down the A-pillar (s 1.873, 0.675 across)
+        // moulding (v 3.93) in to the door seals' top runs (v 3.9, offset -0.025), which are clamped on it
         named('pinchFlange', (() => {
           const F = [[SV.vFrameTop, -0.0015], [3.905, -0.0215]];
           return plates([
-            skinRibbon(sd, SV.frontDoor[0] + 0.06, 1.856, ...F, 'paint'),
-            skinRibbon(sd, 1.856, 1.892, ...F, 'paint', 0, 0.42),
-            skinRibbon(sd, 1.856, 1.892, ...F, 'paint', 0.93, 1),
-            skinRibbon(sd, 1.892, 3.505, ...F, 'paint'),
+            skinRibbon(sd, SV.frontDoor[0] + 0.06, 3.505, ...F, 'paint'),
             // and down the A-pillar edge of the door opening (skin edge at s 1.67, over the door glass's front edge) in
-            // to the seal's A-pillar run, which closes the A-pillar from the door side; with a hole where the front
-            // roof drain tube comes through it (v 3.645, half way across)
-            ...[[SV.vSill, 3.63, 0, 1], [3.63, 3.66, 0, 0.47], [3.63, 3.66, 0.57, 1], [3.66, 3.9, 0, 1]].map(([va, vb, t0, t1]) => {
+            // to the seal's A-pillar run, which closes the A-pillar from the door side
+            ...[[SV.vSill, 3.9, 0, 1]].map(([va, vb, t0, t1]) => {
               const k = Math.max(2, Math.ceil((vb - va) / 0.05));
               const pos = [];
               const idx = [];

@@ -379,18 +379,23 @@ export function buildClosures(reg) {
   });
   // Drain tubes from the cassette corner spouts, between the outer skin and the
   // pillar trims (outboard of the liftgate harness, clear of the ends of the curtain airbags): the front
-  // ones down the A-pillar ahead of the door hinges, the rear ones down the C-pillar.  The rear ones stay
+  // ones down the A-pillar and the hinge pillar ahead of the door hinges, the rear ones down the C-pillar.  The rear ones stay
   // on the body: outboard over the rear header ahead of the liftgate harness, over the rear end of the
   // curtain airbag and under the harness where it turns onto the liftgate, down in front of the liftgate
   // opening seal (s 3.3), back along the roof rail between that seal (v 3.97) and the rear door seal
   // (v 3.9), and down the C-pillar behind the rear door opening.
   const drains = [];
   for (const { sd } of SIDES) {
-    // (front: off the spout outboard under the headliner, then down the A-pillar at v <= 4.04 behind the pillar trim)
+    // (front: off the spout outboard under the headliner, then down the A-pillar inside its section the whole way, behind
+    // the pillar trim: at v 4.03 on the windshield side of the headliner harness (LH, v 4.02 further in), round the
+    // pillar root ahead of the harness, the tweeter pocket and the door seal's corner, across the sail under the harness
+    // where it lies against the skin (s 1.625, v 3.74), on the door seal side of it down to the hinge pillar and down
+    // inside the hinge pillar to its outlet; it no longer passes through the door opening)
     drains.push(named(`drainF${sd}`, tube([skinAt(R0 - 0.02, 4.17, sd, -0.022), skinAt(2.37, 4.095, sd, -0.016), skinAt(2.33, 4.04, sd, -0.01),
-      skinAt(2.2, 4.035, sd, -0.009), skinAt(2.1, 4.03, sd, -0.011), skinAt(1.95, 3.97, sd, -0.015), skinAt(1.873, 3.913, sd, -0.015),
-      skinAt(1.72, 3.8, sd, -0.015), skinAt(1.6652, 3.645, sd, -0.0119), skinAt(1.6, 3.3, sd, -0.015), skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02),
-      skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
+      skinAt(2.2, 4.035, sd, -0.009), skinAt(2.1, 4.03, sd, -0.011), ...[[1.95, 4.032, -0.0095], [1.8, 4.033, -0.0095], [1.7, 4.036, -0.0105],
+        [1.65, 4.025, -0.013], [1.622, 3.98, -0.016], [1.615, 3.88, -0.019], [1.62, 3.78, -0.021], [1.63, 3.7, -0.021], [1.64, 3.6, -0.019],
+        [1.632, 3.45, -0.016], [1.6, 3.3, -0.015]].map(([s, v, o]) => skinAt(s, v, sd, o)),
+      skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02), skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
     drains.push(named(`drainR${sd}`, pipe([[R1 + 0.02, 4.17, -0.022], [3.215, 4.1, -0.016], [3.225, 4.06, -0.012], [3.268, 4.06, -0.012],
       [3.268, 3.94, -0.008], [3.5, 3.94, -0.008], [3.58, 3.86, -0.015], [3.62, 3.5, -0.015], [3.64, 3.0, -0.015], [3.64, 2.4, -0.02],
       [3.64, 1.5, -0.02], [3.64, 0.8, -0.02]].map(([s, v, o]) => skinAt(s, v, sd, o)), 0.005, 'rubber', { bend: 0.02 })));

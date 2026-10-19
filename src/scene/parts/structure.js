@@ -503,7 +503,8 @@ export function buildStructure(reg) {
     id: 'rear-undertray', ko: '리어 언더트레이(미드 에어로 실드·스트레이크)', en: 'Rear undertray (mid aero shield & strakes)',
     groups: ['rear-undertray-and-diffuser'],
     object: group(
-      quadPlate([[-1.18, 0.165, -0.66], [-1.18, 0.165, 0.66], [-2.1, 0.2, 0.62], [-2.1, 0.2, -0.62]], 0.008, 'blackPlastic'),
+      // (front edge at the battery pack's rear edge, x -1.035, so it closes the underside under the 2nd-row seat)
+      quadPlate([[-1.035, 0.162, -0.66], [-1.035, 0.162, 0.66], [-2.1, 0.2, 0.62], [-2.1, 0.2, -0.62]], 0.008, 'blackPlastic'),
       ...[-0.56, -0.3, 0.3, 0.56].map((z) => quadPlate([[-1.6, 0.17, z], [-2.08, 0.2, z], [-2.08, 0.14, z], [-1.7, 0.155, z]], 0.006, 'blackPlastic')),
       // stand-off brackets up to the rear subframe side members (#8 BLT HF M6x18)
       ...SIDES.map(({ sd, sg }) => named(`mount${sd}`, box([0.04, 0.052, 0.04], [-1.72, 0.21, sg * 0.42], 'blackPlastic'))),
