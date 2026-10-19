@@ -404,8 +404,11 @@ export function buildInterior(reg) {
         // widens outboard down to the door seal's A-pillar run and turns down at its front edge onto the IP top / IP
         // end top (y 0.925), closing the A-pillar root above the IP end (hinge pillar top, drain tube, harness)
         named('aPillar', group(
-          region([[SV.cowlRear + 0.02, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
-          region([[SV.cowlRear + 0.02, 1.675, 3.0, 3.86]], {
+          // (its door-side edge ends just under the door seal's top run, on the pinch flange)
+          region([[SV.cowlRear + 0.02, SV.roof[0], 3.905, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
+          // glass-side lip turned out to the windshield, closing the pillar section (drain tube, harness) from the cabin
+          skinStrip(sd, SV.cowlRear + 0.02, SV.roof[0], [4.07, -0.03], [4.072, -0.006], 'fabric'),
+          region([[SV.cowlRear + 0.02, 1.675, 3.0, 3.905]], {
             side: sd, offset: -0.03, mat: 'fabric', edges: false,
             field: (q, s, v) => 3.0 + (s - (SV.frontDoor[0] + 0.01)) * 18 + 0.02 - v, // edge tucked behind the door seal's A-pillar run
           }),
