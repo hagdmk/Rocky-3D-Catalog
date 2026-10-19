@@ -672,7 +672,16 @@ export function buildInterior(reg) {
     });
   }
   // the headliner dips under the two pano roof drive motors at the front of the roof opening
-  const panoMotors = [2.35, 2.445, 4.38, 4.53];
+  // (the dip sits under the motor blocks bolted under the roof cassette, pano-drive, with side walls back up to the
+  // headliner)
+  const panoMotors = [2.36, 2.455, 4.165, 4.295];
+  const pocketWalls = SIDES.flatMap(({ sd }) => {
+    const [s0, s1, v0, v1] = panoMotors;
+    return [
+      ...[v0, v1].map((v) => skinStrip(sd, s0, s1, [v, -0.035], [v, -0.055], 'fabric')),
+      ...[s0, s1].map((sx) => vStrip(sd, sx, v0, v1, -0.035, -0.055, 'fabric')),
+    ];
+  });
   reg.add({
     id: 'headliner', ko: '헤드라이닝', en: 'Headliner',
     groups: ['headlining'],
@@ -683,6 +692,7 @@ export function buildInterior(reg) {
       // C-pillar tops up over the liftgate seal
       region([[SV.roof[0] - 0.02, 3.3, 3.888, 5], [3.3, 3.72, 3.888, 3.995]], { offset: -0.035, exclude: [panoMotors], mat: 'fabric', edges: false }),
       region([panoMotors], { offset: -0.055, mat: 'fabric', edges: false }),
+      ...pocketWalls,
       // (the rail between its edge and the body side skin is closed by the door opening pinch flange under the door
       // seals, body-side-*#pinchFlange)
     ),
