@@ -334,12 +334,14 @@ export const JOINTS = [
   J('hood-latch#latch', 'front-bumper-carrier#upper', 'hood latch #5 bolted to the carrier upper beam (BLT M8x24 #4)'),
   J('hood-latch#cable@start', 'hood-latch#latch', 'release cable #2 hooked into the latch'),
   J('hood-latch#cable@end', 'hood-latch#handle', 'release cable #2 on the release handle #1'),
+  J('hood-latch#grommet', 'floor-pan#dashCorners', 'release cable #2 through the bulkhead in its grommet, seated in the LH dash panel corner'),
   J('hood-latch#handle', 'dash-panel', 'release handle #1 on the LH lower instrument panel'),
   J('hood-seal', 'frunk', 'SEAL - HOOD on the frunk tub rim (frunk #19 = hood seals #1)'),
   J('hood-cowl-seal', 'underhood-apron-rear', 'SEAL - HOOD TO COWL #2 on the rear underhood apron'),
   ...each((s) => [
     J(`hood-hinge-${s}#strutBracket`, `hood-hinge-${s}#strut@end`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of its body bracket BRKT-GAS PROP BODY (#2)'),
     J(`hood-hinge-${s}#strutBracket`, `front-inner-${s}#tower`, 'BRKT-GAS PROP LH/RH BODY (hood hinges #2) bolted (BLT HF M6x15 #3) to the rear face of the shock tower'),
+    J(`hood-hinge-${s}#base`, 'floor-pan#cowlFront', 'HOOD HINGE (#6) body leaf bolted (BLT HEX FLG M8x20 #7, NUT M8 #5) to the cowl front wall of the body'),
   ]),
   // rear structure and bumper
   ...each((s) => [
@@ -353,6 +355,7 @@ export const JOINTS = [
   ...each((s) => [
     J(`rear-quarter-inner-${s}#cPillar`, `body-side-${s}`, 'ASY REINF C-PILLAR (quarter inner #23/#24, 1014652/1014648) bonded to the body side outer C-pillar (#9)'),
     J(`rear-quarter-inner-${s}#lampHousing`, `body-side-${s}`, 'REINF - RR LAMP HOUSING (quarter inner #15/#16 = body side #4, 1003096/1003097) bonded behind the body side outer at the tail lamp pocket'),
+    J(`rear-quarter-inner-${s}#quarterInner`, `body-side-${s}`, 'ASSY - RR QTR INR (#13/#14) joined (riveted and bonded) to the body side outer by its upper and rear flanges'),
   ]),
   // pillars and floor
   ...each((s) => [
@@ -360,7 +363,7 @@ export const JOINTS = [
     J(`hinge-pillar-${s}`, `front-inner-${s}`, 'cowl side #6 joined to the upper (shotgun) rail'),
     J(`hinge-pillar-${s}`, `body-side-${s}`, 'body side outer A-pillar #7 bonded over the hinge pillar'),
     J(`b-pillar-${s}#lower`, `sill-${s}`, 'A / B pillar comp #13 joined to the side sill'),
-    J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE)', { inset: 'the floor pan and toe board flanges are welded into the sill section' }),
+    J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE): its flanges welded to the sill inner walls'),
   ]),
   J('nvh-plugs', 'floor-pan', 'body plugs in the floor pan openings'),
   ...corners((k) => [J(`nvh-plugs#doorTape${k}`, `door-${k}#inner`, 'TAPE, DOOR, D44 (NVH damping #9) over an access hole in the door inner panel, behind the trim pad')]),

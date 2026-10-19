@@ -115,6 +115,43 @@ function cPillarReinf(sd) {
   }));
 }
 
+/** Skin parameter v on the body side (v 0..3) where the outer skin at station s is at height y. */
+function vAtY(s, y) {
+  let lo = 0;
+  let hi = 3;
+  for (let i = 0; i < 40; i++) {
+    const m = (lo + hi) / 2;
+    if (skinAt(s, m).y < y) lo = m; else hi = m;
+  }
+  return (lo + hi) / 2;
+}
+
+/**
+ * Weld flange of an inner panel that lies `depth` inside the body side outer: a strip square to the
+ * skin from the panel edge out to the skin, along the edge polyline [[s, y], ...] (outer-skin heights).
+ */
+function skinFlange(sd, path, depth, mat, step = 0.02) {
+  const pts = [];
+  for (let k = 0; k < path.length - 1; k++) {
+    const [sa, ya] = path[k];
+    const [sb, yb] = path[k + 1];
+    const n = Math.max(1, Math.ceil(Math.max(Math.abs(sb - sa), Math.abs(yb - ya)) / step));
+    for (let i = k ? 1 : 0; i <= n; i++) pts.push([sa + ((sb - sa) * i) / n, ya + ((yb - ya) * i) / n]);
+  }
+  const pos = [];
+  for (const [ps, py] of pts) {
+    const v = vAtY(ps, py);
+    pos.push(...skinAt(ps, v, sd, -depth).toArray(), ...skinAt(ps, v, sd, 0).toArray());
+  }
+  const idx = [];
+  for (let i = 0; i < pts.length - 1; i++) idx.push(2 * i, 2 * i + 1, 2 * i + 3, 2 * i, 2 * i + 3, 2 * i + 2);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return mesh(g, mat);
+}
+
 function hoodY(x, inset = 0.04) {
   return topY(sOf(x)) - inset;
 }
@@ -212,12 +249,30 @@ export function buildStructure(reg) {
     const t = (0.99 - x) / 0.09; // along the insulator from (0.99, 0.86) to (0.9, 0.921)
     return [0.99 - 0.09 * t + plenumN.x * off, 0.86 + 0.061 * t + plenumN.y * off, z];
   };
+  // The pan and the toe board end at the sills' inner faces (|z| 0.775), where their flanges are welded to
+  // the sill inner walls.
   reg.add({
     id: 'floor-pan', ko: '차체(BIW): 플로어 팬·카울 플레넘', en: 'Body in white: floor pan & cowl plenum',
     groups: ['body-side-panels'], match: /BODY IN WHITE/,
     object: group(
-      quadPlate([[0.72, 0.296, -0.8], [0.72, 0.296, 0.8], [-0.7, 0.296, 0.8], [-0.7, 0.296, -0.8]], 0.004, 'aluminum'),
-      named('toeBoard', quadPlate([[0.97, 0.41, -0.8], [0.97, 0.41, 0.8], [0.72, 0.296, 0.8], [0.72, 0.296, -0.8]], 0.004, 'aluminum')),
+      quadPlate([[0.72, 0.296, -0.775], [0.72, 0.296, 0.775], [-0.7, 0.296, 0.775], [-0.7, 0.296, -0.775]], 0.004, 'aluminum'),
+      named('toeBoard', quadPlate([[0.97, 0.41, -0.775], [0.97, 0.41, 0.775], [0.72, 0.296, 0.775], [0.72, 0.296, -0.775]], 0.004, 'aluminum')),
+      // dash panel corners: the bulkhead outboard of the dash insulator (|z| 0.72) out to the hinge pillars
+      // (|z| 0.79), from the toe board up under the shotgun rail ends and the plenum.  LH: notched at its
+      // inboard edge for the hood release cable grommet (hood-latch#grommet)
+      named('dashCorners', (() => {
+        const P = (sg, y0, y1, z0, z1) => quadPlate([[0.985, y0, sg * z0], [0.985, y0, sg * z1], [0.985, y1, sg * z1], [0.985, y1, sg * z0]], 0.004, 'aluminum');
+        return group(...SIDES.flatMap(({ sd, sg }) => [
+          ...(sd === 'L'
+            ? [P(sg, 0.4, 0.6379, 0.72, 0.79), P(sg, 0.6379, 0.6509, 0.733, 0.79), P(sg, 0.6509, 0.843, 0.72, 0.79)]
+            : [P(sg, 0.4, 0.843, 0.72, 0.79)]),
+          P(sg, 0.843, 0.868, 0.72, 0.75),
+        ]));
+      })()),
+      // dash panel upper edge (cowl front wall) in front of the dash insulator, under the plenum front edge,
+      // outboard of the insulator's upper strip (|z| 0.54) to the shotgun rail ends: the hood hinges are
+      // bolted to it (hood-hinge-*#base)
+      named('cowlFront', group(...SIDES.map(({ sg }) => quadPlate([[0.997, 0.8, sg * 0.54], [0.997, 0.8, sg * 0.75], [0.997, 0.867, sg * 0.75], [0.997, 0.867, sg * 0.54]], 0.004, 'aluminum')))),
       // between the hinge pillars (|z| 0.79); its outboard front corners stop short of the shotgun
       // rail ends (x 0.975, |z| 0.75-0.82)
       named('plenum', group(
@@ -265,12 +320,21 @@ export function buildStructure(reg) {
           zPlate(sg * 0.6, [...arcPts(XR - 0.16, -1.845), ...[-1.845, -1.7, XR - 0.16].map((x) => [x, railTop(x) - 0.003])], 'aluminum'),
         )),
         // rear quarter inner panel (#13/#14 ASSY - RR QTR INR) behind the trunk side trim, 30 mm inside
-        // the body side outer: from the wheelhouse arch (y 0.62 behind it) up to the C-pillar trim,
-        // below the tail lamp pocket at the rear
-        named('quarterInner', region([[4.04, 4.45, 0.2, 1.85]], {
-          side: sd, offset: -0.03, mat: 'aluminum', edges: false,
-          field: (q, s) => Math.max(archTop(q.x) + 0.004 - q.y, 0.62 - q.y, q.y - 0.955, Math.min(s - 4.39, q.y - 0.868)),
-        })),
+        // the body side outer: from the wheelhouse arch band, on which its lower edge stands (y 0.62
+        // behind the arch), up to the C-pillar trim, below the tail lamp pocket at the rear; welded to
+        // the body side outer by flanges along its upper and rear edges
+        named('quarterInner', group(
+          region([[4.04, 4.45, 0, 1.85]], {
+            side: sd, offset: -0.03, mat: 'aluminum', edges: false,
+            // the arch edge is taken on the panel itself (the inward offset lifts it off the skin height),
+            // its flange lapped 5 mm over the arch band
+            field: (q, s, v) => {
+              const p = skinAt(s, v, 'L', -0.03);
+              return Math.max(archTop(p.x) - 0.005 - p.y, 0.62 - q.y, q.y - 0.955, Math.min(s - 4.39, q.y - 0.868));
+            },
+          }),
+          skinFlange(sd, [[4.04, 0.955], [4.39, 0.955], [4.39, 0.868], [4.45, 0.868], [4.45, 0.62]], 0.03, 'aluminum'),
+        )),
         // C-pillar reinforcement (#23/#24): just inside the body side outer, outboard of the C-pillar and
         // trunk side trims, from the wheelhouse up behind the rear door opening to the roof rail
         named('cPillar', cPillarReinf(sd)),

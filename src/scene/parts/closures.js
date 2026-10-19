@@ -56,6 +56,8 @@ export function buildClosures(reg) {
         // through the apron slot); gas strut (#1) from the hinge forward to its body bracket (#2,
         // BLT HF M6x15 #3) on the rear face of the shock tower, below the tower top and the apron
         rbox([0.12, 0.06, 0.03], [1.065, 0.85, sg * 0.58], 'steel', { r: 0.008 }),
+        // body leaf of the hinge, bolted (BLT M8 #7, NUT M8 #5) to the cowl front wall (floor-pan#cowlFront)
+        named('base', rbox([0.008, 0.06, 0.045], [1.003, 0.835, sg * 0.58], 'steel', { r: 0.003 })),
         named('strut', beam([1.11, 0.86, sg * 0.565], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
         named('strutBracket', rbox([0.02, 0.04, 0.04], [1.345, 0.815, sg * 0.615], 'steel', { r: 0.004 })),
       ),
@@ -146,6 +148,8 @@ export function buildClosures(reg) {
       named('cable', pipe([[2.15, 0.725, -0.07], [2.1, 0.733, -0.12], [2.062, 0.725, -0.22], [2.06, 0.71, -0.4], [2.058, 0.705, -0.46], [1.98, 0.7, -0.472],
         [1.45, 0.7, -0.47], [1.336, 0.69, -0.475], [1.333, 0.68, -0.585], [1.23, 0.65, -0.63], [1.11, 0.625, -0.7], [0.99, 0.645, -0.727],
         [0.93, 0.635, -0.727], [0.85, 0.598, -0.727], [0.77, 0.575, -0.727], [0.712, 0.566, -0.729], [0.712, 0.545, -0.731], [0.712, 0.524, -0.738]], 0.004, 'steel', { bend: 0.02 })),
+      // the cable's grommet in the notch of the LH dash panel corner (floor-pan#dashCorners)
+      named('grommet', cyl(0.0065, 0.012, 'x', [0.985, 0.6444, -0.7264], 'rubber', { seg: 16 })),
       // on the LH end face of the lower instrument panel shell (z -0.74), facing the door opening
       named('handle', rbox([0.06, 0.03, 0.02], [0.7, 0.52, -0.745], 'blackPlastic', { r: 0.006 })),
     ),
