@@ -108,6 +108,13 @@ function itemDist(a, b) {
   return distCache.get(k);
 }
 const mm = M.mm;
+// a failing gap (mm) printed with the fewest decimals (1..6) that still show it above the limit:
+// 2.4 -> '2.4', 2.0004 -> '2.0004', 2.0000247 -> '2.00002' (never '2 mm > 2 mm')
+const mmAbove = (v, limit) => {
+  let k = 1;
+  while (k < 6 && Number(v.toFixed(k)) <= limit) k++;
+  return v.toFixed(k);
+};
 
 // ---------------------------------------------------------------- joints
 /** Resolve 'comp#name@end' to {it, obj, meshes, shape, end}. */
@@ -199,13 +206,13 @@ if (want('joints')) {
     // a hollow placeholder counts by its shell: the part must reach it
     const r = M.shapeDist(A.shape, B.shape, { hollowSurface: true });
     const max = j.max ?? 2;
-    const gap = mm(r.d);
-    if (r.d * 1000 > max + 1e-6) { // unrounded: 2.4 mm does not pass a 2 mm row
+    const gapMm = r.d * 1000;
+    if (gapMm > max + 1e-6) { // unrounded: 2.4 mm does not pass a 2 mm row
       const where = `${M.fmt(r.pa)} → ${M.fmt(r.pb)}`;
-      (j.known ? warnings : errors).push(`joint ${label}: gap ${gap} mm > ${max} mm ${where}  [${j.note}]`);
+      (j.known ? warnings : errors).push(`joint ${label}: gap ${mmAbove(gapMm, max)} mm > ${max} mm ${where}  [${j.note}]`);
     } else {
       ok++;
-      if (verbose) info.push(`joint ok ${gap} mm  ${label}`);
+      if (verbose) info.push(`joint ok ${gapMm.toFixed(2)} mm  ${label}`);
     }
   }
   info.push(`joints: ${ok}/${JOINTS.length} within tolerance`);
@@ -215,6 +222,7 @@ if (want('joints')) {
 if (want('shared')) {
   const HW = /\b(BOLTS?|BLT|NUTS?|SCREWS?|SCR|WASHERS?|WSHR|CLIPS?|RIVETS?|RIVITS?|RVT|RIVNUT|NUTSERT|STUDS?|GROMMETS?|TAPE|SEALANT|SEALER|PRIMER|CABLE TIES?|TIE STRAPS?|TIE-STRAP|ZIP TIE|LABELS?|STICKER|ADHESIVE|GLUE|COMPOUND|GREASE|LUBRICANT|BETASEAL|INSTAPACK|BUTYL|URETHANE|FASTENER|PUSH ?PIN|SHIM|CLAMP|HOSE RING)\b/i;
   const BLANK = /^(NA|N\/A|-|NO LONGER AVAILABLE|DISCONTINUED|TBA|)$/i;
+  const SHARED_MAX = 3; // mm between the components of a shared part
   const keyOf = (p) => (!p.pn || BLANK.test(p.pn.trim())
     ? `NAME:${p.name.trim().toUpperCase().replace(/\s*[,-]\s*/g, ', ').replace(/\s+/g, ' ')}`
     : `PN:${p.pn.trim().toUpperCase()}`);
@@ -267,7 +275,7 @@ if (want('shared')) {
               if (!best || r.d < best.d) best = { ...r, a: a.id, b: b.id };
             }
           }
-          if (!best || mm(best.d) > 3) { worst = { cfg, best }; break; }
+          if (!best || best.d * 1000 > SHARED_MAX + 1e-6) { worst = { cfg, best }; break; } // unrounded, like the joints
         }
         if (!shown) { unchecked++; if (verbose) info.push(`shared part ${k}: ${gids[i]} and ${gids[j]} are never shown together`); }
         if (shown && worst) {
@@ -275,7 +283,7 @@ if (want('shared')) {
           const r = ra[0];
           const b = worst.best;
           errors.push(`shared part ${k} "${r.name}" (#${ra[0].no} in ${gids[i]}, #${rb[0].no} in ${gids[j]}): `
-            + `${b ? `${b.a} and ${b.b} are ${mm(b.d)} mm apart` : 'no side-compatible pair'} in ${cfgName(worst.cfg)}`);
+            + `${b ? `${b.a} and ${b.b} are ${mmAbove(b.d * 1000, SHARED_MAX)} mm apart` : 'no side-compatible pair'} in ${cfgName(worst.cfg)}`);
         }
       }
     }
