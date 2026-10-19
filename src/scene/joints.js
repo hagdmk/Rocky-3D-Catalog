@@ -36,7 +36,7 @@ export const JOINTS = [
   J('steering-ishaft-upper#yoke', 'steering-wheel#column@end', 'upper link #6 U-joint on the column spline, bolt #7'),
   J('steering-ishaft-upper#sleeve', 'steering-ishaft#lowerLink@start', 'upper link sleeve on the lower link (upper #8/#9)'),
   J('steering-ishaft#couplingBolt', 'steering-ishaft-upper#sleeve', 'BOLT H M10x35 (upper #8) with NUT HF M10 (upper #9) through the sleeve pinch'),
-  J('steering-ishaft#dashSeal', 'sound-insulation', 'I-shaft dash seal in the firewall (lower #8 = upper #10)'),
+  J('steering-ishaft#dashSeal', 'sound-insulation#dash', 'I-shaft dash seal in the firewall (lower #8 = upper #10)'),
   J('steering-ishaft#ujLower', 'steering-gear#inputShaft@end', 'lower U-joint on the pinion input shaft (lower #7 = upper #8)'),
   ...each((s) => [
     J(`steering-gear#boss${s}`, `front-subframe#rail${s}`, 'gear bolted to the subframe (lower #2 M14x78)'),
@@ -188,7 +188,7 @@ export const JOINTS = [
   J('motor-coolant-loop#bypass@start', 'motor-coolant-loop#rockerR', 'ASY - HOSE (PT) - RKR TO BYPASS 3 WAY VLV (motor cooling #20) teed off the RH rocker hose'),
   J('motor-coolant-loop#bypass@end', 'motor-coolant-loop#valve3', 'ASY - HOSE (PT) - RKR TO BYPASS 3 WAY VLV (motor cooling #20) on the 3-way valve'),
   J('hvac-drain-hose#hose@start', 'hvac-unit', 'HVAC DRAIN HOSE on the HVAC case'),
-  J('hvac-drain-hose#grommet', 'sound-insulation', 'GROMMET, HVAC DRAIN TUBE (heater assembly #6) in the dash insulator'),
+  J('hvac-drain-hose#grommet', 'sound-insulation#dash', 'GROMMET, HVAC DRAIN TUBE (heater assembly #6) in the dash insulator'),
   J('ptc-heater', 'hvac-unit#case', 'CORE COMPLETE ASSY - PTC AIR HEATER (heater core #1) in the heater core slot of the HVAC UNIT - NO PTC HEATER (heater assembly #1)', { inset: 'the heater core slides into its slot in the HVAC case' }),
   J('hvac-blower#outlet', 'hvac-unit#case', 'blower scroll outlet bolted to the RH side of the HVAC case'),
 
@@ -296,8 +296,8 @@ export const JOINTS = [
   J('wipers#frame@end', 'hinge-pillar-R', 'WIPER MODULE (#1) frame end bolted (BOLT M6x25 #2) at the RH cowl side (body side panels #6)'),
   J('wipers#motor', 'wipers#frame', 'wiper motor on the module frame with the WIPER MOTOR BRACKET (#3)'),
   ...each((s) => [J(`washer-nozzles#nozzle${s}`, 'hood', 'WASHER NOZZLE (#1) clipped into the hood from below')]),
-  J('radio-tuner', 'dash-support-frame', 'RADIO (#1, TORX M5 #2) on the AMP AND TUNER bracket (dash support frame #5) under the cross-car beam'),
-  J('audio-amplifier', 'dash-support-frame', 'AUDIO, AMPLIFIER, EXTERNAL, PREMIUM on the AMP AND TUNER bracket (dash support frame #5)'),
+  J('radio-tuner', 'dash-support-frame#ampTunerBracket', 'RADIO (#1, TORX M5 #2) screwed into the AMP AND TUNER bracket (dash support frame #5) hung from the cross-car beam'),
+  J('audio-amplifier', 'dash-support-frame#ampTunerBracket', 'AUDIO, AMPLIFIER, EXTERNAL, PREMIUM screwed into the floor of the AMP AND TUNER bracket (dash support frame #5), below the radio'),
 
   // --- interior ducts: HVAC case outlets to the vents
   ...['faceL', 'faceR', 'centreL', 'centreR', 'floorL', 'floorR', 'console'].map((d) => J(`interior-ducts#${d}@start`, 'hvac-unit', 'duct on the HVAC case outlet')),
@@ -412,6 +412,7 @@ export const JOINTS = [
   ]),
   J('rear-belts#centreRetractor', 'rear-seat-back-60', '2nd row centre seatbelt retractor (#3) bolted in the 60% seat back frame (#9 BOLT, 2ND ROW CENTER RETRACTOR)', { inset: 'the retractor is inside the seat back' }),
   J('third-row-belts', 'third-row-seats', '3rd row seatbelt assembly (#1) anchored on the seat back frame (ASY - THIRD ROW SEAT #8)'),
+  J('third-row-seats#mounts', 'trunk-floor#floor', 'ASY - THIRD ROW SEAT (#8) pivot brackets bolted to the trunk floor (BLT M10x28.4 #6, BARREL NUT M10 #5)'),
   J('touchscreen', 'dash-panel', 'MCU in the CENTER SCREEN FRAME (touchscreen #2 = dash panel #35), BLT M5x25 (#3)'),
   J('instrument-cluster', 'dash-panel', 'cluster in the IP cluster frame and bezel (ASY FRAME INSTRUMENT CLUSTER / CLUSTER BEZEL, dash panel #28)'),
   J('glove-box', 'dash-panel', 'ASY GLOVE BOX COMP (dash panel #24) hinged in the lower right IP'),
