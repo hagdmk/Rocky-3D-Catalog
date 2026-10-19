@@ -519,7 +519,8 @@ export function buildInterior(reg) {
         // trunk C-pillar trim, over the C-pillar reinforcement (which lies against the body side outer)
         // (their lower edges come down over the top of the lower C-pillar trim)
         named('cPillar', region([[SV.rearGlass[1], 3.67, 2.7, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
-        named('cPillarMid', region([[3.67, 3.78, 2.7, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
+        // (with the hole for the liftgate strut's body ball stud, liftgate-hinge-*#bodyStud)
+        named('cPillarMid', region([[3.67, 3.78, 2.7, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false, exclude: [[3.702, 3.728, 3.68, 3.72]] })),
         // trim clips (TRIM CLIP #11) on towers from their back faces to the C-pillar reinforcement: two under the mid
         // trim, and a bracket from the rear edge of the upper trim
         named('cPillarClips', group(
@@ -707,7 +708,8 @@ export function buildInterior(reg) {
     // top strip up to the glass edge, where a lip turns out to the glass and closes the frame from the cabin (the
     // liftgate harness runs behind it)
     object: group(
-      region([[4.42, 4.93, 3.1, 5], [3.3, 4.42, 3.995, 4.12]], { offset: -0.035, exclude: [[4.865, 4.93, 4.76, 5]], mat: 'greyPlastic', edges: false }),
+      // (the side band has the holes for the liftgate struts' ball studs, liftgate-hinge-*#gateStud)
+      region([[4.42, 4.93, 3.1, 5], [3.3, 4.42, 3.995, 4.12]], { offset: -0.035, exclude: [[4.865, 4.93, 4.76, 5], [4.287, 4.313, 4.018, 4.054]], mat: 'greyPlastic', edges: false }),
       named('lip', group(...SIDES.map(({ sd }) => skinStrip(sd, 3.305, 4.42, [4.118, -0.035], [4.118, -0.006], 'greyPlastic')))),
     ),
   });

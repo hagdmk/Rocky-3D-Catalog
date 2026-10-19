@@ -94,8 +94,16 @@ export function buildClosures(reg) {
       groups: ['liftgate-hinges-and-fittings'], match: /HINGE|STRUT|BALL STUD|WEDGE|BUMPER|ANTI PINCH|push clip|SEALER|BLT|NUT/,
       object: group(
         rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 }), // hinge on the roof rear header
-        tube([skinAt(3.9, 4.05, sd, -0.05), skinAt(4.15, 3.6, sd, -0.08), skinAt(4.35, 3.0, sd, -0.1)], 0.012, 'steel'),
-        tube([skinAt(3.35, 4.06, sd, -0.025), skinAt(4.0, 4.06, sd, -0.025), skinAt(4.5, 4.03, sd, -0.025)], 0.005, 'rubber'), // anti-pinch sensor
+        // LIFTGATE GAS / POWER STRUT (#15/#16) on its two BALL STUDs (#17): the body stud forward, on the C-pillar
+        // reinforcement top (through a hole in the upper C-pillar trim), and the liftgate stud rearward, on the liftgate
+        // side band (through a hole in the liftgate side trim); closed, the strut lies along the opening edge just
+        // inboard of the trims
+        named('bodyStud', beam(skinAt(3.715, 3.70, sd, -0.024), skinAt(3.715, 3.70, sd, -0.06), 0.005, 'steel')),
+        named('strut', tube([skinAt(3.715, 3.70, sd, -0.06), skinAt(4.0, 3.975, sd, -0.061), skinAt(4.3, 4.036, sd, -0.054)], 0.012, 'steel')),
+        named('gateStud', beam(skinAt(4.3, 4.036, sd, -0.001), skinAt(4.3, 4.036, sd, -0.054), 0.005, 'steel')), // (the liftgate is drawn as its outer skin only: the stud reaches to 1 mm under it)
+        // ANTI PINCH SENSOR (#12/#13) clipped (push clips #14) along the liftgate side band: it follows the skin, its
+        // surface 1.5 mm under it (the liftgate is drawn as its outer skin only), so it no longer cuts through the skin
+        named('pinchSensor', tube(skinPath([[3.35, 4.06], [4.0, 4.06], [4.3, 4.06], [4.5, 4.03]], sd, -0.0065, 4), 0.005, 'rubber')),
       ),
     });
   }
