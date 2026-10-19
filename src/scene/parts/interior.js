@@ -287,9 +287,9 @@ export function buildInterior(reg) {
     groups: ['interior-sound-insulation'],
     object: group(
       named('dash', group(
-        // dash insulator (#1 RH / #2 LH) on the bulkhead, cut out at its top corners round the hood hinge mounts
+        // dash insulator (#1 RH / #2 LH) on the bulkhead, up to the cowl
         quadPlate([[0.985, 0.4, -0.72], [0.985, 0.4, 0.72], [0.985, 0.8, 0.72], [0.985, 0.8, -0.72]], 0.02, 'foam'),
-        quadPlate([[0.985, 0.8, -0.54], [0.985, 0.8, 0.54], [0.985, 0.86, 0.54], [0.985, 0.86, -0.54]], 0.02, 'foam'),
+        quadPlate([[0.985, 0.8, -0.72], [0.985, 0.8, 0.72], [0.985, 0.86, 0.72], [0.985, 0.86, -0.72]], 0.02, 'foam'),
         // upper dash insulator under the cowl, up to the IP carrier's front edge (NVH, IP CARRIER: dash panel #12 = insulation #4)
         quadPlate([[0.99, 0.86, -0.54], [0.99, 0.86, 0.54], [0.9, 0.921, 0.54], [0.9, 0.921, -0.54]], 0.012, 'foam'),
       )),
@@ -373,10 +373,18 @@ export function buildInterior(reg) {
             const [x0, x1] = [xs[i], xs[i + 1]];
             plates.push(quadPlate([[x0, bot(x0), z], [x1, bot(x1), z], [x1, top(x1), z], [x0, top(x0), z]], 0.004, 'greyPlastic'));
           }
-          plates.push(quadPlate([[0.928, 0.445, z], [0.928, 0.445, sg * 0.79], [0.928, top(0.928), sg * 0.79], [0.928, top(0.928), z]], 0.004, 'greyPlastic'));
+          // front flange against the hinge pillar, down to its foot
+          plates.push(quadPlate([[0.928, 0.47, z], [0.928, 0.4, sg * 0.79], [0.928, top(0.928), sg * 0.79], [0.928, top(0.928), z]], 0.004, 'greyPlastic'));
           // and its foot turned out over the harness down onto the sill top (no gap to see the harness through from the
           // door opening), continuing the scuff plate forward
           plates.push(quadPlate([[0.75, 0.44, z], [0.928, 0.47, z], [0.928, 0.4, sg * 0.79], [0.75, 0.362, sg * 0.79]], 0.004, 'greyPlastic'));
+          // front closeout from the flange forward to the edge of the dash insulator, closing the footwell corner in
+          // front of the trim; the cabin harness passes it through a grommet-sized hole on its way from the dash
+          // harness to behind the trim
+          const cz = (x) => sg * (0.745 - ((x - 0.928) / 0.045) * 0.023);
+          const [h0, h1] = [0.462, 0.497];
+          plates.push(quadPlate([[0.928, bot(0.928), cz(0.928)], [0.973, bot(0.973), cz(0.973)], [0.973, h0, cz(0.973)], [0.928, h0, cz(0.928)]], 0.004, 'greyPlastic'));
+          plates.push(quadPlate([[0.928, h1, cz(0.928)], [0.973, h1, cz(0.973)], [0.973, top(0.973), cz(0.973)], [0.928, top(0.928), cz(0.928)]], 0.004, 'greyPlastic'));
           return group(...plates);
         })()),
         // C-pillar trim behind the rear door glass, and behind it the ASY C-PILLAR TRIM MID (#22) on to the

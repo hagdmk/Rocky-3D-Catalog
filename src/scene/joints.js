@@ -444,7 +444,6 @@ export const JOINTS = [
   J('rear-seat-cushion#hooks', 'floor-pan', 'rear cushion frame wire hooks (cushion assy #4) clipped to the rear edge of the floor pan'),
   J('rear-seat-cushion#hooks', 'rear-seat-cushion#cushion', 'hooks on the cushion frame'),
   ...each((s) => [
-    J(`pedestrian-protection#actuator${s}`, `hood-hinge-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 under the rear of the hood hinge it lifts'),
     J(`pedestrian-protection#actuator${s}`, `front-inner-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 bracket bolted (BLT HF M6x20 #8) to the shotgun rail beside the hood hinge'),
   ]),
   J('pedestrian-protection#sensor', 'front-bumper-beam#beam', 'PEDESTRIAN PROTECTION SENSING SYSTEM (#9) clipped along the front face of the bumper beam'),
