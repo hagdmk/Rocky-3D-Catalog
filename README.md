@@ -175,18 +175,21 @@ node tools/check.mjs                # Node 18.19+ / 20.6+, about 5 min (--only=b
 
 - Fastening points: every pair of parts in `src/scene/joints.js` touches (gap ≤ 2 mm). Each row cites the catalog
   callout or part number it is based on. A part mounted on a hollow placeholder (a shock tower, the dash panel) must
-  reach its shell.
+  reach its shell. Gaps are measured exactly (not rounded), and an open tube ends at its end ring.
 - Shared parts: when the same non-fastener part number (bolts, nuts and the like excluded) appears in two groups, it
   must resolve to the same 3D location in both, or to locations that touch. Part numbers that really are used in
   different places (e.g. the same handle on front and rear doors) are listed as exceptions with a reason.
 - Pass-through: beams, bars, lines and harnesses do not run more than 10 mm through another part's solid, nor cross
   another part's surface (panels, trims, the body skin). Two fastened parts may overlap only where they are fastened:
   near the end of a line that plugs in, or for a short length between the named parts of a joint.
-- Clashes: no part sits more than 10 mm deep inside another part's solid (40 mm between fastened parts).
-  Remaining simplifications (for example a brake disc running in the slot of a caliper drawn as a solid block) are
+- Clashes: no part sits more than 10 mm deep inside another part's solid. Fastened parts may overlap up to 40 mm
+  deep, but only locally (under 40 × 40 mm and 1,600 mm²); a part really set into another (an air outlet in the
+  instrument panel, a latch inside the door) needs an `inset` reason on its joint row. Remaining simplifications (for example a brake disc running in the slot of a caliper drawn as a solid block) are
   listed with their reason in `src/scene/joints.js`.
-- Floating parts: every component touches another part in each configuration where it is shown (a joint row proves
-  contact; components without a shown joint partner are measured). Only off-vehicle items are exempt.
+- Floating parts: every piece of every component touches another part in each configuration where it is shown. A
+  piece is a set of the component's meshes (merged plates split into their islands) that touch each other within
+  2 mm. A joint row proves contact only for the piece that really reaches its partner; all other pieces are measured.
+  Only off-vehicle items (repair consumables, the wall connector) are exempt.
 
 In the source PDF the same part row repeats for every model-year column, so identical rows within a group are merged.
 A `*` in the No column means "not shown in the illustration", and a quantity of `**` means "as required" (catalog legend).
