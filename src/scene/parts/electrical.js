@@ -298,16 +298,17 @@ export function buildElectrical(reg) {
     id: 'rear-subframe-harness', ko: '리어 서브프레임 하네스', en: 'Rear subframe harness',
     groups: ['rear-bumper-and-subframe-harness'], match: /SUBFRAME|FEP/,
     // from the RH body harness junction above the wheelhouse, down over the back of the wheelhouse
-    // behind the trunk side trim, below the park assist ECU, then inboard just above the trunk floor
-    // extension shelf and out of the trunk through a grommet in the shelf, inboard under the shelf and
-    // over the wheelhouse inner wall, down inboard of the rail to the subframe, across on top of the
-    // rear cross member behind the drive unit
+    // behind the trunk side trim, below the park assist ECU, back outboard of the finisher wall (|z| 0.868)
+    // behind the trunk bracket and down through a grommet in the outboard flange of the trunk floor
+    // extension shelf under the finisher, then inboard and forward under the shelf and over the wheelhouse
+    // inner wall, down inboard of the rail to the subframe, across on top of the rear cross member behind
+    // the drive unit
     object: group(
       named('lead', pipe([[-1.4815, 0.805, 0.908], [-1.58, 0.785, 0.905], [-1.68, 0.745, 0.905], [-1.75, 0.715, 0.9],
-        [-1.8, 0.712, 0.895], [-1.81, 0.715, 0.86], [-1.805, 0.715, 0.826], [-1.8, 0.635, 0.822], [-1.795, 0.632, 0.7],
+        [-1.84, 0.712, 0.895], [-1.87, 0.7, 0.895], [-1.87, 0.645, 0.895], [-1.85, 0.638, 0.82], [-1.8, 0.632, 0.72],
         [-1.785, 0.632, 0.61], [-1.78, 0.62, 0.58], [-1.76, 0.49, 0.48], [-1.72, 0.33, 0.42], [-1.73, 0.345, 0], [-1.74, 0.321, -0.42]],
       0.009, 'wire', { bend: 0.03 })),
-      named('grommet', cyl(0.015, 0.014, 'y', [-1.8, 0.676, 0.823], 'rubber')),
+      named('grommet', cyl(0.015, 0.014, 'y', [-1.87, 0.676, 0.895], 'rubber')),
     ),
   });
   // --- Parking sensors, radar, cameras ---------------------------------------------------

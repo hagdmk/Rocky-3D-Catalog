@@ -554,16 +554,14 @@ export function buildInterior(reg) {
       object: (() => {
         // the finisher wall stands at |z| ZP, inboard of the harnesses, ECUs and the charge cable behind it, from the
         // shock tower back to the liftgate opening (behind the liftgate drain); it comes down onto the wheelhouse
-        // arch (covered by its hump) and the shelf behind it, with a notch on the RH side where the rear subframe
-        // harness passes inboard to its grommet in the shelf, and up to the parcel shelf
+        // arch (covered by its hump) and the shelf behind it, and up to the parcel shelf (the RH rear subframe
+        // harness drops behind it to its grommet in the shelf's outboard flange)
         const ZP = 0.868;
         const q = (pts, mat = 'carpet') => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, mat);
         const archY = (x) => 0.352 + Math.sqrt(0.44 ** 2 - (x + 1.425) ** 2);
-        const notch = sd === 'R' ? [-1.785, -1.83] : null;
         const st = [];
         for (const x of [-1.39, -1.45, -1.5, -1.55, -1.6, -1.65, -1.7]) st.push([x, archY(x) + 0.008]);
         st.push([-1.723, 0.684]);
-        if (notch) st.push([notch[0], 0.684], [notch[0], 0.735], [notch[1], 0.735], [notch[1], 0.684]);
         st.push([-1.95, 0.684], [-1.987, 0.675], [-2.115, 0.675]);
         // LH: cut out above for the charge port cover; behind the strut cover up to the lower edge of the trunk C-pillar trim
         const top = (x) => (sd === 'L' && x < -1.987 + 1e-6 ? 0.795 : (x < -1.6 && x > -2.05 ? 0.986 : 0.96));
@@ -587,7 +585,7 @@ export function buildInterior(reg) {
         // lower edge onto the edge of the shelf over the back of the wheelhouse and of the rear corner shelf
         // behind it (trunk floor extension)
         const edge = [
-          ...(notch ? [[-1.723, notch[0]], [notch[1], -1.95]] : [[-1.723, -1.95]]).map(([x0, x1]) => q([[x0, 0.679, 0.836], [x1, 0.679, 0.836], [x1, 0.682, ZP], [x0, 0.682, ZP]])),
+          q([[-1.723, 0.679, 0.836], [-1.95, 0.679, 0.836], [-1.95, 0.682, ZP], [-1.723, 0.682, ZP]]),
           q([[-1.95, 0.679, 0.81], [-2.115, 0.679, 0.81], [-2.115, 0.677, ZP], [-1.95, 0.682, ZP]]),
         ];
         // rear end: returned inboard of the liftgate drain and closed to the quarter
@@ -626,19 +624,9 @@ export function buildInterior(reg) {
           // outer lip down onto the top of the finisher wall
           q([[-1.385, 0.958, 0.872], [-1.6, 0.958, 0.872], [-1.6, T, 0.872], [-1.385, T, 0.872]]),
         ], 'carpet');
-        // RH: the finisher bulges inboard round the notch, over the rear subframe harness dropping to its grommet
-        // in the shelf (and the carpet cut round it), down onto the trunk carpet
-        const bulge = notch ? (() => {
-          const [xa, xb, zi, yt] = [-1.775, -1.84, 0.795, 0.745];
-          return [
-            q([[xa, 0.683, zi], [xb, 0.683, zi], [xb, yt, zi], [xa, yt, zi]]),
-            q([[xa, yt, zi], [xb, yt, zi], [xb, yt, ZP], [xa, yt, ZP]]),
-            ...[xa, xb].map((x) => q([[x, 0.683, zi], [x, 0.683, ZP], [x, yt, ZP], [x, yt, zi]])),
-          ];
-        })() : [];
         return group(
           named('strutCover', strutCover),
-          named('panel', plates([...wall, ...hump, ...rear, ...bulge], 'carpet')),
+          named('panel', plates([...wall, ...hump, ...rear], 'carpet')),
           // trunk bracket #6 (LH) / #7 (RH): stands on the wheelhouse and carries the finisher's lower edge
           named('bracket', bar([-1.838, 0.676, sg * 0.864], [-1.765, 0.614, sg * 0.864], 0.025, 0.04, 'steel')),
           named('lowerEdge', plates(edge, 'carpet')),
@@ -710,8 +698,7 @@ export function buildInterior(reg) {
       ...[-1, 1].map((sg) => box([0.12, 0.02, 0.045], [-1.36, 0.635, sg * 0.5725], 'carpet')),
       // side edges of the floor trim (#5): up the sloped flanges of the trunk floor extensions behind the strut
       // covers, turned up against the wheelhouse inner wall under the finisher's arch hump, and over the shelves
-      // behind the wheelhouse and in the rear corners out to the finisher's lower edge (RH: round the subwoofer
-      // and the subframe harness grommet)
+      // behind the wheelhouse and in the rear corners out to the finisher's lower edge (RH: round the subwoofer)
       ...[-1, 1].map((sg) => {
         const q = (pts) => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'carpet');
         const slope = (x0, x1) => q([[x0, 0.645, 0.55], [x1, 0.645, 0.55], [x1, 0.6835, 0.6], [x0, 0.6835, 0.6]]);
@@ -723,8 +710,8 @@ export function buildInterior(reg) {
         ]);
         return plates(sg < 0
           ? [slope(-1.6, -2.345), ...upturn, flat(-1.723, -1.95, 0.6, 0.834), flat(-1.95, -2.345, 0.6, 0.81)]
-          : [slope(-1.6, -1.925), slope(-2.18, -2.345), ...upturn, flat(-1.723, -1.776, 0.6, 0.834), flat(-1.776, -1.829, 0.6, 0.798),
-            flat(-1.829, -1.95, 0.6, 0.834), flat(-1.95, -2.18, 0.621, 0.81), flat(-2.18, -2.345, 0.6, 0.81)], 'carpet');
+          : [slope(-1.6, -1.925), slope(-2.18, -2.345), ...upturn, flat(-1.723, -1.95, 0.6, 0.834),
+            flat(-1.95, -2.18, 0.621, 0.81), flat(-2.18, -2.345, 0.6, 0.81)], 'carpet');
       }),
     ),
   });
