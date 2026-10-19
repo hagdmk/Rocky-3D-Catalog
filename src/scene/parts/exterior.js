@@ -109,6 +109,28 @@ export const REAR = {
   bodySide: (q, s, v) => max(-REAR.fascia(q, s), -REAR.lamp(q, s), -REAR.liftgate(q, s, v), -REAR.charge(q, s)),
 };
 
+// Side edge of the liftgate over the roof rail ahead of the C-pillar (s < 3.72): it starts just inside its
+// opening seal (liftgate-seal, v 3.97), so the rail strip outboard of it belongs to the body side alone.
+const LG_EDGE = 3.965;
+
+/** Surface ribbon between two lines on the skin, (v0, offset o0) and (v1, o1), over s0..s1 (fraction t0..t1 across). */
+function skinRibbon(sd, s0, s1, [v0, o0], [v1, o1], mat, t0 = 0, t1 = 1) {
+  const k = Math.max(2, Math.ceil((s1 - s0) / 0.04));
+  const pos = [];
+  const idx = [];
+  const at = (a, t) => skinAt(a, v0 + (v1 - v0) * t, sd, o0 + (o1 - o0) * t);
+  for (let i = 0; i <= k; i++) {
+    const a = s0 + ((s1 - s0) * i) / k;
+    for (const p of [at(a, t0), at(a, t1)]) pos.push(p.x, p.y, p.z);
+    if (i < k) idx.push(2 * i, 2 * i + 2, 2 * i + 1, 2 * i + 1, 2 * i + 2, 2 * i + 3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return skinMesh(g, mat);
+}
+
 /** Chrome projector bowl sitting just inside the headlamp lens. */
 function projector(s, v, sd) {
   const p = skinAt(s, v, sd, -0.012);
@@ -253,17 +275,31 @@ export function buildExterior(reg) {
     reg.add({
       id: `body-side-${sd}`, ko: `보디 사이드 아우터 (${ko})`, en: `Body side outer ${en}`, shell: true, tags: sd,
       groups: ['body-side-panels'], match: /^(?!.*(HINGE PILLAR|COWL SIDE|A \/ B PILLAR|SEAT BELT ATTACH|CARRIER, BODY SIDE B-PILLAR|BODY IN WHITE))/, // inner sections: hinge-pillar, b-pillar, floor-pan
-      object: region([
-        [SV.fenderRear, SV.frontGlass[0], SV.vSill, SV.vFrameTop],
-        [SV.fenderRear, 3.72, SV.vFrameTop, SV.vRoof],
-        [SV.rearGlass[1], 3.72, SV.vSill, SV.vFrameTop],
-        [SV.rearDoor[1], 4.3, -0.3, SV.vRoof],
-        [4.3, 4.97, -0.3, SV.vRoof],
-      ], {
-        side: sd, dv: 0.03,
-        exclude: [[3.72, 4.97, SV.vRoof - 0.12, 5]],
-        field: (q, s, v) => (s < 4.3 ? -v : REAR.bodySide(q, s, v)),
-      }),
+      object: group(
+        region([
+          [SV.fenderRear, SV.frontGlass[0], SV.vSill, SV.vFrameTop],
+          [SV.fenderRear, 3.72, SV.vFrameTop, SV.vRoof],
+          [SV.rearGlass[1], 3.72, SV.vSill, SV.vFrameTop],
+          [SV.rearDoor[1], 4.3, -0.3, SV.vRoof],
+          [4.3, 4.97, -0.3, SV.vRoof],
+        ], {
+          side: sd, dv: 0.03,
+          exclude: [[3.72, 4.97, SV.vRoof - 0.12, 5], [SV.liftgateFront, 3.72, LG_EDGE, 5]], // the liftgate's side edges
+          field: (q, s, v) => (s < 4.3 ? -v : REAR.bodySide(q, s, v)),
+        }),
+        // pinch flange along the top of the door openings: from the edge of the skin over the window frame
+        // moulding (v 3.93) in to the door seals' top runs (v 3.9, offset -0.025), which are clamped on it; with a
+        // hole where the front roof drain tube comes through it down the A-pillar (s 1.873, 0.675 across)
+        named('pinchFlange', (() => {
+          const F = [[SV.vFrameTop, -0.0015], [3.905, -0.0215]];
+          return plates([
+            skinRibbon(sd, SV.frontDoor[0] + 0.06, 1.856, ...F, 'paint'),
+            skinRibbon(sd, 1.856, 1.892, ...F, 'paint', 0, 0.42),
+            skinRibbon(sd, 1.856, 1.892, ...F, 'paint', 0.93, 1),
+            skinRibbon(sd, 1.892, SV.rearDoor[1] - 0.06, ...F, 'paint'),
+          ], 'paint');
+        })()),
+      ),
     });
     reg.add({
       id: `rocker-${sd}`, ko: `로커 패널 트림 (${ko})`, en: `Rocker panel trim ${en}`, shell: true, tags: sd,
@@ -325,7 +361,7 @@ export function buildExterior(reg) {
   reg.add({
     id: 'liftgate', ko: '리프트게이트', en: 'Liftgate', shell: true, tags: 'B', match: /LIFTGATE/,
     groups: ['closure-panels'],
-    object: region([[SV.liftgateFront, 4.97, -1, 5]], { field: REAR.liftgate, dv: FINE }),
+    object: region([[SV.liftgateFront, 4.97, -1, 5]], { field: REAR.liftgate, dv: FINE, exclude: [[SV.liftgateFront, 3.72, -1, LG_EDGE]] }),
   });
 
   // --- Rear lamps / fascia -------------------------------------------------

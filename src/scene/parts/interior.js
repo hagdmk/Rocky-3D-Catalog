@@ -107,9 +107,6 @@ function skinClip(sd, s, v, o0, o1, mat = 'blackPlastic', r = 0.008) {
   const b = skinAt(s, v, sd, o1);
   return faceTo(cyl(r, a.distanceTo(b), 'y', [0, 0, 0], mat), a.clone().add(b).multiplyScalar(0.5), b.clone().sub(a), 'y');
 }
-// edge of the headliner / A-pillar trim folded over the roof rail flange just above the door seal, out to the
-// edge of the body side skin: closes the roof rail from the door openings
-const RAIL_FLANGE = [[3.945, -0.0335], [3.952, -0.0015]];
 
 function dashShell() {
   const face = (b) => [...IP_TOP, b];
@@ -403,11 +400,9 @@ export function buildInterior(reg) {
       id: `pillar-trim-${sd}`, ko: `A·B·C 필러 실내 트림 (${ko})`, en: `A/B/C pillar interior trim ${en}`, tags: sd,
       groups: ['a-b-and-c-post-interior-trim'],
       object: group(
+        // (its outer edge ends behind the door seal on the door opening pinch flange, body-side-*#pinchFlange)
         named('aPillar', group(
           region([[SV.cowlRear + 0.02, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
-          // its outer edge folded over the door opening flange (open where the drain tube crosses it)
-          skinStrip(sd, 1.7, 1.87, ...RAIL_FLANGE, 'fabric'),
-          skinStrip(sd, 1.925, SV.roof[0], ...RAIL_FLANGE, 'fabric'),
         )),
         named('bPillar', group(
           region([[b0, b1, 0.95, 1.85]], { side: sd, offset: -0.13, mat: 'greyPlastic', edges: false }),
@@ -667,10 +662,8 @@ export function buildInterior(reg) {
       // C-pillar tops up over the liftgate seal
       region([[SV.roof[0] - 0.02, 3.3, 3.888, 5], [3.3, 3.72, 3.888, 3.995]], { offset: -0.035, exclude: [panoMotors], mat: 'fabric', edges: false }),
       region([panoMotors], { offset: -0.055, mat: 'fabric', edges: false }),
-      // (along the straight top runs of the door seals, short of their rounded corners)
-      ...SIDES.flatMap(({ sd }) => [[SV.roof[0], 2.6], [2.86, 3.2]].map(([s0, s1]) => skinStrip(sd, s0, s1, ...RAIL_FLANGE, 'fabric'))),
-      // and higher across the B-pillar, over the seals' corners
-      ...SIDES.map(({ sd }) => skinStrip(sd, 2.59, 2.87, [3.963, -0.0335], [3.969, -0.0015], 'fabric')),
+      // (the rail between its edge and the body side skin is closed by the door opening pinch flange under the door
+      // seals, body-side-*#pinchFlange)
     ),
   });
   reg.add({
@@ -841,8 +834,9 @@ export function buildInterior(reg) {
       // rear trim flap of the cushion cover, tucked back under the seat back's lower edge: closes the crease
       // between cushion and seat back from below
       named('rearFlap', quadPlate([[-1.165, 0.561, -0.55], [-1.165, 0.561, 0.55], [-1.285, 0.561, 0.55], [-1.285, 0.561, -0.55]], 0.004, 'carpet')),
-      // cushion frame wire hooks (part of cushion assy #4) clipped to the rear edge of the floor pan
-      named('hooks', group(...[-0.5, 0.5].map((z) => bar([-0.735, 0.5, z], [-0.69, 0.3, z], 0.012, 0.012, 'steel')))),
+      // cushion frame wire hooks (part of cushion assy #4) from the frame pan down into the rear floor (floor-pan#rearFloor),
+      // in front of the chargers, on which the cushion stands
+      named('hooks', group(...[-0.475, 0.475].map((z) => bar([-0.712, 0.3765, z], [-0.712, 0.481, z], 0.012, 0.012, 'steel')))),
     ),
   });
   reg.add({
@@ -922,12 +916,12 @@ export function buildInterior(reg) {
       named('centreRetractor', rbox([0.06, 0.06, 0.07], backRear(0.92, 0), 'blackPlastic', { r: 0.01, rot: [0, 0, RB.rot] })), // on the seat back frame
       ...[-1, 1].map((sg) => pipe([[-1.465, 0.96, sg * 0.53], [-1.462, 1.04, sg * 0.53], [-1.445, 1.14, sg * 0.52], [-1.315, 1.145, sg * 0.51],
         backFront(1.06, 0.012, sg * 0.49), backFront(0.85, 0.012, sg * 0.42), backFront(0.66, 0.012, sg * 0.35)], 0.007, 'fabric', { bend: 0.03 })),
-      // buckles (#4) at the crease between the cushion and the seat back, on the cushion's rear edge; their straps
-      // run back into the crease and down behind the cushion, through the slots in its rear flap to the anchors
+      // buckles (#4) at the crease between the cushion and the seat back, on the cushion's rear edge; their stalks
+      // go down through the cushion to the anchor bolts (#5) on the rear seat crossmember (floor-pan#seatCrossmember)
       ...[-0.24, -0.08, 0.08, 0.24].map((z) => named(`buckle${Math.round((z + 0.24) / 0.16)}`, group(
         rbox([0.04, 0.09, 0.03], [-1.13, 0.6355, z], 'blackPlastic', { r: 0.008 }),
-        quadPlate([[-1.13, 0.5925, z - 0.0125], [-1.13, 0.5925, z + 0.0125], [-1.198, 0.5855, z + 0.0125], [-1.198, 0.5855, z - 0.0125]], 0.003, 'fabric'),
-        quadPlate([[-1.198, 0.5855, z - 0.0125], [-1.198, 0.5855, z + 0.0125], [-1.198, 0.562, z + 0.0125], [-1.198, 0.562, z - 0.0125]], 0.003, 'fabric'),
+        pipe([[-1.13, 0.592, z], [-1.13, 0.4455, z]], 0.006, 'fabric'),
+        cyl(0.009, 0.006, 'y', [-1.13, 0.4453, z], 'steel', { seg: 12 }),
       ))),
     ),
   });
