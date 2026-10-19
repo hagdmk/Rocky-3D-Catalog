@@ -81,8 +81,8 @@ export function buildClosures(reg) {
         named('strut', beam([1.12, 0.862, sg * 0.722], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
         named('strutBracket', rbox([0.02, 0.04, 0.04], [1.345, 0.815, sg * 0.615], 'steel', { r: 0.004 })),
         // BRKT-GAS PROP HOOD SIDE (#4): its flange on the hood underside (2 x NUT M8 #5 on the hood studs), inboard of the
-        // hinge, and a web down between the side and rear underhood aprons to the strut's ball stud; the web's drop
-        // stands for the hood inner panel's deep section there (the inner panel is not drawn) plus the bracket
+        // hinge, and a web down behind the side underhood apron's rear edge (outboard of the rear apron) to the strut's
+        // ball stud; the web's drop stands for the hood inner panel's deep section there (not drawn) plus the bracket
         named('hoodBracket', group(
           box([0.05, 0.004, 0.034], [1.112, 0.9314, sg * 0.722], 'steel', [0, 0, -0.12]),
           box([0.004, 0.078, 0.03], [1.1165, 0.891, sg * 0.722], 'steel'),
@@ -93,7 +93,7 @@ export function buildClosures(reg) {
       id: `liftgate-hinge-${sd}`, ko: `리프트게이트 힌지·스트럿 (${ko})`, en: `Liftgate hinge & strut ${en}`, tags: sd,
       groups: ['liftgate-hinges-and-fittings'], match: /HINGE|STRUT|BALL STUD|WEDGE|BUMPER|ANTI PINCH|push clip|SEALER|BLT|NUT/,
       object: group(
-        rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 }), // hinge on the roof rear header
+        named('hinge', rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 })), // hinge on the roof rear header
         // LIFTGATE GAS / POWER STRUT (#15/#16) on its two BALL STUDs (#17): the body stud forward, on the C-pillar
         // reinforcement top (through a hole in the upper C-pillar trim), and the liftgate stud rearward, on the liftgate
         // side band (through a hole in the liftgate side trim); closed, the strut lies along the opening edge just

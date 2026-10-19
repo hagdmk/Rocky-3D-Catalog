@@ -418,7 +418,7 @@ export const JOINTS = [
     J(`wind-deflector#arm${s}`, 'pano-cassette', 'wind deflector arm pivot on the roof cassette frame'),
   ]),
   J('chmsl', 'liftgate', 'CHMSL #8 on the liftgate top edge, under the glass'),
-  ...each((s) => [J(`liftgate-hinge-${s}`, 'roof-panel', 'liftgate hinge bolted to the roof rear header')]),
+  ...each((s) => [J(`liftgate-hinge-${s}#hinge`, 'roof-panel', 'liftgate hinge bolted to the roof rear header')]),
   ...each((s) => [
     J(`liftgate-hinge-${s}#bodyStud`, `rear-quarter-inner-${s}#cPillar`, 'BALL STUD - LIFTGATE (#17), body side, on the C-pillar reinforcement (quarter inner #23/#24); the strut (#15/#16) clipped on its ball'),
     J(`liftgate-hinge-${s}#gateStud`, 'liftgate', 'BALL STUD - LIFTGATE (#17) on the liftgate side band; the strut (#15/#16) clipped on its ball'),
