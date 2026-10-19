@@ -85,6 +85,22 @@ function skinStrip(sd, s0, s1, [v0, o0], [v1, o1], mat) {
   g.computeVertexNormals();
   return mesh(g, mat);
 }
+/** Smooth surface strip across the skin at one s, between offsets o0 and o1, over v0..v1. */
+function vStrip(sd, s, v0, v1, o0, o1, mat) {
+  const k = Math.max(2, Math.ceil((v1 - v0) / 0.05));
+  const pos = [];
+  const idx = [];
+  for (let i = 0; i <= k; i++) {
+    const v = v0 + ((v1 - v0) * i) / k;
+    for (const p of [skinAt(s, v, sd, o0), skinAt(s, v, sd, o1)]) pos.push(p.x, p.y, p.z);
+    if (i < k) idx.push(2 * i, 2 * i + 2, 2 * i + 1, 2 * i + 1, 2 * i + 2, 2 * i + 3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return mesh(g, mat);
+}
 // edge of the headliner / A-pillar trim folded over the roof rail flange just above the door seal, out to the
 // edge of the body side skin: closes the roof rail from the door openings
 const RAIL_FLANGE = [[3.945, -0.0335], [3.952, -0.0015]];
@@ -385,6 +401,13 @@ export function buildInterior(reg) {
         named('bPillar', group(
           region([[b0, b1, 0.95, 1.85]], { side: sd, offset: -0.13, mat: 'greyPlastic', edges: false }),
           region([[b0, b1, 2.85, 4.0]], { side: sd, offset: -0.1, exclude: [[bm - 0.03, bm + 0.03, 3.27, 3.45]], mat: 'greyPlastic', edges: false }),
+          // front and rear return flanges out to the door trims / door seals, so the trim wraps the pillar as a U
+          // section (the belt webbing runs inside it): below, out to just short of the door trims' lower parts;
+          // above the window-sill caps, out towards the door seals
+          ...[b0, b1].flatMap((sx) => [
+            vStrip(sd, sx, 0.95, 1.55, -0.13, -0.077, 'greyPlastic'),
+            vStrip(sd, sx, 3.03, 3.95, -0.1, -0.035, 'greyPlastic'),
+          ]),
           // foot of the lower trim down onto the scuff plate and the sill: covers the belt retractor, the pillar
           // impact sensor and the rear door harness rising from under the scuff plate into the pillar
           ...[
@@ -394,6 +417,11 @@ export function buildInterior(reg) {
               [[x, 0.323, 0.752], [x, 0.37, 0.8], [x, 0.483, 0.8], [x, 0.483, 0.752]],
               [[x, 0.362, 0.8], [x, 0.362, 0.855], [x, 0.483, 0.855], [x, 0.483, 0.8]],
             ]),
+            // outboard face down onto the sill, closing the foot round the belt retractor and the pillar impact
+            // sensor; notched at its top for the rear door harness going into the pillar
+            [[-0.19, 0.362, 0.855], [-0.315, 0.362, 0.855], [-0.315, 0.455, 0.855], [-0.19, 0.455, 0.855]],
+            [[-0.19, 0.455, 0.855], [-0.25, 0.455, 0.855], [-0.25, 0.483, 0.855], [-0.19, 0.483, 0.855]],
+            [[-0.293, 0.455, 0.855], [-0.315, 0.455, 0.855], [-0.315, 0.483, 0.855], [-0.293, 0.483, 0.855]],
           ].map((c) => quadPlate(c.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'greyPlastic')),
         )),
         // ASY, A PILLAR TRIM LOWER (#8): kick panel on the outboard side of the front footwell, from the scuff plate
