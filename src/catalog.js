@@ -86,9 +86,12 @@ export class Catalog {
 
   /** Components (instances) that a part row belongs to. */
   componentsForPart(part, visibleOnly = null) {
-    const comps = (this.componentsByGroup.get(part.group.id) || []).filter((c) => !visibleOnly || visibleOnly(c));
-    const hits = comps.filter((c) => this.partMatches(c, part));
-    return hits.length ? hits : comps;
+    // match first, then filter: a row whose own locations are filtered out yields none, rather than
+    // falling back to every other location of its group
+    const all = this.componentsByGroup.get(part.group.id) || [];
+    const hits = all.filter((c) => this.partMatches(c, part));
+    const base = hits.length ? hits : all;
+    return visibleOnly ? base.filter(visibleOnly) : base;
   }
 
   search(query, limit = 60) {

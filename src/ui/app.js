@@ -562,8 +562,9 @@ export class App {
 
   renderPartDetail(p) {
     // where the part is fitted in this configuration, also while its system is hidden
-    const fitted = this.cat.componentsForPart(p, (c) => this.viewer.inConfig(c));
-    const inst = fitted.length ? fitted : this.cat.componentsForPart(p);
+    const own = this.cat.componentsForPart(p);
+    const fitted = own.filter((c) => this.viewer.inConfig(c));
+    const inst = fitted.length ? fitted : own;
     const tr = el(`<tr class="detail"><td colspan="4"><dl class="pd">
       <dt>품번</dt><dd><b style="font-family:var(--mono)">${esc(p.pn || '—')}</b></dd>
       <dt>부품명</dt><dd>${esc(p.name)}</dd>

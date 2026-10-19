@@ -477,22 +477,85 @@ function refine(r, A, B, hollowSurface) {
 
 /** Does segment p-q cross triangle o of T?  (Moller-Trumbore, t in [0, 1]) */
 export function segmentHitsTri(p, q, T, o) {
+  return segmentHitT(p, q, T, o) >= 0;
+}
+
+/** Parameter t in [0, 1] where segment p-q crosses triangle o of T, or -1. */
+export function segmentHitT(p, q, T, o) {
   const ax = T[o]; const ay = T[o + 1]; const az = T[o + 2];
   const e1x = T[o + 3] - ax; const e1y = T[o + 4] - ay; const e1z = T[o + 5] - az;
   const e2x = T[o + 6] - ax; const e2y = T[o + 7] - ay; const e2z = T[o + 8] - az;
   const dx = q.x - p.x; const dy = q.y - p.y; const dz = q.z - p.z;
   const hx = dy * e2z - dz * e2y; const hy = dz * e2x - dx * e2z; const hz = dx * e2y - dy * e2x;
   const det = e1x * hx + e1y * hy + e1z * hz;
-  if (Math.abs(det) < 1e-12) return false;
+  if (Math.abs(det) < 1e-12) return -1;
   const f = 1 / det;
   const sx = p.x - ax; const sy = p.y - ay; const sz = p.z - az;
   const u = f * (sx * hx + sy * hy + sz * hz);
-  if (u < 0 || u > 1) return false;
+  if (u < 0 || u > 1) return -1;
   const qx = sy * e1z - sz * e1y; const qy = sz * e1x - sx * e1z; const qz = sx * e1y - sy * e1x;
   const v = f * (dx * qx + dy * qy + dz * qz);
-  if (v < 0 || u + v > 1) return false;
+  if (v < 0 || u + v > 1) return -1;
   const t = f * (e2x * qx + e2y * qy + e2z * qz);
-  return t >= 0 && t <= 1;
+  return t >= 0 && t <= 1 ? t : -1;
+}
+
+/** Wall thickness of a box solid in world units (exact under non-uniform scale and shear). */
+export function boxThickness(s) {
+  const e = s.inv.elements;
+  const r = [Math.hypot(e[0], e[4], e[8]), Math.hypot(e[1], e[5], e[9]), Math.hypot(e[2], e[6], e[10])];
+  return Math.min((2 * s.hx) / r[0], (2 * s.hy) / r[1], (2 * s.hz) / r[2]);
+}
+
+/** Principal extents (largest first, metres) of a point set given as [x, y, z] arrays. */
+export function principalExtents(pts) {
+  const n = pts.length;
+  if (n < 2) return [0, 0, 0];
+  const c = [0, 0, 0];
+  for (const p of pts) for (let i = 0; i < 3; i++) c[i] += p[i] / n;
+  const C = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (const p of pts) for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) C[i][j] += (p[i] - c[i]) * (p[j] - c[j]);
+  // Jacobi eigen-decomposition of the symmetric 3x3 covariance
+  const V = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  for (let sweep = 0; sweep < 20; sweep++) {
+    for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) {
+      if (Math.abs(C[i][j]) < 1e-18) continue;
+      const th = 0.5 * Math.atan2(2 * C[i][j], C[j][j] - C[i][i]);
+      const cs = Math.cos(th); const sn = Math.sin(th);
+      for (let k = 0; k < 3; k++) { const a = C[k][i]; const b2 = C[k][j]; C[k][i] = cs * a - sn * b2; C[k][j] = sn * a + cs * b2; }
+      for (let k = 0; k < 3; k++) { const a = C[i][k]; const b2 = C[j][k]; C[i][k] = cs * a - sn * b2; C[j][k] = sn * a + cs * b2; }
+      for (let k = 0; k < 3; k++) { const a = V[k][i]; const b2 = V[k][j]; V[k][i] = cs * a - sn * b2; V[k][j] = sn * a + cs * b2; }
+    }
+  }
+  const ext = [0, 1, 2].map((k) => {
+    let lo = Infinity; let hi = -Infinity;
+    for (const p of pts) { const d = (p[0] - c[0]) * V[0][k] + (p[1] - c[1]) * V[1][k] + (p[2] - c[2]) * V[2][k]; if (d < lo) lo = d; if (d > hi) hi = d; }
+    return hi - lo;
+  });
+  return ext.sort((u, v) => v - u);
+}
+
+/** Split points ([x, y, z] arrays) into clusters whose members lie within `link` of a neighbour. */
+export function clusterPoints(pts, link) {
+  const cell = new Map();
+  const key = (p) => `${Math.floor(p[0] / link)},${Math.floor(p[1] / link)},${Math.floor(p[2] / link)}`;
+  pts.forEach((p, i) => { const k = key(p); if (!cell.has(k)) cell.set(k, []); cell.get(k).push(i); });
+  const parent = pts.map((_, i) => i);
+  const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  const l2 = link * link;
+  pts.forEach((p, i) => {
+    const [cx, cy, cz] = [Math.floor(p[0] / link), Math.floor(p[1] / link), Math.floor(p[2] / link)];
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+      for (const j of cell.get(`${cx + dx},${cy + dy},${cz + dz}`) || []) {
+        if (j <= i) continue;
+        const q = pts[j];
+        if ((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2 <= l2) parent[find(i)] = find(j);
+      }
+    }
+  });
+  const groups = new Map();
+  pts.forEach((p, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(p); });
+  return [...groups.values()];
 }
 
 // ---------------------------------------------------------------- linear members

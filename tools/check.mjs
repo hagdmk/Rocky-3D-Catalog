@@ -200,7 +200,7 @@ if (want('joints')) {
     const r = M.shapeDist(A.shape, B.shape, { hollowSurface: true });
     const max = j.max ?? 2;
     const gap = mm(r.d);
-    if (gap > max) {
+    if (r.d * 1000 > max + 1e-6) { // unrounded: 2.4 mm does not pass a 2 mm row
       const where = `${M.fmt(r.pa)} → ${M.fmt(r.pb)}`;
       (j.known ? warnings : errors).push(`joint ${label}: gap ${gap} mm > ${max} mm ${where}  [${j.note}]`);
     } else {
@@ -300,8 +300,13 @@ const together = (a, b) => CONFIGS.some((c) => visibleIn(a, c) && visibleIn(b, c
 // hollow() marks a closed placeholder block whose contents may run inside it. A thin plate (under 20 mm)
 // or a surface-only mesh marked hollow is still tested like any other part.
 const BLOCK_MIN = 0.02;
-const isBlock = (s) => s.kind !== 'box' || 2 * Math.min(s.hx, s.hy, s.hz) * (s.scale || 1) >= BLOCK_MIN;
+const isBlock = (s) => s.kind === 'box' && M.boxThickness(s) >= BLOCK_MIN;
 const tested = (s) => !(s.hollow && isBlock(s));
+for (const it of reg.items) {
+  for (const s of shapeOfItem(it).solids) {
+    if (s.hollow && s.kind !== 'box') errors.push(`${it.id}${partName(s.mesh) ? `#${partName(s.mesh)}` : ''}: hollow() is only for closed box placeholders (this is a ${s.kind})`);
+  }
+}
 
 if (want('pass')) {
   const STEP = 0.004;
@@ -343,16 +348,18 @@ if (want('pass')) {
           for (let i = 0; i + 1 < pts.length; i++) {
             const p = pts[i];
             const q = pts[i + 1];
+            const ts = []; // distinct crossings in this segment (a hit on a shared edge counts once)
             for (let t = r.t0; t < r.t1; t++) {
               const o = t * 6;
               if (Math.max(p.x, q.x) < TB[o] || Math.min(p.x, q.x) > TB[o + 3] || Math.max(p.y, q.y) < TB[o + 1]
                 || Math.min(p.y, q.y) > TB[o + 4] || Math.max(p.z, q.z) < TB[o + 2] || Math.min(p.z, q.z) > TB[o + 5]) continue;
-              if (!M.segmentHitsTri(p, q, S.T, t * 9)) continue;
-              if (cover(a, m, b, r.mesh, p)) continue;
-              n++;
-              if (!at) at = p;
-              break;
+              const u = M.segmentHitT(p, q, S.T, t * 9);
+              if (u < 0 || ts.some((v) => Math.abs(v - u) < 1e-6)) continue;
+              ts.push(u);
             }
+            if (!ts.length || cover(a, m, b, r.mesh, p)) continue;
+            n += ts.length;
+            if (!at) at = p;
           }
           if (n && (!sol || n >= 2)) { cross += n; if (!crossAt) crossAt = at; }
         }
@@ -395,7 +402,7 @@ if (want('clash')) {
         const P = M.sample(A, region, STEP, r.t0, r.t1);
         const aName = partName(r.mesh);
         let worst = null;
-        const partArea = new Map(); // b solid -> box of the points deeper than DEPTH under a 'part' cover
+        const partArea = new Map(); // b solid -> points deeper than DEPTH under a 'part' cover
         for (let i = 0; i < P.length; i += 3) {
           for (const s of solids) {
             const d = M.insideDepth(s, P[i], P[i + 1], P[i + 2]);
@@ -404,8 +411,8 @@ if (want('clash')) {
             const c = cover(a, r.mesh, b, s.mesh, p);
             if (c === 'end' || c === 'inset') continue;
             if (c === 'part' && d <= PART_DEPTH) {
-              if (!partArea.has(s)) partArea.set(s, new THREE.Box3());
-              partArea.get(s).expandByPoint(p);
+              if (!partArea.has(s)) partArea.set(s, []);
+              partArea.get(s).push([p.x, p.y, p.z]);
               continue;
             }
             const bName = partName(s.mesh);
@@ -418,13 +425,18 @@ if (want('clash')) {
         }
         // fastened parts may overlap only locally (a bushing in an eye, a bolt in a bracket); a deep overlap
         // spread over a whole face (40 x 40 mm or more) needs an explicit inset reason on the joint row
-        for (const [s, bx] of partArea) {
-          const e = bx.getSize(new THREE.Vector3()).toArray().sort((u, v) => v - u);
-          if (e[1] < 0.04) continue;
-          const bName = partName(s.mesh);
-          if (allowed(a, b, aName) || allowed(b, a, bName)) continue;
-          errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} overlaps ${b.id}${bName ? `#${bName}` : ''}, which it is fastened to, more than ${DEPTH * 1000} mm deep over ${mm(e[0])} x ${mm(e[1])} mm `
-            + `(set inside it? give the joint row an inset reason)`);
+        // each separate overlap (points linked within 12 mm) is judged by its principal extents, so the
+        // verdict does not depend on orientation and two small lugs far apart are not one big overlap
+        for (const [s, pts] of partArea) {
+          for (const cl of M.clusterPoints(pts, 0.012)) {
+            const e = M.principalExtents(cl);
+            if (e[1] < 0.04) continue;
+            const bName = partName(s.mesh);
+            if (allowed(a, b, aName) || allowed(b, a, bName)) continue;
+            errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} overlaps ${b.id}${bName ? `#${bName}` : ''}, which it is fastened to, more than ${DEPTH * 1000} mm deep over ${mm(e[0])} x ${mm(e[1])} mm `
+              + `(set inside it? give the joint row an inset reason)`);
+            break;
+          }
         }
         if (!worst) continue;
         const key = `${a.id}#${aName}|${b.id}#${worst.into}`;
@@ -438,42 +450,73 @@ if (want('clash')) {
   info.push(`clash: ${pairsN} overlapping component pairs tested`);
 }
 if (want('float')) {
-  // A joint row already proves contact where both parts are shown (the joints section measures it),
-  // so only components without a shown joint partner are measured, smallest candidates first.
+  // Every separate piece of every component must touch another component in each configuration where
+  // it is shown. A component's meshes are grouped into pieces by mutual contact (<= 2 mm, a hollow
+  // block counts by its shell). A joint row proves contact for the pieces its reference covers,
+  // because the joints section measures it; other pieces are measured here.
+  if (!want('joints')) warnings.push('the float section trusts joint rows; run it together with the joints section');
   const okIds = new Set(FLOAT_OK.map((f) => f.id));
-  const partners = new Map(reg.items.map((it) => [it.id, new Set()]));
+  const meshShape = new Map();
+  const shapeOfMeshes = (key, ms) => { if (!meshShape.has(key)) meshShape.set(key, M.shapeOf(key, ms)); return meshShape.get(key); };
+  const touch = (A, B) => M.boxGap(A.box, B.box) <= 0.002 && M.shapeDist(A, B, { coarse: 0.008, hollowSurface: true }).d <= 0.002;
+  // joint references that prove contact: mesh -> partner component ids
+  const proven = new Map();
   for (const j of JOINTS) {
-    const a = j.a.split(/[#@]/)[0];
-    const b = j.b.split(/[#@]/)[0];
-    if (a !== b && partners.has(a) && partners.has(b)) { partners.get(a).add(b); partners.get(b).add(a); }
-  }
-  const touchCache = new Map();
-  const touches = (a, b) => {
-    const k = a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
-    if (!touchCache.has(k)) {
-      const A = shapeOfItem(a);
-      const B = shapeOfItem(b);
-      touchCache.set(k, M.boxGap(A.box, B.box) <= 0.002 && M.shapeDist(A, B, { coarse: 0.008 }).d <= 0.002);
+    if (j.known || (j.max ?? 2) > 2) continue;
+    const A = refOf(j.a);
+    const B = refOf(j.b);
+    if (A.error || B.error || A.it === B.it) continue;
+    for (const [x, y] of [[A, B], [B, A]]) {
+      for (const m of x.meshes) {
+        if (!proven.has(m)) proven.set(m, new Set());
+        proven.get(m).add(y.it.id);
+      }
     }
-    return touchCache.get(k);
-  };
+  }
+  let pieces = 0;
   let measured = 0;
+  const touchCache = new Map();
   for (const a of reg.items) {
     if (okIds.has(a.id)) continue;
+    const ms = M.meshesOf(a.root);
+    const shapes = ms.map((m, i) => shapeOfMeshes(`${a.id}/${i}`, [m]));
+    const parent = ms.map((_, i) => i);
+    const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    for (let i = 0; i < ms.length; i++) {
+      for (let k = i + 1; k < ms.length; k++) {
+        if (find(i) === find(k)) continue;
+        if (touch(shapes[i], shapes[k])) parent[find(i)] = find(k);
+      }
+    }
+    const groups = new Map();
+    ms.forEach((m, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(i); });
     const A = shapeOfItem(a);
     const near = reg.items.filter((b) => b !== a && M.boxGap(A.box, shapeOfItem(b).box) <= 0.002)
       .sort((x, y) => shapeOfItem(x).nt - shapeOfItem(y).nt);
-    for (const cfg of CONFIGS) {
-      if (!visibleIn(a, cfg)) continue;
-      if ([...partners.get(a.id)].some((id) => visibleIn(reg.byId.get(id), cfg))) continue;
-      measured++;
-      if (near.some((b) => visibleIn(b, cfg) && touches(a, b))) continue;
-      errors.push(`floating: ${a.id} touches no other part in ${cfgName(cfg)}`);
-      break;
+    for (const idx of groups.values()) {
+      pieces++;
+      const pms = idx.map((i) => ms[i]);
+      const byJoint = new Set(pms.flatMap((m) => [...(proven.get(m) || [])]));
+      const P = idx.length === ms.length ? A : shapeOfMeshes(`${a.id}/piece${idx[0]}`, pms);
+      const label = `${a.id}${groups.size > 1 ? ` (piece ${partName(pms[0]) ? `#${partName(pms[0])}` : `with mesh ${idx[0]}`})` : ''}`;
+      for (const cfg of CONFIGS) {
+        if (!visibleIn(a, cfg)) continue;
+        if ([...byJoint].some((id) => visibleIn(reg.byId.get(id), cfg))) continue;
+        measured++;
+        const ok = near.some((b) => {
+          if (!visibleIn(b, cfg)) return false;
+          const k = `${a.id}/${idx[0]}|${b.id}`;
+          if (!touchCache.has(k)) touchCache.set(k, touch(P, shapeOfItem(b)));
+          return touchCache.get(k);
+        });
+        if (ok) continue;
+        errors.push(`floating: ${label} touches no other part in ${cfgName(cfg)}`);
+        break;
+      }
     }
   }
   for (const id of okIds) if (!reg.byId.has(id)) warnings.push(`FLOAT_OK entry ${id} is not a component`);
-  info.push(`floating: every component touches another part (${measured} component/configuration cases measured, ${okIds.size} allow-listed)`);
+  info.push(`floating: every piece of every component touches another part (${pieces} pieces, ${measured} piece/configuration cases measured, ${okIds.size} allow-listed)`);
 }
 if (want('pass') && want('clash')) for (const r of PASS_OK) if (!usedPassOk.has(r)) warnings.push(`PASS_OK entry ${r.a} / ${r.b} is not needed any more`);
 
