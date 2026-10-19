@@ -758,8 +758,9 @@ export function buildChassisSystems(reg) {
     groups: ['brake-master-cylinder', 'brake-vacuum-pump-and-booster'], match: /MASTER|Reservoir|Fluid|Cap|Nut - Master|BRAKE FLUID/i,
     object: group(
       cyl(0.033, 0.17, 'x', [1.225, 0.66, bz], 'aluminum'),
-      rbox([0.09, 0.06, 0.07], [1.2, 0.73, bz], 'lensClear', { r: 0.012 }),
-      cyl(0.022, 0.02, 'y', [1.2, 0.77, bz], 'blackPlastic'),
+      // reservoir seated on top of the bore, its filler cap on top
+      rbox([0.09, 0.06, 0.07], [1.2, 0.723, bz], 'lensClear', { r: 0.012 }),
+      cyl(0.022, 0.02, 'y', [1.2, 0.763, bz], 'blackPlastic'),
     ),
   });
   reg.add({
