@@ -186,18 +186,28 @@ export function buildClosures(reg) {
   }
 
   // --- Seals -------------------------------------------------------------------------
+  // Body side primary seals round the door openings, and the margin seals that fill the shut lines just
+  // under the skin: A-pillar margin (front door seals #6) between the fender / cowl and the front door,
+  // B-pillar margin (rear door seals #5) between the front and the rear door, below the belt moulding.
   for (const { sd, ko, en } of SIDES) {
     const f = SV.frontDoor;
     const r = SV.rearDoor;
+    const margin = (s0, s1, v1) => region([[s0 - 0.003, s1 + 0.003, SV.vRockerTop, v1]], { side: sd, offset: -0.0015, mat: 'rubber', edges: false });
     reg.add({
       id: `front-door-seal-${sd}`, ko: `앞 도어 실 (${ko})`, en: `Front door seals ${en}`, tags: sd,
       groups: ['front-door-seals'],
-      object: loop([[f[0] + 0.01, 0.32], [f[1] - 0.01, 0.32], [f[1] - 0.01, 3.9], [f[0] + 0.06, 3.9], [f[0] + 0.01, 3.0], [f[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
+      object: group(
+        loop([[f[0] + 0.01, 0.32], [f[1] - 0.01, 0.32], [f[1] - 0.01, 3.9], [f[0] + 0.06, 3.9], [f[0] + 0.01, 3.0], [f[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
+        named('aPillarMargin', margin(SV.fenderRear, f[0], SV.vSill)),
+      ),
     });
     reg.add({
       id: `rear-door-seal-${sd}`, ko: `뒤 도어 실 (${ko})`, en: `Rear door seals ${en}`, tags: sd,
       groups: ['rear-door-seals'],
-      object: loop([[r[0] + 0.01, 0.32], [r[1] - 0.01, 0.32], [r[1] - 0.01, 3.0], [r[1] - 0.06, 3.9], [r[0] + 0.01, 3.9], [r[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
+      object: group(
+        loop([[r[0] + 0.01, 0.32], [r[1] - 0.01, 0.32], [r[1] - 0.01, 3.0], [r[1] - 0.06, 3.9], [r[0] + 0.01, 3.9], [r[0] + 0.01, 0.32]], sd, -0.025, 0.007, 'rubber'),
+        named('bPillarMargin', margin(f[1], r[0], SV.vBelt)),
+      ),
     });
   }
   // SEAL - HOOD (#1) is the closed loop on the frunk tub rim (frunk group #19); its rear

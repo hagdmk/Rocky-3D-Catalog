@@ -584,18 +584,23 @@ export function buildStructure(reg) {
   for (const x of [0.6, 0.1, -0.4, -0.9]) {
     for (const z of [-0.55, 0.55]) plugs.push(cyl(0.022, 0.008, 'y', [x, 0.3, z], 'rubber', { seg: 14 })); // in the floor pan
   }
-  // door tape patches (TAPE, DOOR, D44 #9) over access holes on the cabin side of each door inner
-  // panel, behind the trim pad
-  for (const { sd } of SIDES) {
-    for (const [fr, s, v] of [['F', 2.435, 1.0], ['B', 2.905, 0.9]]) {
-      const n = skinNormal(s, v);
-      if (sd === 'R') n.z = -n.z;
-      plugs.push(named(`doorTape${sd}${fr}`, faceTo(cyl(0.022, 0.002, 'y', [0, 0, 0], 'rubber', { seg: 20 }), skinAt(s, v, sd, -0.041), n, 'y')));
-    }
-  }
   reg.add({
     id: 'nvh-plugs', ko: 'NVH 댐핑 패치·바디 플러그 (여러 위치)', en: 'NVH damping patches & body plugs (various)',
-    groups: ['nvh-damping-and-paint-armor'],
+    groups: ['nvh-damping-and-paint-armor'], match: /^(?!.*TAPE, DOOR)/, // the door tapes are door-tape-*
     object: group(plugs),
   });
+  // door tape patches (TAPE, DOOR, D44 #9) over access holes on the cabin side of each door inner
+  // panel, behind the trim pad: one component per door, so they travel with their doors in the exploded
+  // view (explodeWith names the door whose exploded-view offset they share)
+  for (const { sd, ko, en } of SIDES) {
+    for (const [fr, s, v, frKo, frEn] of [['F', 2.435, 1.0, '앞', 'front'], ['B', 2.905, 0.9, '뒤', 'rear']]) {
+      const n = skinNormal(s, v);
+      if (sd === 'R') n.z = -n.z;
+      reg.add({
+        id: `door-tape-${sd}${fr}`, ko: `${frKo} 도어 NVH 테이프 (${ko})`, en: `${frEn} door NVH tape ${en}`, tags: `${sd}${fr}`,
+        groups: ['nvh-damping-and-paint-armor'], match: /TAPE, DOOR/, explodeWith: `door-${sd}${fr}`,
+        object: faceTo(cyl(0.022, 0.002, 'y', [0, 0, 0], 'rubber', { seg: 20 }), skinAt(s, v, sd, -0.041), n, 'y'),
+      });
+    }
+  }
 }

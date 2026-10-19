@@ -366,7 +366,7 @@ export const JOINTS = [
     J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE): its flanges welded to the sill inner walls'),
   ]),
   J('nvh-plugs', 'floor-pan', 'body plugs in the floor pan openings'),
-  ...corners((k) => [J(`nvh-plugs#doorTape${k}`, `door-${k}#inner`, 'TAPE, DOOR, D44 (NVH damping #9) over an access hole in the door inner panel, behind the trim pad')]),
+  ...corners((k) => [J(`door-tape-${k}`, `door-${k}#inner`, 'TAPE, DOOR, D44 (NVH damping #9) over an access hole in the door inner panel, behind the trim pad')]),
   ...each((s) => [
     J(`rocker-${s}#brackets`, `sill-${s}`, 'rocker moulding brackets #7/#8 bolted to the sill (BLT HF M8x20 #11)'),
     J(`rocker-${s}#scuff`, `sill-${s}`, 'SCUFF PLATE, PLASTIC (rocker panel trim #6) taped (TAPE, DBL SIDED ADHESIVE, SCUFF PLATE #16) on the sill inner top edge'),
