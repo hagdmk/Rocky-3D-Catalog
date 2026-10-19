@@ -109,6 +109,41 @@ function dashShell() {
     // IP side covers (#15/#16)
     capZ([...IP_TOP, ...IP_LH_KICK], -0.735, 'leather'),
     capZ([...IP_TOP, ...IP_RH_OUT], 0.735, 'leather'),
+    // and the side covers step out to the door trim, forward to the hinge pillar
+    ...SIDES.map(({ sd, sg }) => named(`end${sd}`, ipEnd(sg, sd === 'L' ? IP_LH_KICK : IP_RH_OUT))),
+  );
+}
+
+/**
+ * IP end (side cover #15/#16), from the shell end at |z| 0.735 out to the door trim (0.838), under the top pad's
+ * outer edge, over the face and the lower edge, back to the door trim's front edge, then forward of it out to 0.855 and on to the hinge pillar,
+ * with a grommet notch for the front door harness at the pillar.  The cross-car beam end bracket and the IP harness end
+ * lie inside it.
+ */
+function ipEnd(sg, low) {
+  const [ZI, ZO, ZC, XD, XH, YT] = [0.735, 0.838, 0.855, 0.842, 0.876, 0.926];
+  const lerp = (x) => {
+    for (let i = 0; i + 1 < low.length; i++) {
+      const [[x0, y0], [x1, y1]] = [low[i], low[i + 1]];
+      if (x <= x1) return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+    }
+    return low[low.length - 1][1];
+  };
+  const bottom = [...low.filter(([x]) => x < XD), [XD, lerp(XD)]];
+  const face = IP_TOP.filter(([x]) => x < XD);
+  const prof = [[XD, YT], ...face, ...bottom];
+  const q = (pts) => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'leather');
+  const yb = lerp(XH);
+  return group(
+    loftZ([{ z: sg * ZI, pts: prof }, { z: sg * ZO, pts: prof }], 'leather'),
+    capZ([...face, ...bottom, [XD, YT]], sg * ZO, 'leather'),
+    // step out at the door trim's front edge, and the closeout on to the hinge pillar
+    q([[XD, lerp(XD), ZO], [XD, lerp(XD), ZC], [XD, YT, ZC], [XD, YT, ZO]]),
+    q([[XD, lerp(XD), ZC], [XH, yb, ZC], [XH, 0.735, ZC], [XD, 0.735, ZC]]),
+    q([[XD, 0.735, ZC], [0.86, 0.735, ZC], [0.86, 0.8, ZC], [XD, 0.8, ZC]]),
+    q([[XD, 0.8, ZC], [XH, 0.8, ZC], [XH, YT, ZC], [XD, YT, ZC]]),
+    q([[XD, YT, ZO], [XD, YT, ZC], [XH, YT, ZC], [XH, YT, ZI]]),
+    q([[XD, YT, ZI], [XD, YT, ZO], [XH, YT, ZI], [XH, YT, ZI]]),
   );
 }
 
@@ -332,7 +367,7 @@ export function buildInterior(reg) {
       groups: ['a-b-and-c-post-interior-trim'],
       object: group(
         named('aPillar', group(
-          region([[SV.cowlRear + 0.02, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
+          region([[SV.cowlRear, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
           // its outer edge folded over the door opening flange (open where the drain tube crosses it)
           skinStrip(sd, 1.7, 1.87, ...RAIL_FLANGE, 'fabric'),
           skinStrip(sd, 1.925, SV.roof[0], ...RAIL_FLANGE, 'fabric'),
