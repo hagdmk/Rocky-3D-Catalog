@@ -410,7 +410,7 @@ if (want('clash')) {
       pairsN++;
       // A point of mesh r.mesh of a in the solids of b: [x, y, z, a mesh, b solid] when it lies 10-40 mm deep in
       // one of them under a 'part' cover (the first such solid, so each point counts once), else null; every
-      // other hit deeper than 10 mm that no joint covers goes to free(s, d, p, c).
+      // other hit deeper than 10 mm (no joint covers it, or a 'part' cover deeper than 40 mm) goes to free(s, d, p, c).
       const classify = (r, x, y, z, free) => {
         let inPart = null;
         for (const s of solids) {
