@@ -341,7 +341,7 @@ export const JOINTS = [
   ...each((s) => [
     J(`hood-hinge-${s}#strutBracket`, `hood-hinge-${s}#strut@end`, 'GAS STRUT - HOOD (#1) end fitting on the ball stud of its body bracket BRKT-GAS PROP BODY (#2)'),
     J(`hood-hinge-${s}#strutBracket`, `front-inner-${s}#tower`, 'BRKT-GAS PROP LH/RH BODY (hood hinges #2) bolted (BLT HF M6x15 #3) to the rear face of the shock tower'),
-    J(`hood-hinge-${s}#base`, 'floor-pan#cowlFront', 'HOOD HINGE (#6) body leaf bolted (BLT HEX FLG M8x20 #7, NUT M8 #5) to the cowl front wall of the body'),
+    J(`hood-hinge-${s}#base`, `front-inner-${s}`, 'HOOD HINGE (#6) body flange bolted from above (BLT HEX FLG M8x20 #7, NUT M8 #5) to the top of the shotgun upper at the cowl side (side underhood aprons #2/#3 have holes for the hinges)'),
   ]),
   // rear structure and bumper
   ...each((s) => [
@@ -449,7 +449,7 @@ export const JOINTS = [
   ...[0, 1, 2, 3].map((i) => J(`rear-belts#buckle${i}`, 'floor-pan#seatCrossmember', 'BUCKLE ASY, 2ND ROW (2nd row seat belts #4) bolted (#5) to the rear seat crossmember')),
   ...each((s) => [J('floor-pan#seatCrossmember', `rear-rail-${s}#railFront`, 'rear seat crossmember of the body in white (ECOAT BODY IN WHITE) welded across the rear rail fronts (rear end panels #5/#6)')]),
   ...each((s) => [
-    J(`pedestrian-protection#actuator${s}`, `front-inner-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 bracket bolted (BLT HF M6x20 #8) to the shotgun rail beside the hood hinge'),
+    J(`pedestrian-protection#flange${s}`, `front-inner-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 flange bolted from above (BLT HF M6x20 #8) to the shotgun rail top beside the hinge base'),
   ]),
   J('pedestrian-protection#sensor', 'front-bumper-beam#beam', 'PEDESTRIAN PROTECTION SENSING SYSTEM (#9) clipped along the front face of the bumper beam'),
   ...['bracket0', 'bracket1'].map((n) => J(`instrument-cluster#${n}`, 'dash-support-frame#beam', 'cluster bracket bolted to the cross-car beam')),

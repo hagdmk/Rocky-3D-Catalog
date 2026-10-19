@@ -1057,12 +1057,12 @@ export function buildInterior(reg) {
     object: group(
       // sensing system (#9): its tube clipped along the front edge of the bumper beam, in the energy absorber
       named('sensor', tube([[2.39, 0.47, -0.6], [2.425, 0.47, -0.3], [2.432, 0.47, 0], [2.425, 0.47, 0.3], [2.39, 0.47, 0.6]], 0.008, 'darkMetal')),
-      // hood actuators (#7) under the rear of the hood hinges, which they lift, each bolted (#8 BLT HF M6x20) on
-      // its bracket to the inner face of the shotgun rail outboard of the hinge
+      // hood actuators (#7) under the rear of the hood hinges, which they lift: the cylinder stands just inboard of the
+      // shotgun rail's inner face, its plunger under the hinge's inboard flange, and its own horizontal flange (no
+      // bracket) lies on the rail top beside the hinge's body leaf, bolted from above with 2 vertical bolts (#8 BLT HF M6x20)
       ...SIDES.map(({ sd, sg }) => named(`actuator${sd}`, group(
-        cyl(0.02, 0.05, 'y', [1.11, 0.797, sg * 0.592], 'darkMetal'),
-        box([0.03, 0.008, 0.139], [1.11, 0.816, sg * 0.6715], 'steel'),
-        box([0.03, 0.033, 0.004], [1.11, 0.8285, sg * 0.739], 'steel'),
+        cyl(0.02, 0.06, 'y', [1.03, 0.862, sg * 0.715], 'darkMetal'),
+        named(`flange${sd}`, box([0.03, 0.004, 0.044], [1.03, 0.879, sg * 0.735], 'steel')),
       ))),
     ),
   });

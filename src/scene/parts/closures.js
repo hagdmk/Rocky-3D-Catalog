@@ -6,7 +6,7 @@ import { skinAt, skinNormal, skinPath, findOnFace } from '../body.js';
 import { region, SV } from './exterior.js';
 import { xOf } from '../profile.js';
 import {
-  V, group, named, rbox, box, cyl, beam, tube, pipe, faceTo, mesh, quadPlate,
+  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, faceTo, mesh, quadPlate,
 } from '../geom.js';
 
 const SIDES = [
@@ -48,17 +48,34 @@ export function buildClosures(reg) {
         rbox([0.05, 0.05, 0.036], [xr, 0.86, sg * 0.935], 'steel', { r: 0.008 }),
       ),
     });
+    // The hood hinge (#6) sits on top of the rear end of the shotgun upper rail (front-inner-*, structure.js), at the
+    // cowl side: plates following the rail top, built along the rail's own axis (A -> B) and its top-face normal
+    const RA = new THREE.Vector3(1.85, 0.758, sg * 0.72);
+    const RB = new THREE.Vector3(0.98, 0.863, sg * 0.785);
+    const railQ = bar(RA, RB, 0.04, 0.07, 'steel').quaternion;
+    const nTop = new THREE.Vector3(1, 0, 0).applyQuaternion(railQ);
+    if (nTop.y < 0) nTop.negate();
+    const onRail = (x, off) => RA.clone().lerp(RB, (1.85 - x) / 0.87).addScaledVector(nTop, off); // rail top face at off 0.02
+    const railPlate = (x0, x1, off, t, w) => {
+      const m = bar(onRail(x0, off), onRail(x1, off), t, w, 'steel'); // a plate along the rail, not a linear member
+      delete m.userData.span;
+      return m;
+    };
     reg.add({
       id: `hood-hinge-${sd}`, ko: `후드 힌지·가스 스트럿 (${ko})`, en: `Hood hinge & gas strut ${en}`, tags: sd,
       groups: ['hood-hinges-and-fittings'],
       object: group(
-        // ahead of the firewall, under the rear underhood apron (the hinge arm reaches the hood
-        // through the apron slot); gas strut (#1) from the hinge forward to its body bracket (#2,
-        // BLT HF M6x15 #3) on the rear face of the shock tower, below the tower top and the apron
-        rbox([0.12, 0.06, 0.03], [1.065, 0.85, sg * 0.58], 'steel', { r: 0.008 }),
-        // body leaf of the hinge, bolted (BLT M8 #7, NUT M8 #5) to the cowl front wall (floor-pan#cowlFront)
-        named('base', rbox([0.008, 0.06, 0.045], [1.003, 0.835, sg * 0.58], 'steel', { r: 0.003 })),
-        named('strut', beam([1.11, 0.86, sg * 0.565], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
+        // body leaf: a horizontal flange on the rail top, bolted from above with 2 vertical M8 bolts (BLT HEX FLG
+        // M8x20 #7) into the rail, nuts (NUT M8 #5) underneath; the side aprons (underhood trim #2/#3) have holes for it
+        named('base', railPlate(1.12, 1.0, 0.023, 0.006, 0.045)),
+        // hinge body on the leaf (its hood leaf reaches up to the hood underside), with the active hinge's large inboard
+        // flange over the pedestrian protection actuator's plunger
+        railPlate(1.125, 1.005, 0.046, 0.04, 0.03),
+        box([0.04, 0.005, 0.078], [1.03, 0.8945, sg * 0.731], 'steel'),
+        // gas strut (#1) from an inboard arm of the hinge forward, inboard of the rail and under the side apron, to its
+        // body bracket (#2, BLT HF M6x15 #3) on the rear face of the shock tower
+        box([0.02, 0.008, 0.045], [1.12, 0.869, sg * 0.7395], 'steel'),
+        named('strut', beam([1.12, 0.862, sg * 0.722], [1.338, 0.818, sg * 0.615], 0.01, 'steel')),
         named('strutBracket', rbox([0.02, 0.04, 0.04], [1.345, 0.815, sg * 0.615], 'steel', { r: 0.004 })),
       ),
     });

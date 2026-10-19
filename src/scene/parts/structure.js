@@ -270,8 +270,7 @@ export function buildStructure(reg) {
         ]), 'aluminum');
       })()),
       // dash panel upper edge (cowl front wall) in front of the dash insulator, under the plenum front edge,
-      // outboard of the insulator's upper strip (|z| 0.54) to the shotgun rail ends: the hood hinges are
-      // bolted to it (hood-hinge-*#base)
+      // outboard of the insulator's upper strip (|z| 0.54) to the shotgun rail ends: closes the bulkhead's cowl corners
       named('cowlFront', plates(SIDES.map(({ sg }) => quadPlate([[0.997, 0.8, sg * 0.54], [0.997, 0.8, sg * 0.75], [0.997, 0.867, sg * 0.75], [0.997, 0.867, sg * 0.54]], 0.004, 'aluminum')), 'aluminum')),
       // between the hinge pillars (|z| 0.79); its outboard front corners stop short of the shotgun
       // rail ends (x 0.975, |z| 0.75-0.82)
