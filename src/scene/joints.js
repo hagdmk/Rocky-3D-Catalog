@@ -222,7 +222,7 @@ export const JOINTS = [
   J('dcdc-12v-cable#cable@start', 'dc-dc-converter', '12 V cable from the DC-DC converter'),
   J('dcdc-12v-cable#cable@end', '12v-battery', '12 V cable to the 12 V battery'),
   J('dc-dc-converter#case', 'front-inner-R#rail', 'DC-DC converter bracket on the RH rail (BRKT DC-DC)'),
-  ...['rear-hvjb', 'charger-master', 'charger-slave'].map((id) => J(id, 'hv-battery', 'mounted on the pack hump under the rear seat')),
+  ...['rear-hvjb', 'charger-master', 'charger-slave'].map((id) => J(id, 'floor-pan#rearFloor', 'mounted on the rear floor over the pack hump under the rear seat')),
   J('four-way-valve#bracket', 'frunk', 'BRKT - 4 WAY VALVE (battery cooling #13 = motor cooling #24) bolted under the frunk tub (BLT M6x20 #14)'),
   J('four-way-valve#valve', 'four-way-valve#bracket', 'VALVE 4-WAY (battery cooling #12 = motor cooling #23) on its bracket'),
   J('ambient-temp-sensor', 'cooling-duct', 'SENSOR ASSEMBLY AMBIENT AIR TEMPERATURE (ducting #11 = radiator #2) clipped under the front ducting'),
@@ -444,9 +444,11 @@ export const JOINTS = [
   J('glove-box', 'dash-panel', 'ASY GLOVE BOX COMP (dash panel #24) hinged in the lower right IP'),
   J('dash-panel', 'dash-support-frame#beam', 'IP carrier (#10) bolted to the cross-car beam (BLT HEX FL M8x25, dash panel #45 = dash support frame #7)'),
   J('rearview-mirror', 'windshield', 'mirror base on its button bonded to the windshield'),
-  J('rear-seat-cushion#hooks', 'floor-pan#rearFloor', 'rear cushion frame wire hooks (cushion assy #4) clipped into the rear floor'),
-  J('rear-seat-cushion#hooks', 'rear-seat-cushion#pan', 'hooks on the cushion frame pan'),
-  ...[0, 1, 2, 3].map((i) => J(`rear-belts#buckle${i}`, 'floor-pan#seatCrossmember', 'BUCKLE ASY, 2ND ROW (2nd row seat belts #4) bolted (#5) to the rear seat crossmember')),
+  J('rear-seat-cushion#legs', 'floor-pan#rearFloor', 'ASY - CUSHION STRUCTURE 2nd SEAT (2nd row seat frame #1) leg brackets bolted to the rear floor (BLT M10x22 / BLT M8x16, use to install item #1)'),
+  J('rear-seat-cushion#legs', 'rear-seat-cushion#pan', 'leg brackets on the cushion structure'),
+  ...each((s) => [J(`rear-seat-cushion#rearBracket${s}`, 'floor-pan#seatCrossmember', 'cushion structure (2nd row seat frame #1) rear tube end bracket bolted (BLT M10x22) to the rear seat crossmember over the rear rail front')]),
+  ...[0, 1, 2].map((i) => J(`rear-belts#buckle${i}`, 'rear-seat-cushion', 'BUCKLE ASY, 2ND ROW (2nd row seat belts #4) bolted (#5) to its bracket on the rear tube of the cushion structure (2nd row seat frame #1)',
+    { inset: 'the cushion is drawn as a solid block without the buckle slots in its cover (2nd row seat assy #4 view): the buckle head stands up through its slot' })),
   ...each((s) => [J('floor-pan#seatCrossmember', `rear-rail-${s}#railFront`, 'rear seat crossmember of the body in white (ECOAT BODY IN WHITE) welded across the rear rail fronts (rear end panels #5/#6)')]),
   ...each((s) => [
     J(`pedestrian-protection#actuator${s}`, `front-inner-${s}`, 'PEDESTRIAN PROTECTION ACTUATOR #7 bracket bolted (BLT HF M6x20 #8) to the shotgun rail beside the hood hinge'),
@@ -483,7 +485,6 @@ export const PASS_OK = [
   ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier (center tunnel trim #1) through the opening in its front face, below the front closeout panel (#14), and runs inside it to its outlet in the carrier's side wall; the carrier is drawn as a closed shell` })),
   { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the outboard flange of the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness passes down through it in its grommet (rear-subframe-harness#grommet), under the trunk side finisher' },
   { a: 'hood-latch#cable', b: 'dash-panel', reason: 'the lower instrument panel is drawn without the opening for the hood release handle (#1) in its LH lower edge: the release cable (#2) runs inside the panel along its LH end cover and reaches the handle through that opening' },
-  ...[0, 1, 2, 3].map((i) => ({ a: `rear-belts#buckle${i}`, b: 'rear-seat-cushion', reason: 'the 2nd-row cushion and its frame pan are drawn solid, without the slots the buckle stalks (2nd row seat belts #4) pass down through to their anchor bolts (#5) on the rear seat crossmember' })),
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).
