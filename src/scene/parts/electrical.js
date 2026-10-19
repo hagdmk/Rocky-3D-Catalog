@@ -7,7 +7,7 @@ import { SV } from './exterior.js';
 import { SEAT } from './interior.js';
 import { STEER } from './chassis.js';
 import {
-  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, disc, faceTo, mesh,
+  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, disc, torus, faceTo, mesh,
 } from '../geom.js';
 
 const SIDES = [
@@ -400,13 +400,17 @@ export function buildElectrical(reg) {
     ),
   });
   reg.add({
-    id: 'passive-entry', ko: '패시브 엔트리 안테나(콘솔·뒤 범퍼)', en: 'Passive entry antennas (console, rear bumper)',
+    id: 'passive-entry', ko: '패시브 엔트리 안테나(콘솔·IP 엔드캡·뒤 범퍼)', en: 'Passive entry antennas (console, IP end caps, rear bumper)',
     groups: ['remote-and-passive-entry'],
     object: group(
-      // LF coils (#1) inside the centre console shell, on the carpeted tunnel floor: the front one in the
-      // dead key fob bracket (#10, push-pull rivets #11), the rear one in the console's rear end
-      named('consoleCoil', rbox([0.12, 0.025, 0.04], [0.32, 0.3235, 0], 'blackPlastic', { r: 0.006 })),
-      named('rearCoil', rbox([0.12, 0.025, 0.04], [-0.33, 0.3235, 0], 'blackPlastic', { r: 0.006 })),
+      // LF coils (#1, ring-shaped, qty 5) lying on the carpeted tunnel floor inside the centre console shell: the
+      // front one in the dead key fob bracket (#10, push-pull rivets #11); the rear one stands for one of the
+      // coils whose location the catalog does not give, drawn in the console's rear end
+      named('consoleCoil', torus(0.022, 0.007, 'y', [0.32, 0.3177, 0], 'blackPlastic')),
+      named('rearCoil', torus(0.022, 0.007, 'y', [-0.33, 0.3177, 0], 'blackPlastic')),
+      // rectangular antennas (#4): two fore-aft against the inside of the IP end caps' outer walls (SCR M4 #9),
+      // the third in the rear bumper
+      ...SIDES.map(({ sd, sg }) => named(`ipAntenna${sd}`, rbox([0.14, 0.025, 0.012], [0.62, 0.85, sg * 0.832], 'blackPlastic', { r: 0.003 }))),
       rbox([0.04, 0.025, 0.14], [-2.33, 0.56, 0], 'blackPlastic', { r: 0.006 }),
     ),
   });

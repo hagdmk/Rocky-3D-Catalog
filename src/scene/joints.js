@@ -269,6 +269,7 @@ export const JOINTS = [
 
   // --- electrical: modules on their mounts
   J('body-controller#mount', 'dash-support-frame#beam', 'MOUNT - ELECTRONICS - FOOTWELL (#6) under the cross-car beam'),
+  ...each((s) => [J(`passive-entry#ipAntenna${s}`, `dash-panel#end${s}`, 'ANTENNA PASSIVE ENTRY (#4, rectangular) screwed (SCR M4 #9, 2 per antenna) inside the IP end cap')]),
   J('body-controller#mount', 'body-controller#controller', 'body controller (#3) on the footwell electronics mount'),
   J('liftgate-ecu#bracket', 'rear-quarter-inner-R#quarterInner', 'BRACKET - ECU - PARK BRAKE AND PWR LIFTGATE (#4) bolted to the RH rear quarter inner panel'),
   J('liftgate-ecu#bracket', 'liftgate-ecu#ecu', 'power liftgate control module (#3) on its bracket'),
