@@ -1042,7 +1042,7 @@ export function buildInterior(reg) {
     // openings, against the body side inner (clipped to the rail, CLIP M6 #*), hidden behind the headliner, whose
     // edge comes down behind the door seals and folds over the rail flange above them. Its narrower front end
     // (16 mm) runs down the A-pillar behind the pillar trim, between the door seal and the headliner harness (LH),
-    // and its front tether strap carries on down the pillar under the drain tube to above the tweeter pocket. Its
+    // and its front tether strap carries on down the pillar, beside the drain tube (v 4.03), to above the tweeter pocket. Its
     // thin rear end (8 mm) drops behind the headliner, between the rear door seal and the liftgate opening seal,
     // and ends at the rear edge of the rear door glass.
     const bagPts = [[2.38, 4.0], [2.49, 4.0], [2.6, 4.0], [2.75, 4.0], [2.9, 4.0], [3.05, 4.0], [3.15, 3.998], [3.24, 3.993]]

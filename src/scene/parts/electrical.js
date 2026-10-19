@@ -275,8 +275,9 @@ export function buildElectrical(reg) {
     object: group(
       // (from the IP harness end inside the IP side cover up inside the hinge pillar's closed section into the
       // A-pillar root under the body side outer, over the tweeter pocket behind the pillar trim; then in short
-      // chords that follow the skin: up the A-pillar 1 mm outboard of the pillar trim at offset -0.03 and under
-      // the front roof drain tube, which crosses it at offset about -0.018 near s 2.05; along the roof between
+      // chords that follow the skin: up the A-pillar 1 mm outboard of the pillar trim at offset -0.03, beside the
+      // front roof drain tube (which runs on its windshield side and crosses under it at the pillar root,
+      // s 1.625 v 3.74); along the roof between
       // the pano frame at -0.02 and the headliner at -0.035)
       named('header', pipe([[0.875, 0.83, -0.84], [0.89, 0.87, -0.83], [0.889, 0.945, -0.8], [0.862, 0.958, -0.76], skinAt(1.645, 3.88, 'L', -0.01),
         skinAt(1.675, 3.96, 'L', -0.016), ...skinPath([[1.7, 4.02], [2.34, 4.02]], 'L', -0.024, 11),
