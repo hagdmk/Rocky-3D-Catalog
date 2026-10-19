@@ -412,16 +412,21 @@ export function buildInterior(reg) {
           // impact sensor and the rear door harness rising from under the scuff plate into the pillar
           ...[
             [[-0.19, 0.325, 0.752], [-0.315, 0.325, 0.752], [-0.315, 0.483, 0.752], [-0.19, 0.483, 0.752]],
-            [[-0.19, 0.483, 0.752], [-0.315, 0.483, 0.752], [-0.315, 0.483, 0.855], [-0.19, 0.483, 0.855]],
+            // top, with the slot the belt webbing leaves the retractor through
+            [[-0.19, 0.483, 0.752], [-0.315, 0.483, 0.752], [-0.315, 0.483, 0.872], [-0.19, 0.483, 0.872]],
+            [[-0.19, 0.483, 0.872], [-0.235, 0.483, 0.872], [-0.235, 0.483, 0.898], [-0.19, 0.483, 0.898]],
+            [[-0.257, 0.483, 0.872], [-0.315, 0.483, 0.872], [-0.315, 0.483, 0.898], [-0.257, 0.483, 0.898]],
+            [[-0.19, 0.483, 0.898], [-0.315, 0.483, 0.898], [-0.315, 0.483, 0.908], [-0.19, 0.483, 0.908]],
             ...[-0.19, -0.315].flatMap((x) => [
               [[x, 0.323, 0.752], [x, 0.37, 0.8], [x, 0.483, 0.8], [x, 0.483, 0.752]],
-              [[x, 0.362, 0.8], [x, 0.362, 0.855], [x, 0.483, 0.855], [x, 0.483, 0.8]],
+              [[x, 0.362, 0.8], [x, 0.362, 0.908], [x, 0.483, 0.908], [x, 0.483, 0.8]],
             ]),
-            // outboard face down onto the sill, closing the foot round the belt retractor and the pillar impact
-            // sensor; notched at its top for the rear door harness going into the pillar
-            [[-0.19, 0.362, 0.855], [-0.315, 0.362, 0.855], [-0.315, 0.455, 0.855], [-0.19, 0.455, 0.855]],
-            [[-0.19, 0.455, 0.855], [-0.25, 0.455, 0.855], [-0.25, 0.483, 0.855], [-0.19, 0.483, 0.855]],
-            [[-0.293, 0.455, 0.855], [-0.315, 0.455, 0.855], [-0.315, 0.483, 0.855], [-0.293, 0.483, 0.855]],
+            // outboard face down onto the sill, just inside the pillar and the door trims, closing the foot round the
+            // belt retractor and the pillar impact sensor; notched at its top for the rear door harness going into the
+            // pillar
+            [[-0.19, 0.362, 0.908], [-0.315, 0.362, 0.908], [-0.315, 0.455, 0.908], [-0.19, 0.455, 0.908]],
+            [[-0.19, 0.455, 0.908], [-0.25, 0.455, 0.908], [-0.25, 0.483, 0.908], [-0.19, 0.483, 0.908]],
+            [[-0.28, 0.455, 0.908], [-0.315, 0.455, 0.908], [-0.315, 0.483, 0.908], [-0.28, 0.483, 0.908]],
           ].map((c) => quadPlate(c.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'greyPlastic')),
         )),
         // ASY, A PILLAR TRIM LOWER (#8): kick panel on the outboard side of the front footwell, from the scuff plate
