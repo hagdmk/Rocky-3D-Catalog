@@ -395,8 +395,9 @@ if (want('clash')) {
   const STEP = 0.008;
   const DEPTH = 0.010;
   const PART_DEPTH = 0.040;
-  const PART_SPAN = 0.040; // a deep fastened overlap: second principal extent below this
-  const PART_AREA = 0.0016; // ... and at most this area (m², 8 mm cells in its best-fit plane)
+  const PART_SPAN = 0.040; // a deep fastened overlap: shorter side of its minimum-area rectangle below this
+  const PART_AREA = 0.0016; // ... and at most this area (m², in its best-fit plane)
+  const FINE = 0.002; // deep fastened overlaps are measured on a resample at this step
   let pairsN = 0;
   const found = new Set();
   for (const a of reg.items) {
@@ -407,50 +408,43 @@ if (want('clash')) {
       const solids = B.solids.filter(tested);
       if (!solids.length) continue;
       pairsN++;
+      // A point of mesh r.mesh of a in the solids of b: [x, y, z, a mesh, b solid] when it lies 10-40 mm deep in
+      // one of them under a 'part' cover (the first such solid, so each point counts once), else null; every
+      // other hit deeper than 10 mm (no joint covers it, or a 'part' cover deeper than 40 mm) goes to free(s, d, p, c).
+      const classify = (r, x, y, z, free) => {
+        let inPart = null;
+        for (const s of solids) {
+          const d = M.insideDepth(s, x, y, z);
+          if (d <= DEPTH) continue;
+          const p = new THREE.Vector3(x, y, z);
+          const c = cover(a, r.mesh, b, s.mesh, p);
+          if (c === 'end' || c === 'inset') continue;
+          if (c === 'part' && d <= PART_DEPTH) { if (!inPart) inPart = [x, y, z, r.mesh, s.mesh]; continue; }
+          if (free) free(s, d, p, c);
+        }
+        return inPart;
+      };
+      const deep = []; // the 'part' points of every mesh of a in every solid of b
+      const regions = []; // [range, its region] of the meshes of a that are tested
       for (const r of A.ranges) {
         if (r.mesh.userData.span) continue; // linear members: pass-through above
         const region = new THREE.Box3().setFromObject(r.mesh).intersect(B.box);
         if (region.isEmpty()) continue;
+        regions.push([r, region]);
         const P = M.sample(A, region, STEP, r.t0, r.t1);
         const aName = partName(r.mesh);
         let worst = null;
-        const partArea = new Map(); // b solid -> points deeper than DEPTH under a 'part' cover
+        const free = (s, d, p, c) => {
+          const bName = partName(s.mesh);
+          if (allowed(a, b, aName) || allowed(b, a, bName)) {
+            if (verbose && !worst) info.push(`clash allowed: ${a.id}${aName ? `#${aName}` : ''} inside ${b.id}${bName ? `#${bName}` : ''}`);
+            return;
+          }
+          if (!worst || d > worst.d) worst = { d, p, into: bName, c };
+        };
         for (let i = 0; i < P.length; i += 3) {
-          for (const s of solids) {
-            const d = M.insideDepth(s, P[i], P[i + 1], P[i + 2]);
-            if (d <= DEPTH) continue;
-            const p = new THREE.Vector3(P[i], P[i + 1], P[i + 2]);
-            const c = cover(a, r.mesh, b, s.mesh, p);
-            if (c === 'end' || c === 'inset') continue;
-            if (c === 'part' && d <= PART_DEPTH) {
-              if (!partArea.has(s)) partArea.set(s, []);
-              partArea.get(s).push([p.x, p.y, p.z]);
-              continue;
-            }
-            const bName = partName(s.mesh);
-            if (allowed(a, b, aName) || allowed(b, a, bName)) {
-              if (verbose && !worst) info.push(`clash allowed: ${a.id}${aName ? `#${aName}` : ''} inside ${b.id}${bName ? `#${bName}` : ''}`);
-              continue;
-            }
-            if (!worst || d > worst.d) worst = { d, p, into: bName, c };
-          }
-        }
-        // fastened parts may overlap only locally (a bushing in an eye, a bolt in a bracket); a deep overlap
-        // spread over a whole face (40 x 40 mm, or 1600 mm² in all) needs an explicit inset reason on the joint row
-        // each separate overlap (points linked within 12 mm) is judged by its principal extents and by the
-        // area it covers in its best-fit plane (8 mm grid cells), so the verdict does not depend on
-        // orientation, two small lugs far apart are not one big overlap, and a long narrow strip counts
-        for (const [s, pts] of partArea) {
-          for (const cl of M.clusterPoints(pts, 0.012)) {
-            const e = M.principalExtents(cl);
-            const area = M.planarArea(cl, STEP);
-            if (e[1] < PART_SPAN && area <= PART_AREA + 1e-12) continue;
-            const bName = partName(s.mesh);
-            if (allowed(a, b, aName) || allowed(b, a, bName)) continue;
-            errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} overlaps ${b.id}${bName ? `#${bName}` : ''}, which it is fastened to, more than ${DEPTH * 1000} mm deep over ${mm(e[0])} x ${mm(e[1])} mm, ${Math.round(area * 1e6)} mm² `
-              + `(limits ${PART_SPAN * 1000} mm across, ${Math.round(PART_AREA * 1e6)} mm²; set inside it? give the joint row an inset reason)`);
-            break;
-          }
+          const q = classify(r, P[i], P[i + 1], P[i + 2], free);
+          if (q) deep.push(q);
         }
         if (!worst) continue;
         const key = `${a.id}#${aName}|${b.id}#${worst.into}`;
@@ -458,6 +452,72 @@ if (want('clash')) {
         found.add(key);
         errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} is ${mm(worst.d)} mm deep inside ${b.id}${worst.into ? `#${worst.into}` : ''} at ${M.fmt(worst.p)}`
           + (worst.c === 'part' ? ` (fastened together; limit ${PART_DEPTH * 1000} mm)` : ''));
+      }
+      // Fastened parts may overlap only locally (a bushing in an eye, a bolt in a bracket); a deep overlap spread
+      // over a whole face (40 mm across, or more than 1600 mm²) needs an explicit inset reason on the joint row.
+      // Each separate overlap (points linked within 12 mm, over all meshes of a and all solids of b, so the verdict
+      // does not depend on how either part is split into meshes; two small lugs far apart are not one big overlap)
+      // is found on the 8 mm scan, then sampled again at 2 mm around it (its box grown by 8 mm) and measured in
+      // its best-fit plane by its minimum-area rectangle (M.overlapRect): the sides and the area (rectangle x
+      // occupied share of 1 mm cells) do not depend on orientation, are not padded by a grid, and are accurate
+      // to about one 2 mm step where the overlap is bounded by the 10 mm depth contour. A PASS_OK entry exempts
+      // only its own mesh pairs: the rest of a failing overlap is clustered again and judged without them.
+      if (!deep.length) continue;
+      const zones = M.clusterPoints(deep, 0.012).map((cl) => new THREE.Box3().setFromArray(cl.flatMap((q) => [q[0], q[1], q[2]])).expandByScalar(STEP));
+      for (let merged = true; merged;) { // join overlapping zones, so no point is resampled twice
+        merged = false;
+        for (let i = 0; i < zones.length && !merged; i++) {
+          for (let j = i + 1; j < zones.length; j++) {
+            if (!zones[i].intersectsBox(zones[j])) continue;
+            zones[i].union(zones[j]);
+            zones.splice(j, 1);
+            merged = true;
+            break;
+          }
+        }
+      }
+      const fine = [];
+      for (const zone of zones) {
+        for (const [r, region] of regions) {
+          const box = region.clone().intersect(zone);
+          if (box.isEmpty()) continue;
+          const P = M.sample(A, box, FINE, r.t0, r.t1);
+          for (let i = 0; i < P.length; i += 3) {
+            const q = classify(r, P[i], P[i + 1], P[i + 2], null);
+            if (q) fine.push(q);
+          }
+        }
+      }
+      const big = (cl) => {
+        const { e, area } = M.overlapRect(cl, FINE / 2);
+        return e[1] < PART_SPAN && area <= PART_AREA + 1e-12 ? null : { e, area };
+      };
+      const okPairs = new Map();
+      const okPair = (q) => {
+        const k = `${q[3].id}|${q[4].id}`;
+        if (!okPairs.has(k)) okPairs.set(k, !!(allowed(a, b, partName(q[3])) || allowed(b, a, partName(q[4]))));
+        return okPairs.get(k);
+      };
+      for (const cl0 of M.clusterPoints(fine, 0.012)) {
+        if (!big(cl0)) continue;
+        const rest = cl0.filter((q) => !okPair(q));
+        const parts = rest.length === cl0.length ? [cl0] : M.clusterPoints(rest, 0.012);
+        let bad = null;
+        for (const cl of parts) { const v = big(cl); if (v) { bad = { cl, ...v }; break; } }
+        if (!bad) continue;
+        const { cl, e, area } = bad;
+        const n = new Map(); // mesh/solid pair -> points
+        for (const q of cl) {
+          const k = `${q[3].id}|${q[4].id}`;
+          if (!n.has(k)) n.set(k, { m: q[3], s: q[4], c: 0 });
+          n.get(k).c++;
+        }
+        const top = [...n.values()].sort((u, v) => v.c - u.c)[0];
+        const aName = partName(top.m);
+        const bName = partName(top.s);
+        errors.push(`clash: ${a.id}${aName ? `#${aName}` : ''} overlaps ${b.id}${bName ? `#${bName}` : ''}, which it is fastened to, more than ${DEPTH * 1000} mm deep over ${mm(e[0])} x ${mm(e[1])} mm, ${Math.round(area * 1e6)} mm² `
+          + `${n.size > 1 ? `(one overlap over ${n.size} mesh/solid pairs) ` : ''}(limits ${PART_SPAN * 1000} mm across, ${Math.round(PART_AREA * 1e6)} mm²; set inside it? give the joint row an inset reason)`);
+        break;
       }
     }
   }

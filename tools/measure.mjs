@@ -140,7 +140,7 @@ function polyEdgeDist(poly, x, y) {
 /**
  * How deep (m) a point lies inside a solid: distance to its surface, or -1 when outside.
  * Exact for boxes; other kinds are scaled by the smallest axis scale (only the steering wheel rim is
- * non-uniformly scaled, by 8 %).
+ * non-uniformly scaled, by 8 %). An open tube ends flat at its end rings, as in insideSolid.
  */
 export function insideDepth(s, x, y, z) {
   if (!insideSolid(s, x, y, z)) return -1;
@@ -164,8 +164,14 @@ export function insideDepth(s, x, y, z) {
     case 'lathe': d = polyEdgeDist(s.poly, Math.hypot(lx, lz), ly); break;
     case 'extrude': d = Math.min(s.hd - Math.abs(lz), polyEdgeDist(s.poly, lx, ly)); break;
     case 'tube': {
-      let best = Infinity;
+      // per segment, as insideSolid accepts the point: r minus the distance to the axis, and for the k segments
+      // at an open end also the distance to that end's ring plane; the depth is the best segment's
       const P = s.pts;
+      const E = s.ends;
+      const Z = P[P.length - 1];
+      const e0 = E ? (lx - P[0].x) * E.t0.x + (ly - P[0].y) * E.t0.y + (lz - P[0].z) * E.t0.z : Infinity;
+      const e1 = E ? (Z.x - lx) * E.t1.x + (Z.y - ly) * E.t1.y + (Z.z - lz) * E.t1.z : Infinity;
+      d = -Infinity;
       for (let i = 0; i < P.length - 1; i++) {
         const a = P[i]; const b = P[i + 1];
         const abx = b.x - a.x; const aby = b.y - a.y; const abz = b.z - a.z;
@@ -173,9 +179,11 @@ export function insideDepth(s, x, y, z) {
         const L = abx * abx + aby * aby + abz * abz;
         let t = L > 0 ? (apx * abx + apy * aby + apz * abz) / L : 0;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
-        best = Math.min(best, Math.hypot(apx - t * abx, apy - t * aby, apz - t * abz));
+        let di = s.r - Math.hypot(apx - t * abx, apy - t * aby, apz - t * abz);
+        if (E && i < E.k) di = Math.min(di, e0);
+        if (E && i >= P.length - 1 - E.k) di = Math.min(di, e1);
+        if (di > d) d = di;
       }
-      d = s.r - best;
       break;
     }
     default: return -1;
@@ -546,30 +554,85 @@ export function principalAxes(pts) {
 
 const project = (p, c, a) => (p[0] - c[0]) * a[0] + (p[1] - c[1]) * a[1] + (p[2] - c[2]) * a[2];
 
-/** Principal extents (largest first, metres) of a point set given as [x, y, z] arrays. */
-export function principalExtents(pts) {
-  if (pts.length < 2) return [0, 0, 0];
-  const { c, axes } = principalAxes(pts);
-  const ext = axes.map((a) => {
-    let lo = Infinity; let hi = -Infinity;
-    for (const p of pts) { const d = project(p, c, a); if (d < lo) lo = d; if (d > hi) hi = d; }
-    return hi - lo;
-  });
-  return ext.sort((u, v) => v - u);
+/** Convex hull (counter-clockwise, no collinear points) of 2D points given as [u, v] arrays. */
+function hull2(P) {
+  const S = P.slice().sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+  if (S.length < 3) return S;
+  const cross = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+  const chain = (list) => {
+    const h = [];
+    for (const p of list) {
+      while (h.length >= 2 && cross(h[h.length - 2], h[h.length - 1], p) <= 0) h.pop();
+      h.push(p);
+    }
+    h.pop();
+    return h;
+  };
+  return chain(S).concat(chain(S.slice().reverse()));
 }
 
 /**
- * Area (m²) a point set covers in its best-fit plane: the points projected onto the two largest principal
- * axes and snapped to a g x g grid whose origin is the projected min corner; occupied cells x g².
+ * Size of a point set ([x, y, z] arrays, e.g. the surface samples of one overlap) in its best-fit plane, independent
+ * of orientation and unpadded: the points are projected onto their two largest principal axes and enclosed in the
+ * minimum-area rectangle (rotating calipers: one side lies on an edge of the 2D hull). Returns
+ * { e: [long side, short side] (m), area (m²) }: area = rectangle area x the share of occupied cells of a grid of
+ * about g x g aligned with the rectangle. Use g = half the sample step: a boundary inside the rectangle (an L, a
+ * ring) then adds at most one cell along its length.
  */
-export function planarArea(pts, g) {
-  if (!pts.length) return 0;
+export function overlapRect(pts, g) {
+  if (pts.length < 2) return { e: [0, 0], area: 0 };
   const { c, axes } = principalAxes(pts);
   const uv = pts.map((p) => [project(p, c, axes[0]), project(p, c, axes[1])]);
-  let u0 = Infinity; let v0 = Infinity;
-  for (const [u, v] of uv) { if (u < u0) u0 = u; if (v < v0) v0 = v; }
-  const cells = new Set(uv.map(([u, v]) => `${Math.floor((u - u0) / g)},${Math.floor((v - v0) / g)}`));
-  return cells.size * g * g;
+  const H = hull2(uv);
+  let best = null;
+  const tryDir = (dx, dy) => {
+    let a0 = Infinity; let a1 = -Infinity; let b0 = Infinity; let b1 = -Infinity;
+    for (const [u, v] of H) {
+      const x = u * dx + v * dy; const y = v * dx - u * dy;
+      if (x < a0) a0 = x; if (x > a1) a1 = x; if (y < b0) b0 = y; if (y > b1) b1 = y;
+    }
+    const ar = (a1 - a0) * (b1 - b0);
+    if (!best || ar < best.ar) best = { ar, dx, dy, a0, b0, Ru: a1 - a0, Rv: b1 - b0 };
+  };
+  for (let i = 0; i < H.length; i++) {
+    const p = H[i]; const q = H[(i + 1) % H.length];
+    const L = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    if (L > 1e-12) tryDir((q[0] - p[0]) / L, (q[1] - p[1]) / L);
+  }
+  if (!best) return { e: [0, 0], area: 0 };
+  const { dx, dy, a0, b0, Ru, Rv } = best;
+  // cells tile the rectangle exactly (sides Ru / nI, Rv / nJ, at least g), so its edge points never fall into a
+  // row of cells of their own; occ is padded by one cell on each side for the closing
+  const nI = Math.max(1, Math.floor(Ru / g)); const nJ = Math.max(1, Math.floor(Rv / g));
+  const cu = Ru / nI || 1; const cv = Rv / nJ || 1;
+  const W = nJ + 2;
+  const occ = new Uint8Array((nI + 2) * W);
+  for (const [u, v] of uv) {
+    const i = Math.min(nI - 1, Math.max(0, Math.floor((u * dx + v * dy - a0) / cu)));
+    const j = Math.min(nJ - 1, Math.max(0, Math.floor((v * dx - u * dy - b0) / cv)));
+    occ[(i + 1) * W + j + 1] = 1;
+  }
+  // closing (3 x 3 dilation, then erosion): fills the empty cells between samples (gaps up to two cells wide)
+  // without growing the outline
+  const dil = new Uint8Array(occ.length);
+  for (let i = 0; i < nI + 2; i++) {
+    for (let j = 0; j < W; j++) {
+      let f = 0;
+      for (let x = Math.max(0, i - 1); x <= Math.min(nI + 1, i + 1) && !f; x++) {
+        for (let y = Math.max(0, j - 1); y <= Math.min(W - 1, j + 1); y++) if (occ[x * W + y]) { f = 1; break; }
+      }
+      dil[i * W + j] = f;
+    }
+  }
+  let n = 0;
+  for (let i = 1; i <= nI; i++) {
+    for (let j = 1; j <= nJ; j++) {
+      let f = 1;
+      for (let x = i - 1; x <= i + 1 && f; x++) for (let y = j - 1; y <= j + 1; y++) if (!dil[x * W + y]) { f = 0; break; }
+      n += f;
+    }
+  }
+  return { e: Ru >= Rv ? [Ru, Rv] : [Rv, Ru], area: (Ru * Rv * n) / (nI * nJ) };
 }
 
 /** Split points ([x, y, z] arrays) into clusters whose members lie within `link` of a neighbour. */
