@@ -540,14 +540,18 @@ export class App {
     for (const p of g.parts) {
       const here = comp ? this.cat.partMatches(comp, p) : true;
       if (onlyHere && !here) continue;
+      // group mode: dim a row whose own locations are all outside the current configuration
+      const unfit = !comp && !this.cat.componentsForPart(p).some((c) => this.viewer.inConfig(c));
       if (q && !(`${p.name} ${p.desc} ${p.pn} ${p.cmt}`.toUpperCase().includes(q))) continue;
       shown++;
       const open = this.state.part === p;
       const tags = tagLabels(p.tags).map((t) => `<span class="tag-mini">${t.key === 'L' ? 'LH' : t.key === 'R' ? 'RH' : t.key === 'F' ? 'FR' : 'RR'}</span>`).join('');
-      const tr = el(`<tr class="row ${open ? 'open' : ''} ${here ? '' : 'other'}" data-i="${p.index}">
+      // break long names after commas; keep each part number on one line
+      const brk = (t) => esc(t).replace(/,(?=\S)/g, ',<wbr>');
+      const tr = el(`<tr class="row ${open ? 'open' : ''} ${here ? '' : 'other'} ${unfit ? 'unfit' : ''}" data-i="${p.index}"${unfit ? ' title="현재 차량 구성에 없음"' : ''}>
         <td class="no ${p.no === '*' ? 'na' : ''}" title="${p.no === '*' ? '일러스트에 표시되지 않음' : '일러스트 번호'}">${esc(p.no)}</td>
-        <td>${esc(p.name)}${tags}<span class="d">${esc(p.desc)}</span></td>
-        <td class="pn">${esc(p.pn || '—')}</td>
+        <td>${brk(p.name)}${tags}<span class="d">${brk(p.desc)}</span></td>
+        <td class="pn">${(p.pn || '—').split(' ').map((t) => `<span>${esc(t)}</span>`).join(' ')}</td>
         <td class="q">${esc(p.qty)}</td>
       </tr>`);
       tr.addEventListener('click', () => this.togglePart(p));
@@ -565,6 +569,7 @@ export class App {
     const own = this.cat.componentsForPart(p);
     const fitted = own.filter((c) => this.viewer.inConfig(c));
     const inst = fitted.length ? fitted : own;
+    const off = !fitted.length && own.length > 0;
     const tr = el(`<tr class="detail"><td colspan="4"><dl class="pd">
       <dt>품번</dt><dd><b style="font-family:var(--mono)">${esc(p.pn || '—')}</b></dd>
       <dt>부품명</dt><dd>${esc(p.name)}</dd>
@@ -572,7 +577,7 @@ export class App {
       <dt>수량</dt><dd>${esc(p.qty)}${p.qty === '**' ? ' (필요 수량)' : ''}</dd>
       <dt>카테고리</dt><dd>${esc(p.cat)}</dd>
       ${p.cmt ? `<dt>비고</dt><dd>${esc(p.cmt)}</dd>` : ''}
-      <dt>위치</dt><dd>${inst.map((c) => esc(c.ko)).join(', ') || '—'}</dd>
+      <dt>위치</dt><dd>${inst.map((c) => esc(c.ko)).join(', ') || '—'}${off ? ' <span class="chip off" title="\'3D 위치로 이동\'을 누르면 이 위치가 있는 차량 구성으로 바꿉니다.">현재 차량 구성에 없음</span>' : ''}</dd>
       <dt>원문</dt><dd><a href="${PDF}#page=${p.pg}" target="_blank" rel="noopener" style="color:var(--accent-2)">카탈로그 p.${p.pg} ↗</a></dd>
       <div class="acts">
         <button class="btn" data-act="copy">품번 복사</button>
