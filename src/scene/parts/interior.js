@@ -808,7 +808,7 @@ export function buildInterior(reg) {
     id: 'pods', ko: '탑승자 감지 매트(PODS, 조수석)', en: 'Passenger occupant detection (PODS)', tags: 'R',
     groups: ['passenger-presence-detection'],
     object: group(
-      box([0.38, 0.006, 0.36], [SEAT.x + 0.03 - 0.052 * Math.sin(0.08), 0.445 + 0.052 * Math.cos(0.08), SEAT.z], 'foam', [0, 0, 0.08]), // mat under the cushion cover
+      box([0.38, 0.006, 0.36], [SEAT.x + 0.03 - 0.0485 * Math.sin(0.08), 0.445 + 0.0485 * Math.cos(0.08), SEAT.z], 'foam', [0, 0, 0.08]), // mat in the cushion foam 3.5 mm under the cover
       // PODS unit (#1) screwed (trim studs #2) under the cushion pan, flush with the cushion's underside
       (() => {
         const [c, s] = [Math.cos(0.08), Math.sin(0.08)];
@@ -883,7 +883,7 @@ export function buildInterior(reg) {
     // shown stowed, folded flat (the parcel shelf can only be fitted with the 3rd row folded): the seat back
     // folded down over the cushion, its carpeted back panel flush with the load floor in the trunk carpet's
     // cut-out and the head restraints folded flat on it; drawn without the floor well the real seat folds into, as
-    // a slab standing on the trunk floor, with its pivot brackets (bolted to the floor) inside it
+    // a slab lying on the trunk floor, its pivot brackets (bolted to the floor, #6/#5) not drawn separately but inside it
     object: group(
       named('seat', rbox([0.42, 0.024, 0.9], [-1.875, 0.632, 0], 'carpet', { r: 0.006 })),
       ...[-0.2, 0.2].map((z) => rbox([0.12, 0.012, 0.18], [-2.02, 0.647, z], 'leather', { r: 0.005 })),
@@ -1004,7 +1004,8 @@ export function buildInterior(reg) {
     // and ends at the rear edge of the rear door glass.
     const bagPts = [[2.38, 4.0], [2.49, 4.0], [2.6, 4.0], [2.75, 4.0], [2.9, 4.0], [3.05, 4.0], [3.15, 3.998], [3.24, 3.993]]
       .map(([s, v]) => skinAt(s, v, sd, -0.0145));
-    const frontPts = [[2.06, 3.98], [2.14, 3.98], [2.22, 3.98], [2.3, 3.982], [2.36, 3.99], [2.42, 4.0]].map(([s, v]) => skinAt(s, v, sd, -0.012));
+    // (its first point pressed outboard onto the pillar: the tether's top is sewn under the bag's front end)
+    const frontPts = [[2.06, 3.98, -0.0095], [2.14, 3.98], [2.22, 3.98], [2.3, 3.982], [2.36, 3.99], [2.42, 4.0]].map(([s, v, o = -0.012]) => skinAt(s, v, sd, o));
     const rearPts = [[3.17, 3.995, -0.0145], [3.22, 3.975, -0.022], [3.26, 3.945, -0.029], [3.3, 3.93, -0.03], [3.4, 3.93, -0.03], [3.48, 3.93, -0.03]]
       .map(([s, v, o]) => skinAt(s, v, sd, o));
     reg.add({
