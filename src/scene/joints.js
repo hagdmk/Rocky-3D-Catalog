@@ -343,6 +343,7 @@ export const JOINTS = [
     J(`trunk-floor-ext-${s}`, 'trunk-floor#floor', 'trunk floor extension #2/#3 joined to the trunk floor #1'),
     J(`trunk-floor-ext-${s}`, `rear-quarter-inner-${s}#tower`, 'trunk floor extension (quarter inner #5/#6) joined to the shock tower'),
     J(`trunk-floor-ext-${s}`, `rear-quarter-inner-${s}#innerWall`, 'trunk floor extension (quarter inner #5/#6) outboard flange joined to the wheelhouse inner wall'),
+    J('trunk-floor#frontFloor', `rear-quarter-inner-${s}#innerWall`, 'ASY - RR TRUNK FLOOR (#1) front section: its flange beside the 2nd-row seat back joined to the wheelhouse inner wall (rear wheelhouse assy #20/#21)'),
     J('rear-bumper-beam#beam', `rear-rail-${s}#rail`, 'rear bumper beam #1 bolted to the rail ends (NUT M10 #2)'),
     J('rear-bumper-beam#crossmember', `rear-rail-${s}#rail`, 'rear crossmember #3 bolted under the rail ends'),
   ]),
@@ -408,6 +409,7 @@ export const JOINTS = [
   ...each((s) => [
     J(`trunk-side-trim-${s}#bracket`, `rear-quarter-inner-${s}`, 'trunk bracket #6 LH / #7 RH screwed to the wheelhouse'),
     J(`trunk-side-trim-${s}#bracket`, `trunk-side-trim-${s}#panel`, 'finisher lower edge clipped on the trunk bracket'),
+    J(`trunk-side-trim-${s}#strutCover`, `rear-quarter-inner-${s}#tower`, 'COVER,STRUT, TRUNK TRIM LH #8 / RH #9 (1012354 / 1012353) clipped over the shock tower top'),
   ]),
   J('liftgate-spoiler', 'liftgate', 'spoiler bonded to the liftgate (ADHESIVE TAPE, PRIMER)'),
   J('license-plate-front', 'front-fascia', 'front plate bracket screwed to the fascia (SCR, RVT)'),
@@ -466,6 +468,7 @@ export const PASS_OK = [
   ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier through the opening in its front closeout (#14) and runs under it to its outlet in the carrier's side wall; the tunnel trim is drawn as a closed shell` })),
   { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness leaves the trunk through it in its grommet (rear-subframe-harness#grommet)' },
   { a: 'door-harness-*B#lead', b: 'rocker-*', reason: 'the scuff plate is drawn as one piece across the B-pillar foot; on the car the sill trim ends at the B-pillar lower trim (pillar trim #14) and the rear door harness rises there from the body harness under the sill trim into the pillar' },
+  { a: 'hood-latch#cable', b: 'dash-panel', reason: 'the lower instrument panel is drawn without the opening for the hood release handle (#1) in its LH lower edge: the release cable (#2) runs inside the panel along its LH end cover and reaches the handle through that opening' },
 ];
 
 // FLOAT_OK: components allowed to touch nothing (drawn off the vehicle).
