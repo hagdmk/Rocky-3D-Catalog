@@ -367,7 +367,7 @@ export function buildInterior(reg) {
       groups: ['a-b-and-c-post-interior-trim'],
       object: group(
         named('aPillar', group(
-          region([[SV.cowlRear, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
+          region([[SV.cowlRear + 0.02, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
           // its outer edge folded over the door opening flange (open where the drain tube crosses it)
           skinStrip(sd, 1.7, 1.87, ...RAIL_FLANGE, 'fabric'),
           skinStrip(sd, 1.925, SV.roof[0], ...RAIL_FLANGE, 'fabric'),
@@ -422,6 +422,26 @@ export function buildInterior(reg) {
           plates.push(quadPlate([[0.928, h1, cz(0.928)], [0.973, h1, cz(0.973)], [0.973, top(0.973), cz(0.973)], [0.928, top(0.928), cz(0.928)]], 0.004, 'greyPlastic'));
           return group(...plates);
         })()),
+        // RH: removable fuse box cover of the footwell side trim, round the cabin fuse box (fusebox-cabin) under the IP
+        // lower edge, from the trim's front back over the box and under it; open towards the bulkhead, where the lower
+        // dash harness comes in to the box and the cabin harness leaves it
+        ...(sd === 'R' ? [named('fuseCover', (() => {
+          const [x0, x1, zi, zo, yb] = [0.748, 0.875, 0.572, 0.747, 0.425];
+          const yt = (x) => {
+            for (let i = 0; i + 1 < IP_RH_OUT.length; i++) {
+              const [[a, ya], [b, yb2]] = [IP_RH_OUT[i], IP_RH_OUT[i + 1]];
+              if (x <= b) return ya + ((x - a) / (b - a)) * (yb2 - ya) - 0.003;
+            }
+            return 0.7;
+          };
+          const xs = [x0, 0.8, x1];
+          const q = (pts) => quadPlate(pts, 0.004, 'greyPlastic');
+          return group(
+            ...xs.slice(0, -1).map((a, i) => q([[a, yb, zi], [xs[i + 1], yb, zi], [xs[i + 1], yt(xs[i + 1]), zi], [a, yt(a), zi]])),
+            q([[x0, yb, zi], [x0, yb, zo], [x0, yt(x0), zo], [x0, yt(x0), zi]]),
+            q([[x0, yb, zi], [x1, yb, zi], [x1, yb, zo], [x0, yb, zo]]),
+          );
+        })())] : []),
         // C-pillar trim behind the rear door glass, and behind it the ASY C-PILLAR TRIM MID (#22) on to the
         // trunk C-pillar trim, over the C-pillar reinforcement (which lies against the body side outer)
         named('cPillar', region([[SV.rearGlass[1], 3.67, 2.95, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
