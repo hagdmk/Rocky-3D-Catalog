@@ -400,9 +400,30 @@ export function buildInterior(reg) {
       id: `pillar-trim-${sd}`, ko: `A·B·C 필러 실내 트림 (${ko})`, en: `A/B/C pillar interior trim ${en}`, tags: sd,
       groups: ['a-b-and-c-post-interior-trim'],
       object: group(
-        // (its outer edge ends behind the door seal on the door opening pinch flange, body-side-*#pinchFlange)
+        // (its outer edge ends behind the door seal on the door opening pinch flange, body-side-*#pinchFlange). Its foot
+        // widens outboard down to the door seal's A-pillar run and turns down at its front edge onto the IP top / IP
+        // end top (y 0.925), closing the A-pillar root above the IP end (hinge pillar top, drain tube, harness)
         named('aPillar', group(
           region([[SV.cowlRear + 0.02, SV.roof[0], 3.86, 4.07]], { side: sd, offset: -0.03, mat: 'fabric', edges: false }),
+          region([[SV.cowlRear + 0.02, 1.675, 3.0, 3.86]], {
+            side: sd, offset: -0.03, mat: 'fabric', edges: false,
+            field: (q, s, v) => 3.0 + (s - (SV.frontDoor[0] + 0.01)) * 18 + 0.02 - v, // edge tucked behind the door seal's A-pillar run
+          }),
+          (() => {
+            const k = 12;
+            const pos = [];
+            const idx = [];
+            for (let i = 0; i <= k; i++) {
+              const p = skinAt(SV.cowlRear + 0.02, 3.0 + (1.07 * i) / k, sd, -0.03);
+              pos.push(p.x, p.y, p.z, p.x, 0.925, p.z);
+              if (i < k) idx.push(2 * i, 2 * i + 2, 2 * i + 1, 2 * i + 1, 2 * i + 2, 2 * i + 3);
+            }
+            const g = new THREE.BufferGeometry();
+            g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+            g.setIndex(idx);
+            g.computeVertexNormals();
+            return mesh(g, 'fabric');
+          })(),
         )),
         named('bPillar', group(
           region([[b0, b1, 0.95, 1.85]], { side: sd, offset: -0.13, mat: 'greyPlastic', edges: false }),
