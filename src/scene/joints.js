@@ -319,7 +319,7 @@ export const JOINTS = [
   J('interior-ducts#centreL@end', 'interior-ducts#ventCL', 'centre duct to the AIR OUTLET CENTER L (#5)'),
   J('interior-ducts#centreR@end', 'interior-ducts#ventCR', 'centre duct to the AIR OUTLET CENTER R (#7)'),
   J('interior-ducts#console@end', 'center-console', 'CENTER CONSOLE AIR DUCT (#13-#15) to the rear console outlet'),
-  ...['ventL', 'ventCL', 'ventCR', 'ventR'].map((v) => J(`interior-ducts#${v}`, 'dash-panel', 'air outlet clipped into the instrument panel')),
+  ...['ventL', 'ventCL', 'ventCR', 'ventR'].map((v) => J(`interior-ducts#${v}`, 'dash-panel', 'air outlet clipped into the instrument panel', { inset: 'the air outlet sits in its opening in the instrument panel, which is drawn without the opening' })),
   // --- body and closures
   // front structure and bumper systems
   ...each((s) => [
@@ -363,7 +363,7 @@ export const JOINTS = [
     J(`hinge-pillar-${s}`, `sill-${s}`, 'hinge pillar #5 joined to the front of the side sill', { inset: 'the hinge pillar foot is welded into the front of the sill section' }),
     J(`hinge-pillar-${s}`, `front-inner-${s}`, 'cowl side #6 joined to the upper (shotgun) rail'),
     J(`hinge-pillar-${s}`, `body-side-${s}`, 'body side outer A-pillar #7 bonded over the hinge pillar'),
-    J(`b-pillar-${s}#lower`, `sill-${s}`, 'A / B pillar comp #13 joined to the side sill'),
+    J(`b-pillar-${s}#lower`, `sill-${s}`, 'A / B pillar comp #13 joined to the side sill', { inset: 'the B-pillar foot is welded into the sill section' }),
     J('floor-pan', `sill-${s}`, 'floor pan joined between the side sills (ECOAT BODY IN WHITE): its flanges welded to the sill inner walls'),
   ]),
   J('nvh-plugs', 'floor-pan', 'body plugs in the floor pan openings'),
@@ -400,7 +400,7 @@ export const JOINTS = [
     J(`door-latch-${k}#striker`, `rear-quarter-inner-${s}#lockPillar`, 'rear door striker on the lock pillar'),
   ]),
   ...corners((k) => [
-    J(`door-latch-${k}#latch`, `door-${k}#inner`, 'door latch screwed to the door inner panel'),
+    J(`door-latch-${k}#latch`, `door-${k}#inner`, 'door latch screwed to the door inner panel', { inset: "the latch body sits in the door's rear shut face, inside the door between the inner and outer panels" }),
     ...['railF', 'railR', 'motor'].map((n) => J(`regulator-${k}#${n}`, `door-${k}#inner`, 'glass regulator bolted to the door inner panel')),
     ...['railF', 'railR'].map((n) => J(`regulator-${k}#${n}`, `door-glass-${k}`, 'regulator carrier clamped on the lower edge of the door glass')),
   ]),
@@ -440,7 +440,7 @@ export const JOINTS = [
     J(`pillar-trim-${s}#cPillarClips`, `pillar-trim-${s}#cPillarMid`, 'trim clips in the back of the C-pillar trims'),
     J(`trunk-c-pillar-trim-${s}#clip`, `rear-quarter-inner-${s}#cPillar`, 'ASY C-PILLAR REAR (interior trunk trim #11/#13) on its BRKT C-PILLAR (#9/#10), clipped (TRIM CLIP #16) to the C-pillar reinforcement'),
   ]),
-  J('touchscreen', 'dash-panel', 'MCU in the CENTER SCREEN FRAME (touchscreen #2 = dash panel #35), BLT M5x25 (#3)'),
+  J('touchscreen', 'dash-panel', 'MCU in the CENTER SCREEN FRAME (touchscreen #2 = dash panel #35), BLT M5x25 (#3)', { inset: 'the MCU sits in the centre screen frame recess of the instrument panel' }),
   J('instrument-cluster', 'dash-panel', 'cluster in the IP cluster frame and bezel (ASY FRAME INSTRUMENT CLUSTER / CLUSTER BEZEL, dash panel #28)'),
   J('glove-box', 'dash-panel', 'ASY GLOVE BOX COMP (dash panel #24) hinged in the lower right IP'),
   J('dash-panel', 'dash-support-frame#beam', 'IP carrier (#10) bolted to the cross-car beam (BLT HEX FL M8x25, dash panel #45 = dash support frame #7)'),
