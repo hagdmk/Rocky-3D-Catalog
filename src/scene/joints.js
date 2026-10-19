@@ -121,6 +121,7 @@ export const JOINTS = [
   ...corners((k) => [
     J(`brake-rotor-${k}#hat`, `knuckle-${k}#hub`, 'rotor hat on the hub flange'),
     J(`brake-rotor-${k}#hat`, `wheel-${k}#centre`, 'wheel mounting face on the rotor hat'),
+    J(`brake-rotor-${k}#shield`, `knuckle-${k}#upright`, 'dust shield #6 screwed to the knuckle (BOLT TRX BTNHD M6x16 #7)'),
     J(`brake-caliper-${k}#bracket@end`, `knuckle-${k}#upright`, 'caliper bracket bolted to the knuckle'),
     J(`brake-caliper-${k}#bracket@start`, `brake-caliper-${k}#caliper`, 'caliper on its bracket'),
     J(`wheel-speed-sensor-${k}#head`, `knuckle-${k}`, 'wheel speed sensor in the knuckle'),
