@@ -375,7 +375,11 @@ export function buildStructure(reg) {
       groups: ['rear-end-panels', 'rear-quarter-inner-panels'], match: /EXTENSION RR TRUNK FLOOR/,
       object: group(
         quadPlate([[-1.95, 0.615, sg * 0.535], [-1.56, 0.615, sg * 0.535], [-1.56, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6]], 0.006, 'aluminum'),
-        named('shelf', quadPlate([[SHELF_X0, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.84], [SHELF_X0, SHELF_Y, sg * 0.84]], 0.004, 'aluminum')),
+        named('shelf', group(
+          quadPlate([[SHELF_X0, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.6], [-1.95, SHELF_Y, sg * 0.84], [SHELF_X0, SHELF_Y, sg * 0.84]], 0.004, 'aluminum'),
+          // RH: flange out under the trunk side finisher behind its bracket, with the rear subframe harness grommet
+          ...(sd === 'R' ? [quadPlate([[-1.845, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.84], [-1.95, SHELF_Y, 0.91], [-1.845, SHELF_Y, 0.91]], 0.004, 'aluminum')] : []),
+        )),
         // behind the wheelhouse the extension closes the trunk's rear corner back to the rear body panel,
         // inboard of the liftgate drain tube; on the RH side it leaves room for the subwoofer enclosure,
         // which stands on the load floor in front of the corner

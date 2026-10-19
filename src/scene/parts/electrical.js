@@ -115,8 +115,9 @@ export function buildElectrical(reg) {
   const LD = [[0.84, 0.562, -0.66], [0.89, 0.5, -0.6], [0.9, 0.47, -0.45], [0.9, 0.465, 0], [0.9, 0.47, 0.45], [0.88, 0.49, 0.6], [0.82, 0.52, 0.655]];
   const toe = (x) => 0.2975 + (x - 0.72) * 0.456 + W + 0.0045; // harness centre lying on the toe board
   for (const { sd, sg, ko, en } of SIDES) {
-    // #lead: off the main harness forward to the dash insulator, outboard along it and down the slot
-    // between the insulator and the front flange of the A-pillar lower trim (pillar-trim-*#kickPanel),
+    // #lead: off the main harness forward to the dash insulator, outboard along it through the hole in the
+    // kick panel's front closeout (y 0.462-0.497) and down between the insulator and the front flange of the
+    // A-pillar lower trim (pillar-trim-*#kickPanel),
     // back along the outboard edge of the toe board behind that trim, then along the sill under the scuff
     // plate (rocker-*#scuff), outboard of the carpet edge, to the B-pillar foot, where the rear door
     // harness plugs in.
@@ -127,7 +128,7 @@ export function buildElectrical(reg) {
     // wheelhouse where the rear subframe harness plugs in, and #trunkLead on under the liftgate / park
     // brake ECU to the park assist ECU.
     const zs = sg * 0.765;
-    const floor = [sg < 0 ? LD[1] : LD[5], [0.958, 0.495, sg * 0.665], [0.958, 0.47, sg * 0.768], [0.952, toe(0.952), sg * 0.772], [0.84, toe(0.84), sg * 0.767],
+    const floor = [sg < 0 ? LD[1] : LD[5], [0.958, 0.495, sg * 0.665], [0.958, 0.481, sg * 0.768], [0.952, toe(0.952), sg * 0.772], [0.84, toe(0.84), sg * 0.767],
       [0.76, toe(0.76), sg * 0.766], [0.7, 0.312, zs], [0.2, 0.312, zs], [-0.32, 0.312, zs]];
     // (the climb is clipped to the top of the wheelhouse arch at |z| 0.835, 0.452 from the wheel centre, well
     // inboard of the C-pillar lower trim's outboard return and the lock pillar; it turns outboard to the body
@@ -272,10 +273,13 @@ export function buildElectrical(reg) {
     id: 'roof-harness', ko: '파노라믹 루프·헤드라이닝 하네스', en: 'Panoramic roof & headlining harness',
     groups: ['panoramic-roof-and-head-lining-harness'],
     object: group(
-      // (in short chords that follow the skin: up the A-pillar 1 mm outboard of the pillar trim at offset -0.03
-      // and under the front roof drain tube, which crosses it at offset about -0.018 near s 2.05; along the roof
-      // between the pano frame at -0.02 and the headliner at -0.035)
-      named('header', pipe([[0.875, 0.83, -0.84], ...skinPath([[1.62, 4.02], [2.34, 4.02]], 'L', -0.024, 12),
+      // (from the IP harness end inside the IP side cover up inside the hinge pillar's closed section into the
+      // A-pillar root under the body side outer, over the tweeter pocket behind the pillar trim; then in short
+      // chords that follow the skin: up the A-pillar 1 mm outboard of the pillar trim at offset -0.03 and under
+      // the front roof drain tube, which crosses it at offset about -0.018 near s 2.05; along the roof between
+      // the pano frame at -0.02 and the headliner at -0.035)
+      named('header', pipe([[0.875, 0.83, -0.84], [0.89, 0.87, -0.83], [0.889, 0.945, -0.8], [0.862, 0.958, -0.76], skinAt(1.645, 3.88, 'L', -0.01),
+        skinAt(1.675, 3.96, 'L', -0.016), ...skinPath([[1.7, 4.02], [2.34, 4.02]], 'L', -0.024, 11),
         skinAt(2.345, 4.2, 'L', -0.012), skinAt(2.35, 4.5, 'L', -0.018),
         skinAt(2.4, 4.75, 'L', -0.024), ...skinPath([[2.5, 4.75], [3.2, 4.75]], 'L', -0.026, 10),
         skinAt(3.25, 4.85, 'L', -0.026)], 0.005, 'wire', { bend: 0.05 })),
@@ -298,16 +302,17 @@ export function buildElectrical(reg) {
     id: 'rear-subframe-harness', ko: '리어 서브프레임 하네스', en: 'Rear subframe harness',
     groups: ['rear-bumper-and-subframe-harness'], match: /SUBFRAME|FEP/,
     // from the RH body harness junction above the wheelhouse, down over the back of the wheelhouse
-    // behind the trunk side trim, below the park assist ECU, then inboard just above the trunk floor
-    // extension shelf and out of the trunk through a grommet in the shelf, inboard under the shelf and
-    // over the wheelhouse inner wall, down inboard of the rail to the subframe, across on top of the
-    // rear cross member behind the drive unit
+    // behind the trunk side trim, below the park assist ECU, back outboard of the finisher wall (|z| 0.868)
+    // behind the trunk bracket and down through a grommet in the outboard flange of the trunk floor
+    // extension shelf under the finisher, then inboard and forward under the shelf and over the wheelhouse
+    // inner wall, down inboard of the rail to the subframe, across on top of the rear cross member behind
+    // the drive unit
     object: group(
       named('lead', pipe([[-1.4815, 0.805, 0.908], [-1.58, 0.785, 0.905], [-1.68, 0.745, 0.905], [-1.75, 0.715, 0.9],
-        [-1.8, 0.712, 0.895], [-1.81, 0.715, 0.86], [-1.805, 0.715, 0.826], [-1.8, 0.635, 0.822], [-1.795, 0.632, 0.7],
+        [-1.84, 0.712, 0.895], [-1.87, 0.7, 0.895], [-1.87, 0.645, 0.895], [-1.85, 0.638, 0.82], [-1.8, 0.632, 0.72],
         [-1.785, 0.632, 0.61], [-1.78, 0.62, 0.58], [-1.76, 0.49, 0.48], [-1.72, 0.33, 0.42], [-1.73, 0.345, 0], [-1.74, 0.321, -0.42]],
       0.009, 'wire', { bend: 0.03 })),
-      named('grommet', cyl(0.015, 0.014, 'y', [-1.8, 0.676, 0.823], 'rubber')),
+      named('grommet', cyl(0.015, 0.014, 'y', [-1.87, 0.676, 0.895], 'rubber')),
     ),
   });
   // --- Parking sensors, radar, cameras ---------------------------------------------------

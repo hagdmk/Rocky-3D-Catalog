@@ -255,7 +255,7 @@ export const JOINTS = [
   J('cabin-harness-R#ecuLead@end', 'liftgate-ecu#ecu', 'RH body harness branch into its connector on the power liftgate / park brake ECU'),
   J('rear-bumper-harness#lead@start', 'cabin-harness-L#rearLead@end', 'rear bumper harness (#1) plugs into the LH body harness at the trunk side'),
   J('rear-subframe-harness#lead@start', 'cabin-harness-R#rearLead@end', 'REAR SUBFRAME HARNESS (#2) plugs into the RH body harness above the wheelhouse'),
-  J('rear-subframe-harness#grommet', 'trunk-floor-ext-R#shelf', 'rear subframe harness grommet in the trunk floor extension shelf (grommet not listed in the catalog)'),
+  J('rear-subframe-harness#grommet', 'trunk-floor-ext-R#shelf', 'rear subframe harness grommet in the outboard flange of the trunk floor extension shelf, under the trunk side finisher (grommet not listed in the catalog)'),
   J('rear-subframe-harness#lead@end', 'rear-subframe#sideL', 'rear subframe harness clipped to the LH subframe side member'),
   J('dcdc-pigtail#lead@start', 'dc-dc-converter#case', 'ASY,HRN,PGTL (DC-DC group *) at the converter signal connector'),
   J('dcdc-pigtail#lead@end', 'motor-bay-harness-R#frontLead', 'ASY,HRN,PGTL (harness group *) into the RH front body harness'),
@@ -475,12 +475,11 @@ export const PASS_OK = [
   { a: 'interior-ducts#console', b: 'center-console', reason: 'CENTER CONSOLE AIR DUCT (#13-#15) enters the console carrier (center tunnel trim #1) through the opening in its front face, below the front closeout panel (#14), runs inside it and rises out of its top at the rear into the rear console outlet (#19); the carrier is drawn as a closed shell' },
   { a: 'brake-pedal#arm', b: 'dash-panel', reason: 'the pedal arm passes the cut-out in the LH footwell cover of the instrument panel' },
   { a: 'dash-harness#ip', b: 'dash-panel', reason: 'the IP harness leaves the instrument panel through the side cover openings at the A-pillars' },
-  { a: 'roof-harness#header', b: 'dash-panel', reason: 'the headliner harness drops behind the IP side cover at the A-pillar' },
   ...['L', 'R'].map((s) => ({ a: `door-harness-${s}B#lead`, b: `b-pillar-${s}`, reason: 'the lower B-pillar is a closed section drawn as a solid block: the rear door harness enters it through a grommeted hole in its inboard wall and leaves through the rear door harness grommet (#2/#4) in its rear face below the lower hinge' })),
   { a: 'hvac-drain-hose#hose', b: 'sound-insulation', reason: 'the dash insulator is drawn without the hole for the drain tube grommet (heater assembly #6); the drain tube passes through the grommet there' },
   { a: 'hvac-unit#evapPipes', b: 'sound-insulation', reason: 'the dash insulator is drawn without its opening for the evaporator pipes, which pass through the bulkhead to the TXV (A/C pipes #11) on the motor-bay side' },
   ...[['floorL', 'LH (#17)'], ['floorR', 'RH (#18)']].map(([d, n]) => ({ a: `interior-ducts#${d}`, b: 'center-console', reason: `FLOOR AIR DUCT ${n} enters the console carrier (center tunnel trim #1) through the opening in its front face, below the front closeout panel (#14), and runs inside it to its outlet in the carrier's side wall; the carrier is drawn as a closed shell` })),
-  { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness leaves the trunk through it in its grommet (rear-subframe-harness#grommet)' },
+  { a: 'rear-subframe-harness#lead', b: 'trunk-floor-ext-R', reason: 'the outboard flange of the trunk floor extension shelf is drawn without its harness hole: the rear subframe harness passes down through it in its grommet (rear-subframe-harness#grommet), under the trunk side finisher' },
   { a: 'hood-latch#cable', b: 'dash-panel', reason: 'the lower instrument panel is drawn without the opening for the hood release handle (#1) in its LH lower edge: the release cable (#2) runs inside the panel along its LH end cover and reaches the handle through that opening' },
 ];
 
