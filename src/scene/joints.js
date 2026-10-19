@@ -245,7 +245,7 @@ export const JOINTS = [
     J(`door-harness-${s}F#lead@start`, 'dash-harness#ip', 'front door harness with grommet (#1/#3) to the IP harness at the A-pillar'),
     J(`door-harness-${s}F#lead@end`, `door-controller-${s}`, 'front door harness at the DOOR CONTROLLER'),
     J(`door-harness-${s}B#lead@start`, `cabin-harness-${s}#lead@end`, 'rear door harness with grommet (#2/#4) to the body harness at the B-pillar foot'),
-    J(`door-harness-${s}B#lead@end`, `door-latch-${s}B`, 'rear door harness at the rear door latch'),
+    J(`door-harness-${s}B#lead@end`, `door-latch-${s}B#latch`, 'rear door harness connector in the rear door latch'),
     J(`liftgate-harness-${s}#lead@start`, 'roof-harness#rearT', 'liftgate harness to the headliner harness at the rear header'),
   ]),
   ...[1, 2, 3, 4, 5, 6].map((i) => J(`park-sensors-front#S${i}`, 'front-end-harness#bumper', 'FRONT BUMPER HARNESS (#1) at the park assist sensor (#3)')),
