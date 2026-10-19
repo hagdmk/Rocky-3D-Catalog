@@ -10,7 +10,9 @@
 // * pass-through: beams, bars and tubes do not run through other parts' solids
 //   or cross their surfaces (plates, skins, trims),
 // * clash: no part sits deep inside another part's solid,
-// * floating: every component touches another one in each configuration where it is shown.
+// * floating: every piece of every component (its meshes, merged plates split into their islands, grouped by
+//   contact) touches another part in each configuration where it is shown; a joint row proves only the
+//   piece its partner touches.
 // A joint lets the two parts it names overlap only where they are fastened:
 // within the end region of an @start/@end reference, or for a bounded length / depth.
 import { register } from 'node:module';
@@ -491,9 +493,56 @@ if (want('float')) {
   let rowMissed = 0;
   const touchCache = new Map();
   const touchOnce = (key, P, S) => { if (!touchCache.has(key)) touchCache.set(key, touch(P, S)); return touchCache.get(key); };
+  // A plain BufferGeometry mesh can hold several separate plates (plates() merges them to save draw calls),
+  // so it is split into its connected triangle islands (corners in the same 0.5 mm cell count as shared)
+  // before the grouping. Typed primitives (box, cylinder, tube, lathe, ...) stay whole, so their solids and
+  // hollow() keep working. An island is a surface-only mesh in world coordinates.
+  const ISLAND_Q = 0.0005;
+  const islandsOf = (m) => {
+    const g = m.geometry;
+    if (g.type !== 'BufferGeometry') return [m];
+    const pos = g.attributes.position;
+    const ix = g.index;
+    const nt = Math.floor((ix ? ix.count : pos.count) / 3);
+    const W = new Float64Array(nt * 9);
+    const par = new Int32Array(nt).map((_, t) => t);
+    const fd = (i) => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+    const cell = new Map();
+    const v = new THREE.Vector3();
+    for (let i = 0; i < nt * 3; i++) {
+      v.fromBufferAttribute(pos, ix ? ix.getX(i) : i).applyMatrix4(m.matrixWorld);
+      W[i * 3] = v.x; W[i * 3 + 1] = v.y; W[i * 3 + 2] = v.z;
+      const key = (Math.round(v.x / ISLAND_Q) * 32768 + Math.round(v.y / ISLAND_Q)) * 32768 + Math.round(v.z / ISLAND_Q);
+      const t = (i / 3) | 0;
+      const o = cell.get(key);
+      if (o === undefined) cell.set(key, t);
+      else { const r1 = fd(o); const r2 = fd(t); if (r1 !== r2) par[r1] = r2; }
+    }
+    const isl = new Map();
+    for (let t = 0; t < nt; t++) { const r = fd(t); if (!isl.has(r)) isl.set(r, []); isl.get(r).push(t); }
+    if (isl.size < 2) return [m];
+    return [...isl.values()].map((ts) => {
+      const arr = new Float64Array(ts.length * 9);
+      ts.forEach((t, k) => arr.set(W.subarray(t * 9, t * 9 + 9), k * 9));
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+      const u = new THREE.Mesh(geo);
+      u.userData = { ...m.userData };
+      return u;
+    });
+  };
+  let split = 0;
   for (const a of reg.items) {
     if (okIds.has(a.id)) continue;
-    const ms = M.meshesOf(a.root);
+    const real = M.meshesOf(a.root); // "mesh N" in the messages: the N-th of these (traversal order)
+    const ms = []; // islands
+    const owner = []; // island -> index in real
+    const isl = []; // island -> [k, islands of its mesh]
+    real.forEach((m, r) => {
+      const us = islandsOf(m);
+      if (us.length > 1) split++;
+      us.forEach((u, k) => { ms.push(u); owner.push(r); isl.push([k, us.length]); });
+    });
     const shapes = ms.map((m, i) => shapeOfMeshes(`${a.id}/${i}`, [m]));
     const parent = ms.map((_, i) => i);
     const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
@@ -508,14 +557,23 @@ if (want('float')) {
     const A = shapeOfItem(a);
     const near = reg.items.filter((b) => b !== a && M.boxGap(A.box, shapeOfItem(b).box) <= 0.002)
       .sort((x, y) => shapeOfItem(x).nt - shapeOfItem(y).nt);
+    // the named() sub-part of a piece's first mesh (not the component's own root group)
+    const nameOf = (idx) => { const m = real[owner[idx[0]]]; return m.name || (m.parent !== a.root && m.parent.name) || ''; };
+    const names = [...groups.values()].map(nameOf);
     for (const idx of groups.values()) {
       pieces++;
       const pms = idx.map((i) => ms[i]);
       const P = idx.length === ms.length ? A : shapeOfMeshes(`${a.id}/piece${idx[0]}`, pms);
-      const label = `${a.id}${groups.size > 1 ? ` (piece ${partName(pms[0]) ? `#${partName(pms[0])}` : `with mesh ${idx[0]}`})` : ''}`;
+      const name = nameOf(idx);
+      const N = owner[idx[0]];
+      const [k, n] = isl[idx[0]];
+      let what = name ? `#${name}` : `with mesh ${N}`;
+      if (n > 1) what += `, ${name ? `mesh ${N} ` : ''}island ${k + 1} of ${n} around ${M.fmt(P.box.getCenter(new THREE.Vector3()))}`;
+      else if (name && names.filter((x) => x === name).length > 1) what += `, mesh ${N}`;
+      const label = `${a.id}${groups.size > 1 ? ` (piece ${what})` : ''}`;
       // a joint row naming one of the piece's meshes counts only if its partner touches this piece
       const byJoint = new Set();
-      for (const ref of new Set(pms.flatMap((m) => proven.get(m) || []))) {
+      for (const ref of new Set(idx.flatMap((i) => proven.get(real[owner[i]]) || []))) {
         const y = refOf(ref);
         if (byJoint.has(y.it.id)) continue;
         rowTested++;
@@ -536,7 +594,7 @@ if (want('float')) {
   }
   for (const id of okIds) if (!reg.byId.has(id)) warnings.push(`FLOAT_OK entry ${id} is not a component`);
   info.push(`floating: every piece of every component touches another part (${pieces} pieces, ${measured} piece/configuration cases measured, ${okIds.size} allow-listed; `
-    + `${rowTested} joint-row partners tested on the pieces they name, ${rowMissed} of them do not touch that piece)`);
+    + `${split} plain meshes split into separate islands, ${rowTested} joint-row partners tested on the pieces they name, ${rowMissed} of them do not touch that piece)`);
 }
 if (want('pass') && want('clash')) for (const r of PASS_OK) if (!usedPassOk.has(r)) warnings.push(`PASS_OK entry ${r.a} / ${r.b} is not needed any more`);
 
