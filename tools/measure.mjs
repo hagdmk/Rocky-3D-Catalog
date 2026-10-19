@@ -140,7 +140,7 @@ function polyEdgeDist(poly, x, y) {
 /**
  * How deep (m) a point lies inside a solid: distance to its surface, or -1 when outside.
  * Exact for boxes; other kinds are scaled by the smallest axis scale (only the steering wheel rim is
- * non-uniformly scaled, by 8 %).
+ * non-uniformly scaled, by 8 %). An open tube ends flat at its end rings, as in insideSolid.
  */
 export function insideDepth(s, x, y, z) {
   if (!insideSolid(s, x, y, z)) return -1;
@@ -164,8 +164,14 @@ export function insideDepth(s, x, y, z) {
     case 'lathe': d = polyEdgeDist(s.poly, Math.hypot(lx, lz), ly); break;
     case 'extrude': d = Math.min(s.hd - Math.abs(lz), polyEdgeDist(s.poly, lx, ly)); break;
     case 'tube': {
-      let best = Infinity;
+      // per segment, as insideSolid accepts the point: r minus the distance to the axis, and for the k segments
+      // at an open end also the distance to that end's ring plane; the depth is the best segment's
       const P = s.pts;
+      const E = s.ends;
+      const Z = P[P.length - 1];
+      const e0 = E ? (lx - P[0].x) * E.t0.x + (ly - P[0].y) * E.t0.y + (lz - P[0].z) * E.t0.z : Infinity;
+      const e1 = E ? (Z.x - lx) * E.t1.x + (Z.y - ly) * E.t1.y + (Z.z - lz) * E.t1.z : Infinity;
+      d = -Infinity;
       for (let i = 0; i < P.length - 1; i++) {
         const a = P[i]; const b = P[i + 1];
         const abx = b.x - a.x; const aby = b.y - a.y; const abz = b.z - a.z;
@@ -173,9 +179,11 @@ export function insideDepth(s, x, y, z) {
         const L = abx * abx + aby * aby + abz * abz;
         let t = L > 0 ? (apx * abx + apy * aby + apz * abz) / L : 0;
         t = t < 0 ? 0 : t > 1 ? 1 : t;
-        best = Math.min(best, Math.hypot(apx - t * abx, apy - t * aby, apz - t * abz));
+        let di = s.r - Math.hypot(apx - t * abx, apy - t * aby, apz - t * abz);
+        if (E && i < E.k) di = Math.min(di, e0);
+        if (E && i >= P.length - 1 - E.k) di = Math.min(di, e1);
+        if (di > d) d = di;
       }
-      d = s.r - best;
       break;
     }
     default: return -1;
