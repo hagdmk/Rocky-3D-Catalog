@@ -195,6 +195,8 @@ table.parts tr.detail td { background: rgba(255, 179, 64, 0.05); padding: 8px 10
 .pd dt { color: var(--faint); }
 .pd dd { margin: 0; word-break: break-word; }
 .pd .acts { grid-column: 1 / -1; display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.pd .chip { display: inline-block; white-space: nowrap; }
+.pn-nw { display: inline-block; } /* a quoted part number moves to the next line whole */
 .tag-mini { font-size: 10.5px; color: var(--accent-2); border: 1px solid rgba(127, 232, 255, 0.35); border-radius: 8px; padding: 0 5px; margin-left: 4px; white-space: nowrap; }
 .empty { color: var(--faint); padding: 12px 4px; }
 

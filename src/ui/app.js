@@ -23,6 +23,9 @@ const groupFamily = (name) => name.replace(CONFIG_QUALIFIER, '').replace(/^(Dual
 const $ = (sel, el = document) => el.querySelector(sel);
 const $$ = (sel, el = document) => [...el.querySelectorAll(sel)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// part numbers quoted in text (7-2 or 7-2-1, incl. "##" wildcards): never split at the hyphen
+const PN_IN_TEXT = /\b\d{7}-[0-9A-Z#]{2}(?:-[A-Z])?(?![\w#])/gi;
+const keepPn = (t) => esc(t).replace(PN_IN_TEXT, '<span class="pn-nw">$&</span>');
 
 function el(html) {
   const t = document.createElement('template');
@@ -547,7 +550,7 @@ export class App {
       const open = this.state.part === p;
       const tags = tagLabels(p.tags).map((t) => `<span class="tag-mini">${t.key === 'L' ? 'LH' : t.key === 'R' ? 'RH' : t.key === 'F' ? 'FR' : 'RR'}</span>`).join('');
       // break long names after commas; keep each part number on one line
-      const brk = (t) => esc(t).replace(/,(?=\S)/g, ',<wbr>');
+      const brk = (t) => keepPn(t).replace(/,(?=\S)/g, ',<wbr>');
       const tr = el(`<tr class="row ${open ? 'open' : ''} ${here ? '' : 'other'} ${unfit ? 'unfit' : ''}" data-i="${p.index}"${unfit ? ' title="현재 차량 구성에 없음"' : ''}>
         <td class="no ${p.no === '*' ? 'na' : ''}" title="${p.no === '*' ? '일러스트에 표시되지 않음' : '일러스트 번호'}">${esc(p.no)}</td>
         <td>${brk(p.name)}${tags}<span class="d">${brk(p.desc)}</span></td>
@@ -572,11 +575,11 @@ export class App {
     const off = !fitted.length && own.length > 0;
     const tr = el(`<tr class="detail"><td colspan="4"><dl class="pd">
       <dt>품번</dt><dd><b style="font-family:var(--mono)">${esc(p.pn || '—')}</b></dd>
-      <dt>부품명</dt><dd>${esc(p.name)}</dd>
-      <dt>설명</dt><dd>${esc(p.desc)}</dd>
+      <dt>부품명</dt><dd>${keepPn(p.name)}</dd>
+      <dt>설명</dt><dd>${keepPn(p.desc)}</dd>
       <dt>수량</dt><dd>${esc(p.qty)}${p.qty === '**' ? ' (필요 수량)' : ''}</dd>
       <dt>카테고리</dt><dd>${esc(p.cat)}</dd>
-      ${p.cmt ? `<dt>비고</dt><dd>${esc(p.cmt)}</dd>` : ''}
+      ${p.cmt ? `<dt>비고</dt><dd>${keepPn(p.cmt)}</dd>` : ''}
       <dt>위치</dt><dd>${inst.map((c) => esc(c.ko)).join(', ') || '—'}${off ? ' <span class="chip off" title="\'3D 위치로 이동\'을 누르면 이 위치가 있는 차량 구성으로 바꿉니다.">현재 차량 구성에 없음</span>' : ''}</dd>
       <dt>원문</dt><dd><a href="${PDF}#page=${p.pg}" target="_blank" rel="noopener" style="color:var(--accent-2)">카탈로그 p.${p.pg} ↗</a></dd>
       <div class="acts">
