@@ -409,9 +409,10 @@ export function buildElectrical(reg) {
       // coils whose location the catalog does not give, drawn in the console's rear end
       named('consoleCoil', torus(0.022, 0.007, 'y', [0.32, 0.3177, 0], 'blackPlastic')),
       named('rearCoil', torus(0.022, 0.007, 'y', [-0.33, 0.3177, 0], 'blackPlastic')),
-      // rectangular antennas (#4): two fore-aft against the inside of the IP end caps' outer walls (SCR M4 #9),
-      // the third in the rear bumper
-      ...SIDES.map(({ sd, sg }) => named(`ipAntenna${sd}`, rbox([0.14, 0.025, 0.012], [0.62, 0.85, sg * 0.832], 'blackPlastic', { r: 0.003 }))),
+      // rectangular antennas (#4): two fore-aft against the inside of the IP end caps' outer walls (SCR M4 #9), set
+      // 1 mm (the moulded wall thickness; the cap wall at |z| 0.838 is drawn as a bare surface) inboard of it; the third in
+      // the rear bumper
+      ...SIDES.map(({ sd, sg }) => named(`ipAntenna${sd}`, rbox([0.14, 0.025, 0.012], [0.62, 0.85, sg * 0.831], 'blackPlastic', { r: 0.003 }))),
       rbox([0.04, 0.025, 0.14], [-2.33, 0.56, 0], 'blackPlastic', { r: 0.006 }),
     ),
   });
