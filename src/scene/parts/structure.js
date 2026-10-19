@@ -5,7 +5,7 @@ import {
   X_FRONT_AXLE as XF, X_REAR_AXLE as XR, WHEEL_Y as WY, ARCH_RADIUS, topY, sOf,
 } from '../profile.js';
 import {
-  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, mesh, quadPlate, faceTo,
+  V, group, named, hollow, rbox, box, cyl, beam, bar, tube, mesh, quadPlate, faceTo, plates,
 } from '../geom.js';
 import { skinAt, skinNormal } from '../body.js';
 import { region } from './exterior.js';
@@ -262,23 +262,23 @@ export function buildStructure(reg) {
       // inboard edge for the hood release cable grommet (hood-latch#grommet)
       named('dashCorners', (() => {
         const P = (sg, y0, y1, z0, z1) => quadPlate([[0.985, y0, sg * z0], [0.985, y0, sg * z1], [0.985, y1, sg * z1], [0.985, y1, sg * z0]], 0.004, 'aluminum');
-        return group(...SIDES.flatMap(({ sd, sg }) => [
+        return plates(SIDES.flatMap(({ sd, sg }) => [
           ...(sd === 'L'
             ? [P(sg, 0.4, 0.6379, 0.72, 0.79), P(sg, 0.6379, 0.6509, 0.733, 0.79), P(sg, 0.6509, 0.843, 0.72, 0.79)]
             : [P(sg, 0.4, 0.843, 0.72, 0.79)]),
           P(sg, 0.843, 0.868, 0.72, 0.75),
-        ]));
+        ]), 'aluminum');
       })()),
       // dash panel upper edge (cowl front wall) in front of the dash insulator, under the plenum front edge,
       // outboard of the insulator's upper strip (|z| 0.54) to the shotgun rail ends: the hood hinges are
       // bolted to it (hood-hinge-*#base)
-      named('cowlFront', group(...SIDES.map(({ sg }) => quadPlate([[0.997, 0.8, sg * 0.54], [0.997, 0.8, sg * 0.75], [0.997, 0.867, sg * 0.75], [0.997, 0.867, sg * 0.54]], 0.004, 'aluminum')))),
+      named('cowlFront', plates(SIDES.map(({ sg }) => quadPlate([[0.997, 0.8, sg * 0.54], [0.997, 0.8, sg * 0.75], [0.997, 0.867, sg * 0.75], [0.997, 0.867, sg * 0.54]], 0.004, 'aluminum')), 'aluminum')),
       // between the hinge pillars (|z| 0.79); its outboard front corners stop short of the shotgun
       // rail ends (x 0.975, |z| 0.75-0.82)
-      named('plenum', group(
+      named('plenum', plates([
         quadPlate([plenumAt(0.99, -0.74), plenumAt(0.99, 0.74), plenumAt(0.905, 0.74), plenumAt(0.905, -0.74)], 0.003, 'aluminum'),
         ...SIDES.map(({ sg }) => quadPlate([plenumAt(0.965, sg * 0.74), plenumAt(0.965, sg * 0.79), plenumAt(0.905, sg * 0.79), plenumAt(0.905, sg * 0.74)], 0.003, 'aluminum')),
-      )),
+      ], 'aluminum')),
     ),
   });
 
@@ -315,15 +315,15 @@ export function buildStructure(reg) {
         // inner #1/#2 are the outer arch panels) under the arch band at |z| 0.6,
         // ahead of and behind the shock tower: on the rail node in front (stepped up over the upper
         // link and the air line behind the node) and on the rail behind; open only under the tower
-        named('innerWall', group(
+        named('innerWall', plates([
           zPlate(sg * 0.6, [...arcPts(-1.032, XR + 0.04), [XR + 0.04, 0.6], [-1.335, 0.6], [-1.29, 0.545], [-1.032, 0.545]], 'aluminum'),
           zPlate(sg * 0.6, [...arcPts(XR - 0.16, -1.845), ...[-1.845, -1.7, XR - 0.16].map((x) => [x, railTop(x) - 0.003])], 'aluminum'),
-        )),
+        ], 'aluminum')),
         // rear quarter inner panel (#13/#14 ASSY - RR QTR INR) behind the trunk side trim, 30 mm inside
         // the body side outer: from the wheelhouse arch band, on which its lower edge stands (y 0.62
         // behind the arch), up to the C-pillar trim, below the tail lamp pocket at the rear; welded to
         // the body side outer by flanges along its upper and rear edges
-        named('quarterInner', group(
+        named('quarterInner', plates([
           region([[4.04, 4.45, 0, 1.85]], {
             side: sd, offset: -0.03, mat: 'aluminum', edges: false,
             // the arch edge is taken on the panel itself (the inward offset lifts it off the skin height),
@@ -334,7 +334,7 @@ export function buildStructure(reg) {
             },
           }),
           skinFlange(sd, [[4.04, 0.955], [4.39, 0.955], [4.39, 0.868], [4.45, 0.868], [4.45, 0.62]], 0.03, 'aluminum'),
-        )),
+        ], 'aluminum')),
         // C-pillar reinforcement (#23/#24): just inside the body side outer, outboard of the C-pillar and
         // trunk side trims, from the wheelhouse up behind the rear door opening to the roof rail
         named('cPillar', cPillarReinf(sd)),

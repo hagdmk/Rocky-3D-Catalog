@@ -192,7 +192,7 @@ export function buildClosures(reg) {
   for (const { sd, ko, en } of SIDES) {
     const f = SV.frontDoor;
     const r = SV.rearDoor;
-    const margin = (s0, s1, v1) => region([[s0 - 0.003, s1 + 0.003, SV.vRockerTop, v1]], { side: sd, offset: -0.0015, mat: 'rubber', edges: false });
+    const margin = (s0, s1, v1) => region([[s0 - 0.0005, s1 + 0.0005, SV.vRockerTop, v1]], { side: sd, offset: -0.0015, mat: 'rubber', edges: false });
     reg.add({
       id: `front-door-seal-${sd}`, ko: `앞 도어 실 (${ko})`, en: `Front door seals ${en}`, tags: sd,
       groups: ['front-door-seals'],
