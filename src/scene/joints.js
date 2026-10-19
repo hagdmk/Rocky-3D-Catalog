@@ -422,6 +422,10 @@ export const JOINTS = [
   J('rear-belts#centreRetractor', 'rear-seat-back-60', '2nd row centre seatbelt retractor (#3) bolted in the 60% seat back frame (#9 BOLT, 2ND ROW CENTER RETRACTOR)', { inset: 'the retractor is inside the seat back' }),
   J('third-row-belts', 'third-row-seats', '3rd row seatbelt assembly (#1) anchored on the seat back frame (ASY - THIRD ROW SEAT #8)'),
   J('third-row-seats#mounts', 'trunk-floor#floor', 'ASY - THIRD ROW SEAT (#8) pivot brackets bolted to the trunk floor (BLT M10x28.4 #6, BARREL NUT M10 #5)'),
+  ...each((s) => [
+    J(`pillar-trim-${s}#kickPanel`, `hinge-pillar-${s}`, 'ASY, A PILLAR TRIM LOWER (A/B/C post trim #8) clipped (TRIM CLIP #11) to the hinge pillar'),
+    J(`pillar-trim-${s}#cPillarLower`, `rear-quarter-inner-${s}#innerWall`, 'ASY C-PILLAR TRIM LWR (A/B/C post trim #19) clipped to the wheelhouse inner wall'),
+  ]),
   J('touchscreen', 'dash-panel', 'MCU in the CENTER SCREEN FRAME (touchscreen #2 = dash panel #35), BLT M5x25 (#3)'),
   J('instrument-cluster', 'dash-panel', 'cluster in the IP cluster frame and bezel (ASY FRAME INSTRUMENT CLUSTER / CLUSTER BEZEL, dash panel #28)'),
   J('glove-box', 'dash-panel', 'ASY GLOVE BOX COMP (dash panel #24) hinged in the lower right IP'),

@@ -261,7 +261,9 @@ export function buildInterior(reg) {
         quadPlate([[-0.68, 0.34, sg * 0.74], [-0.68, 0.34, sg * 0.772], [-0.68, 0.465, sg * 0.772], [-0.68, 0.465, sg * 0.74]], 0.01, 'carpet'),
         quadPlate([[-0.675, 0.465, sg * 0.565], [-0.935, 0.465, sg * 0.565], [-0.935, 0.465, sg * 0.772], [-0.675, 0.465, sg * 0.772]], 0.01, 'carpet'),
         // inner lip tucked against the cushion side, return down past the sill top
-        quadPlate([[-0.675, 0.465, sg * 0.566], [-0.935, 0.465, sg * 0.566], [-0.935, 0.5, sg * 0.566], [-0.675, 0.5, sg * 0.566]], 0.004, 'carpet'),
+        quadPlate([[-0.675, 0.465, sg * 0.566], [-0.975, 0.465, sg * 0.566], [-0.975, 0.5, sg * 0.566], [-0.675, 0.5, sg * 0.566]], 0.004, 'carpet'),
+        // beside the cushion, under the foot of the lower C-pillar trim, on to the rear rail node
+        quadPlate([[-0.935, 0.465, sg * 0.565], [-0.975, 0.465, sg * 0.565], [-0.975, 0.465, sg * 0.6], [-0.935, 0.465, sg * 0.6]], 0.01, 'carpet'),
         quadPlate([[-0.675, 0.35, sg * 0.772], [-0.935, 0.35, sg * 0.772], [-0.935, 0.465, sg * 0.772], [-0.675, 0.465, sg * 0.772]], 0.004, 'carpet'),
       ))),
     ),
@@ -319,7 +321,43 @@ export function buildInterior(reg) {
         named('bPillar', group(
           region([[b0, b1, 0.95, 1.85]], { side: sd, offset: -0.13, mat: 'greyPlastic', edges: false }),
           region([[b0, b1, 2.85, 4.0]], { side: sd, offset: -0.1, exclude: [[bm - 0.03, bm + 0.03, 3.27, 3.45]], mat: 'greyPlastic', edges: false }),
+          // foot of the lower trim down onto the scuff plate and the sill: covers the belt retractor, the pillar
+          // impact sensor and the rear door harness rising from under the scuff plate into the pillar
+          ...[
+            [[-0.19, 0.325, 0.752], [-0.315, 0.325, 0.752], [-0.315, 0.483, 0.752], [-0.19, 0.483, 0.752]],
+            [[-0.19, 0.483, 0.752], [-0.315, 0.483, 0.752], [-0.315, 0.483, 0.855], [-0.19, 0.483, 0.855]],
+            ...[-0.19, -0.315].flatMap((x) => [
+              [[x, 0.323, 0.752], [x, 0.37, 0.8], [x, 0.483, 0.8], [x, 0.483, 0.752]],
+              [[x, 0.362, 0.8], [x, 0.362, 0.855], [x, 0.483, 0.855], [x, 0.483, 0.8]],
+            ]),
+          ].map((c) => quadPlate(c.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'greyPlastic')),
         )),
+        // ASY, A PILLAR TRIM LOWER (#8): kick panel on the outboard side of the front footwell, from the scuff plate
+        // to the toe board corner and up to the IP side cover (LH: below the hood release cable), over the cabin
+        // harness running down the toe board edge; its front flange is clipped to the hinge pillar
+        named('kickPanel', (() => {
+          const xs = [0.75, 0.8, 0.85, 0.9, 0.928];
+          const lerp = (pts, x) => {
+            for (let i = 0; i + 1 < pts.length; i++) {
+              const [x0, y0] = pts[i];
+              const [x1, y1] = pts[i + 1];
+              if (x >= x0 && x <= x1) return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+            }
+            return pts[pts.length - 1][1];
+          };
+          const bot = (x) => 0.305 + (x - 0.72) * 0.5 + 0.009; // on the toe board carpet
+          const top = (x) => (sd === 'L' ? 0.522 : lerp(IP_RH_OUT, x) - 0.003);
+          const z = sg * 0.745;
+          const plates = [];
+          for (let i = 0; i + 1 < xs.length; i++) {
+            const [x0, x1] = [xs[i], xs[i + 1]];
+            plates.push(quadPlate([[x0, bot(x0), z], [x1, bot(x1), z], [x1, top(x1), z], [x0, top(x0), z]], 0.004, 'greyPlastic'));
+          }
+          plates.push(quadPlate([[0.928, 0.445, z], [0.928, 0.445, sg * 0.79], [0.928, top(0.928), sg * 0.79], [0.928, top(0.928), z]], 0.004, 'greyPlastic'));
+          // and its foot turned out over the harness onto the sill top, continuing the scuff plate forward
+          plates.push(quadPlate([[0.75, 0.44, z], [0.928, 0.47, z], [0.928, 0.43, sg * 0.79], [0.75, 0.362, sg * 0.79]], 0.004, 'greyPlastic'));
+          return group(...plates);
+        })()),
         // C-pillar trim, ending ahead of the C-pillar reinforcement where it climbs inboard to the roof rail
         named('cPillar', region([[SV.rearGlass[1], 3.67, 2.95, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
         // ASY C-PILLAR TRIM LWR (#19): covers the wheelhouse top beside the 2nd-row seat back, from the rear
@@ -366,7 +404,7 @@ export function buildInterior(reg) {
         const ZP = 0.868;
         const q = (pts, mat = 'carpet') => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, mat);
         const archY = (x) => 0.352 + Math.sqrt(0.44 ** 2 - (x + 1.425) ** 2);
-        const notch = sd === 'R' ? [-1.765, -1.845] : null;
+        const notch = sd === 'R' ? [-1.785, -1.83] : null;
         const st = [];
         for (const x of [-1.39, -1.45, -1.5, -1.55, -1.6, -1.65, -1.7]) st.push([x, archY(x) + 0.008]);
         st.push([-1.723, 0.684]);
