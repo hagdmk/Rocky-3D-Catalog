@@ -128,15 +128,16 @@ function dashShell() {
     // through its opening under the cluster hood
     loftZ(faceSt, 'leather', opening),
     // cluster frame (#28): recess side walls and, beside the column, its floor under the screen
-    capZ(CLUSTER_CHEEK, IP_CLUSTER.z0, 'blackPlastic'),
-    capZ(CLUSTER_CHEEK, IP_CLUSTER.z1, 'blackPlastic'),
-    ...[[IP_CLUSTER.z0, IP_COLUMN.z0], [IP_COLUMN.z1, IP_CLUSTER.z1]].map(([z0, z1]) => quadPlate(
-      [[0.44, 0.8, z0], [0.44, 0.8, z1], [0.525, 0.825, z1], [0.525, 0.825, z0]], 0.003, 'blackPlastic')),
+    plates([
+      capZ(CLUSTER_CHEEK, IP_CLUSTER.z0, 'blackPlastic'),
+      capZ(CLUSTER_CHEEK, IP_CLUSTER.z1, 'blackPlastic'),
+      ...[[IP_CLUSTER.z0, IP_COLUMN.z0], [IP_COLUMN.z1, IP_CLUSTER.z1]].map(([z0, z1]) => quadPlate(
+        [[0.44, 0.8, z0], [0.44, 0.8, z1], [0.525, 0.825, z1], [0.525, 0.825, z0]], 0.003, 'blackPlastic')),
+    ], 'blackPlastic'),
     loftZ(lh, 'leather'),
     loftZ(rh, 'leather'),
     // IP side covers (#15/#16)
-    capZ([...IP_TOP, ...IP_LH_KICK], -0.735, 'leather'),
-    capZ([...IP_TOP, ...IP_RH_OUT], 0.735, 'leather'),
+    plates([capZ([...IP_TOP, ...IP_LH_KICK], -0.735, 'leather'), capZ([...IP_TOP, ...IP_RH_OUT], 0.735, 'leather')], 'leather'),
     // and the side covers step out to the door trim, forward to the hinge pillar
     ...SIDES.map(({ sd, sg }) => named(`end${sd}`, ipEnd(sg, sd === 'L' ? IP_LH_KICK : IP_RH_OUT))),
   );
@@ -164,14 +165,16 @@ function ipEnd(sg, low) {
   const yb = lerp(XH);
   return group(
     loftZ([{ z: sg * ZI, pts: prof }, { z: sg * ZO, pts: prof }], 'leather'),
-    capZ([...face, ...bottom, [XD, YT]], sg * ZO, 'leather'),
-    // step out at the door trim's front edge, and the closeout on to the hinge pillar
-    q([[XD, lerp(XD), ZO], [XD, lerp(XD), ZC], [XD, YT, ZC], [XD, YT, ZO]]),
-    q([[XD, lerp(XD), ZC], [XH, yb, ZC], [XH, 0.735, ZC], [XD, 0.735, ZC]]),
-    q([[XD, 0.735, ZC], [0.86, 0.735, ZC], [0.86, 0.8, ZC], [XD, 0.8, ZC]]),
-    q([[XD, 0.8, ZC], [XH, 0.8, ZC], [XH, YT, ZC], [XD, YT, ZC]]),
-    q([[XD, YT, ZO], [XD, YT, ZC], [XH, YT, ZC], [XH, YT, ZI]]),
-    q([[XD, YT, ZI], [XD, YT, ZO], [XH, YT, ZI], [XH, YT, ZI]]),
+    plates([
+      capZ([...face, ...bottom, [XD, YT]], sg * ZO, 'leather'),
+      // step out at the door trim's front edge, and the closeout on to the hinge pillar
+      q([[XD, lerp(XD), ZO], [XD, lerp(XD), ZC], [XD, YT, ZC], [XD, YT, ZO]]),
+      q([[XD, lerp(XD), ZC], [XH, yb, ZC], [XH, 0.735, ZC], [XD, 0.735, ZC]]),
+      q([[XD, 0.735, ZC], [0.86, 0.735, ZC], [0.86, 0.8, ZC], [XD, 0.8, ZC]]),
+      q([[XD, 0.8, ZC], [XH, 0.8, ZC], [XH, YT, ZC], [XD, YT, ZC]]),
+      q([[XD, YT, ZO], [XD, YT, ZC], [XH, YT, ZC], [XH, YT, ZI]]),
+      q([[XD, YT, ZI], [XD, YT, ZO], [XH, YT, ZI], [XH, YT, ZI]]),
+    ], 'leather'),
   );
 }
 
@@ -322,17 +325,18 @@ export function buildInterior(reg) {
   reg.add({
     id: 'cabin-carpet', ko: '실내 카펫·플로어 매트', en: 'Passenger compartment carpet & mats',
     groups: ['passenger-compartment-carpet'],
-    object: group(
+    object: group(plates([
       quadPlate([[0.95, 0.42, -0.74], [0.95, 0.42, 0.74], [0.72, 0.305, 0.76], [0.72, 0.305, -0.76]], 0.012, 'carpet'),
       quadPlate([[0.72, 0.305, -0.76], [0.72, 0.305, 0.76], [-0.68, 0.305, 0.76], [-0.68, 0.305, -0.76]], 0.012, 'carpet'),
       // riser at the rear edge of the floor up in front of the 2nd-row cushion, to above its front underside
       quadPlate([[-0.68, 0.305, -0.57], [-0.68, 0.305, 0.57], [-0.68, 0.5, 0.57], [-0.68, 0.5, -0.57]], 0.01, 'carpet'),
       // and turned back under the cushion's front edge, closing the gap to it
       quadPlate([[-0.675, 0.502, -0.565], [-0.675, 0.502, 0.565], [-0.708, 0.502, 0.565], [-0.708, 0.502, -0.565]], 0.004, 'carpet'),
+    ], 'carpet'),
       // rear footwell outboard corners, beside the cushion: the riser continues out to the sill and a carpeted
       // closeout (heel-kick shelf) runs back from it at y 0.465 to the rear rail node and the wheelhouse, with
       // a return down to the sill top; the HV cable and coolant hose risers stay below it (energy.js)
-      ...SIDES.map(({ sd, sg }) => named(`corner${sd}`, group(
+      ...SIDES.map(({ sd, sg }) => named(`corner${sd}`, plates([
         // (notched at the sill for the cabin harness, which runs on under the scuff plate and this closeout)
         quadPlate([[-0.68, 0.305, sg * 0.57], [-0.68, 0.305, sg * 0.74], [-0.68, 0.465, sg * 0.74], [-0.68, 0.465, sg * 0.57]], 0.01, 'carpet'),
         quadPlate([[-0.68, 0.34, sg * 0.74], [-0.68, 0.34, sg * 0.772], [-0.68, 0.465, sg * 0.772], [-0.68, 0.465, sg * 0.74]], 0.01, 'carpet'),
@@ -342,7 +346,7 @@ export function buildInterior(reg) {
         // beside the cushion, under the foot of the lower C-pillar trim, on to the rear rail node
         quadPlate([[-0.935, 0.465, sg * 0.565], [-0.975, 0.465, sg * 0.565], [-0.975, 0.465, sg * 0.6], [-0.935, 0.465, sg * 0.6]], 0.01, 'carpet'),
         quadPlate([[-0.675, 0.35, sg * 0.772], [-0.935, 0.35, sg * 0.772], [-0.935, 0.465, sg * 0.772], [-0.675, 0.465, sg * 0.772]], 0.004, 'carpet'),
-      ))),
+      ], 'carpet'))),
     ),
   });
   reg.add({
@@ -417,7 +421,7 @@ export function buildInterior(reg) {
           ]),
           // foot of the lower trim down onto the scuff plate and the sill: covers the belt retractor, the pillar
           // impact sensor and the rear door harness rising from under the scuff plate into the pillar
-          ...[
+          plates([
             [[-0.19, 0.325, 0.752], [-0.315, 0.325, 0.752], [-0.315, 0.483, 0.752], [-0.19, 0.483, 0.752]],
             // top, with the slot the belt webbing leaves the retractor through
             [[-0.19, 0.483, 0.752], [-0.315, 0.483, 0.752], [-0.315, 0.483, 0.872], [-0.19, 0.483, 0.872]],
@@ -434,7 +438,7 @@ export function buildInterior(reg) {
             [[-0.19, 0.362, 0.908], [-0.315, 0.362, 0.908], [-0.315, 0.455, 0.908], [-0.19, 0.455, 0.908]],
             [[-0.19, 0.455, 0.908], [-0.25, 0.455, 0.908], [-0.25, 0.483, 0.908], [-0.19, 0.483, 0.908]],
             [[-0.28, 0.455, 0.908], [-0.315, 0.455, 0.908], [-0.315, 0.483, 0.908], [-0.28, 0.483, 0.908]],
-          ].map((c) => quadPlate(c.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'greyPlastic')),
+          ].map((c) => quadPlate(c.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'greyPlastic')), 'greyPlastic'),
         )),
         // ASY, A PILLAR TRIM LOWER (#8): kick panel on the outboard side of the front footwell, from the scuff plate
         // to the toe board corner and up to the lower edge of the IP side cover (LH: the hood release cable runs
@@ -453,24 +457,24 @@ export function buildInterior(reg) {
           const bot = (x) => 0.305 + (x - 0.72) * 0.5 + 0.009; // on the toe board carpet
           const top = (x) => lerp(sd === 'L' ? IP_LH_KICK : IP_RH_OUT, x) - 0.003;
           const z = sg * 0.745;
-          const plates = [];
+          const list = [];
           for (let i = 0; i + 1 < xs.length; i++) {
             const [x0, x1] = [xs[i], xs[i + 1]];
-            plates.push(quadPlate([[x0, bot(x0), z], [x1, bot(x1), z], [x1, top(x1), z], [x0, top(x0), z]], 0.004, 'greyPlastic'));
+            list.push(quadPlate([[x0, bot(x0), z], [x1, bot(x1), z], [x1, top(x1), z], [x0, top(x0), z]], 0.004, 'greyPlastic'));
           }
           // front flange against the hinge pillar, down to its foot
-          plates.push(quadPlate([[0.928, 0.47, z], [0.928, 0.4, sg * 0.79], [0.928, top(0.928), sg * 0.79], [0.928, top(0.928), z]], 0.004, 'greyPlastic'));
+          list.push(quadPlate([[0.928, 0.47, z], [0.928, 0.4, sg * 0.79], [0.928, top(0.928), sg * 0.79], [0.928, top(0.928), z]], 0.004, 'greyPlastic'));
           // and its foot turned out over the harness down onto the sill top (no gap to see the harness through from the
           // door opening), continuing the scuff plate forward
-          plates.push(quadPlate([[0.75, 0.44, z], [0.928, 0.47, z], [0.928, 0.4, sg * 0.79], [0.75, 0.362, sg * 0.79]], 0.004, 'greyPlastic'));
+          list.push(quadPlate([[0.75, 0.44, z], [0.928, 0.47, z], [0.928, 0.4, sg * 0.79], [0.75, 0.362, sg * 0.79]], 0.004, 'greyPlastic'));
           // front closeout from the flange forward to the edge of the dash insulator, closing the footwell corner in
           // front of the trim; the cabin harness passes it through a grommet-sized hole on its way from the dash
           // harness to behind the trim
           const cz = (x) => sg * (0.745 - ((x - 0.928) / 0.045) * 0.023);
           const [h0, h1] = [0.462, 0.497];
-          plates.push(quadPlate([[0.928, bot(0.928), cz(0.928)], [0.973, bot(0.973), cz(0.973)], [0.973, h0, cz(0.973)], [0.928, h0, cz(0.928)]], 0.004, 'greyPlastic'));
-          plates.push(quadPlate([[0.928, h1, cz(0.928)], [0.973, h1, cz(0.973)], [0.973, top(0.973), cz(0.973)], [0.928, top(0.928), cz(0.928)]], 0.004, 'greyPlastic'));
-          return group(...plates);
+          list.push(quadPlate([[0.928, bot(0.928), cz(0.928)], [0.973, bot(0.973), cz(0.973)], [0.973, h0, cz(0.973)], [0.928, h0, cz(0.928)]], 0.004, 'greyPlastic'));
+          list.push(quadPlate([[0.928, h1, cz(0.928)], [0.973, h1, cz(0.973)], [0.973, top(0.973), cz(0.973)], [0.928, top(0.928), cz(0.928)]], 0.004, 'greyPlastic'));
+          return plates(list, 'greyPlastic');
         })()),
         // RH: removable fuse box cover of the footwell side trim, round the cabin fuse box (fusebox-cabin) under the IP
         // lower edge, from the trim's front back over the box and under it; open towards the bulkhead, where the lower
@@ -486,11 +490,11 @@ export function buildInterior(reg) {
           };
           const xs = [x0, 0.8, x1];
           const q = (pts) => quadPlate(pts, 0.004, 'greyPlastic');
-          return group(
+          return plates([
             ...xs.slice(0, -1).map((a, i) => q([[a, yb, zi], [xs[i + 1], yb, zi], [xs[i + 1], yt(xs[i + 1]), zi], [a, yt(a), zi]])),
             q([[x0, yb, zi], [x0, yb, zo], [x0, yt(x0), zo], [x0, yt(x0), zi]]),
             q([[x0, yb, zi], [x1, yb, zi], [x1, yb, zo], [x0, yb, zo]]),
-          );
+          ], 'greyPlastic');
         })())] : []),
         // C-pillar trim behind the rear door glass, and behind it the ASY C-PILLAR TRIM MID (#22) on to the
         // trunk C-pillar trim, over the C-pillar reinforcement (which lies against the body side outer)
@@ -511,7 +515,7 @@ export function buildInterior(reg) {
         // C-pillar impact sensor is inside it, the C-pillar reinforcement outboard of it against the body side
         named('cPillarLower', (() => {
           const q = (pts) => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'greyPlastic');
-          return group(
+          return plates([
             // front face just behind the rear door trim's armrest, on the footwell closeout and the sill top
             q([[-0.935, 0.465, 0.597], [-0.935, 0.465, 0.772], [-0.935, 0.975, 0.772], [-0.935, 0.975, 0.597]]),
             q([[-0.935, 0.36, 0.772], [-0.935, 0.36, 0.86], [-0.935, 0.81, 0.86], [-0.935, 0.81, 0.772]]),
@@ -538,7 +542,7 @@ export function buildInterior(reg) {
             q([[-1.382, 0.64, 0.558], [-1.382, 0.64, 0.597], [-1.382, 0.975, 0.597], [-1.382, 0.975, 0.558]]),
             // foot on the rail node top, out to the side of the cushion
             q([[-0.935, 0.553, 0.568], [-1.19, 0.553, 0.568], [-1.19, 0.553, 0.597], [-0.935, 0.553, 0.597]]),
-          );
+          ], 'greyPlastic');
         })()),
       ),
     });
@@ -599,7 +603,7 @@ export function buildInterior(reg) {
         const T = 0.9835;
         const [bf, br] = [-1.42, -1.515]; // retractor bulge front / rear
         const [sf, sr, si, so] = [-1.451, -1.477, 0.517, 0.543]; // webbing slot
-        const strutCover = group(
+        const strutCover = plates([
           // top, its front edge over the rear end of the C-pillar lower trim's top and turned down onto it
           q([[-1.37, T, 0.56], [bf, T, 0.56], [bf, T, 0.885], [-1.37, T, 0.885]]),
           q([[-1.37, 0.977, 0.56], [-1.37, 0.977, 0.885], [-1.37, T, 0.885], [-1.37, T, 0.56]]),
@@ -621,7 +625,7 @@ export function buildInterior(reg) {
           q([[-1.6, 0.958, 0.872], [-1.6, 0.958, 0.885], [-1.6, T, 0.885], [-1.6, T, 0.872]]),
           // outer lip down onto the top of the finisher wall
           q([[-1.385, 0.958, 0.872], [-1.6, 0.958, 0.872], [-1.6, T, 0.872], [-1.385, T, 0.872]]),
-        );
+        ], 'carpet');
         // RH: the finisher bulges inboard round the notch, over the rear subframe harness dropping to its grommet
         // in the shelf (and the carpet cut round it), down onto the trunk carpet
         const bulge = notch ? (() => {
@@ -634,13 +638,13 @@ export function buildInterior(reg) {
         })() : [];
         return group(
           named('strutCover', strutCover),
-          named('panel', group(...wall, ...hump, ...rear, ...bulge)),
+          named('panel', plates([...wall, ...hump, ...rear, ...bulge], 'carpet')),
           // trunk bracket #6 (LH) / #7 (RH): stands on the wheelhouse and carries the finisher's lower edge
           named('bracket', bar([-1.838, 0.676, sg * 0.864], [-1.765, 0.614, sg * 0.864], 0.025, 0.04, 'steel')),
-          named('lowerEdge', group(...edge)),
+          named('lowerEdge', plates(edge, 'carpet')),
           // CHARGE PORT COVER: bulges inboard over the back of the charge port inlet and the cable's loop into it,
           // back to the rear closeout (the liftgate drain runs down inside it)
-          ...(sd === 'L' ? [named('chargePortCover', group(
+          ...(sd === 'L' ? [named('chargePortCover', plates([
             q([[-1.987, 0.795, 0.73], [-2.14, 0.795, 0.73], [-2.14, 0.97, 0.73], [-1.987, 0.97, 0.73]]),
             q([[-1.987, 0.795, 0.73], [-1.987, 0.795, ZP], [-1.987, 0.97, ZP], [-1.987, 0.97, 0.73]]),
             q([[-1.987, 0.97, 0.73], [-2.118, 0.97, 0.73], [-2.118, 0.97, ZP], [-1.987, 0.97, ZP]]),
@@ -648,7 +652,7 @@ export function buildInterior(reg) {
             q([[-1.987, 0.795, 0.73], [-2.115, 0.795, 0.73], [-2.115, 0.795, ZP], [-1.987, 0.795, ZP]]),
             q([[-2.115, 0.795, 0.73], [-2.14, 0.795, 0.73], [-2.14, 0.795, 0.81], [-2.115, 0.795, 0.815]]),
             q([[-2.14, 0.795, 0.73], [-2.14, 0.795, 0.915], [-2.14, 0.96, 0.915], [-2.14, 0.96, 0.73]]),
-          ))] : []),
+          ], 'carpet'))] : []),
         );
       })(),
     });
@@ -708,7 +712,7 @@ export function buildInterior(reg) {
       // covers, turned up against the wheelhouse inner wall under the finisher's arch hump, and over the shelves
       // behind the wheelhouse and in the rear corners out to the finisher's lower edge (RH: round the subwoofer
       // and the subframe harness grommet)
-      ...[-1, 1].flatMap((sg) => {
+      ...[-1, 1].map((sg) => {
         const q = (pts) => quadPlate(pts.map(([x, y, z]) => [x, y, sg * z]), 0.004, 'carpet');
         const slope = (x0, x1) => q([[x0, 0.645, 0.55], [x1, 0.645, 0.55], [x1, 0.6835, 0.6], [x0, 0.6835, 0.6]]);
         const flat = (x0, x1, z0, z1) => q([[x0, 0.682, z0], [x1, 0.682, z0], [x1, 0.682, z1], [x0, 0.682, z1]]);
@@ -717,10 +721,10 @@ export function buildInterior(reg) {
           q([[x0, 0.681, 0.597], [x1, 0.681, 0.597], [x1, archY(x1), 0.597], [x0, archY(x0), 0.597]]),
           q([[x0, archY(x0), 0.595], [x1, archY(x1), 0.595], [x1, archY(x1), 0.604], [x0, archY(x0), 0.604]]),
         ]);
-        return sg < 0
+        return plates(sg < 0
           ? [slope(-1.6, -2.345), ...upturn, flat(-1.723, -1.95, 0.6, 0.834), flat(-1.95, -2.345, 0.6, 0.81)]
           : [slope(-1.6, -1.925), slope(-2.18, -2.345), ...upturn, flat(-1.723, -1.776, 0.6, 0.834), flat(-1.776, -1.829, 0.6, 0.798),
-            flat(-1.829, -1.95, 0.6, 0.834), flat(-1.95, -2.18, 0.621, 0.81), flat(-2.18, -2.345, 0.6, 0.81)];
+            flat(-1.829, -1.95, 0.6, 0.834), flat(-1.95, -2.18, 0.621, 0.81), flat(-2.18, -2.345, 0.6, 0.81)], 'carpet');
       }),
     ),
   });
@@ -849,7 +853,7 @@ export function buildInterior(reg) {
       })()),
       // rear trim flap of the cushion cover, tucked back under the seat back's lower edge: closes the crease
       // between cushion and seat back from below
-      named('rearFlap', quadPlate([[-1.19, 0.561, -0.55], [-1.19, 0.561, 0.55], [-1.285, 0.561, 0.55], [-1.285, 0.561, -0.55]], 0.004, 'carpet')),
+      named('rearFlap', quadPlate([[-1.165, 0.561, -0.55], [-1.165, 0.561, 0.55], [-1.285, 0.561, 0.55], [-1.285, 0.561, -0.55]], 0.004, 'carpet')),
       // cushion frame wire hooks (part of cushion assy #4) clipped to the rear edge of the floor pan
       named('hooks', group(...[-0.5, 0.5].map((z) => bar([-0.735, 0.5, z], [-0.69, 0.3, z], 0.012, 0.012, 'steel')))),
     ),
