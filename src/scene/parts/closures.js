@@ -353,15 +353,19 @@ export function buildClosures(reg) {
   });
   // Drain tubes from the cassette corner spouts, between the outer skin and the
   // pillar trims (outboard of the liftgate harness, clear of the ends of the curtain airbags): the front
-  // ones down the A-pillar ahead of the door hinges, the rear ones down the C-pillar.
+  // ones down the A-pillar ahead of the door hinges, the rear ones down the C-pillar.  The rear ones stay
+  // on the body: outboard over the rear header ahead of the liftgate harness, over the rear end of the
+  // curtain airbag and under the harness where it turns onto the liftgate, down in front of the liftgate
+  // opening seal (s 3.3), back along the roof rail between that seal (v 3.97) and the rear door seal
+  // (v 3.9), and down the C-pillar behind the rear door opening.
   const drains = [];
   for (const { sd } of SIDES) {
     drains.push(named(`drainF${sd}`, tube([skinAt(R0 - 0.02, 4.17, sd, -0.022), skinAt(2.2, 4.08, sd, -0.016), skinAt(1.95, 3.97, sd, -0.015),
       skinAt(1.72, 3.8, sd, -0.015), skinAt(1.6, 3.3, sd, -0.015), skinAt(1.54, 2.7, sd, -0.015), skinAt(1.53, 2.0, sd, -0.02),
       skinAt(1.53, 1.5, sd, -0.02), skinAt(1.53, 0.9, sd, -0.02)], 0.005, 'rubber')));
-    drains.push(named(`drainR${sd}`, tube([skinAt(R1 + 0.02, 4.17, sd, -0.022), skinAt(3.35, 4.1, sd, -0.016), skinAt(3.55, 3.95, sd, -0.015),
-      skinAt(3.62, 3.5, sd, -0.015), skinAt(3.64, 3.0, sd, -0.015), skinAt(3.64, 2.4, sd, -0.02), skinAt(3.64, 1.5, sd, -0.02),
-      skinAt(3.64, 0.8, sd, -0.02)], 0.005, 'rubber')));
+    drains.push(named(`drainR${sd}`, pipe([[R1 + 0.02, 4.17, -0.022], [3.215, 4.1, -0.016], [3.225, 4.06, -0.012], [3.268, 4.06, -0.012],
+      [3.268, 3.93, -0.01], [3.5, 3.93, -0.01], [3.58, 3.86, -0.015], [3.62, 3.5, -0.015], [3.64, 3.0, -0.015], [3.64, 2.4, -0.02],
+      [3.64, 1.5, -0.02], [3.64, 0.8, -0.02]].map(([s, v, o]) => skinAt(s, v, sd, o)), 0.005, 'rubber', { bend: 0.02 })));
   }
   reg.add({
     id: 'pano-frame', ko: '루프 프레임·배수관', en: 'Roof frame & drain tubes',
