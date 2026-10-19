@@ -182,10 +182,12 @@ table.parts td { padding: 6px 6px; border-bottom: 1px solid var(--line); vertica
 table.parts tr.row { cursor: pointer; }
 table.parts tr.row:hover td { background: rgba(127, 232, 255, 0.05); }
 table.parts tr.row.open td { background: rgba(255, 179, 64, 0.09); }
-table.parts tr.row.other td { opacity: 0.45; }
+table.parts tr.row.other td, table.parts tr.row.unfit td { opacity: 0.45; }
 table.parts td.no { width: 34px; color: var(--accent-2); font-family: var(--mono); font-size: 12px; }
 table.parts td.no.na { color: var(--faint); }
-table.parts td.pn { font-family: var(--mono); font-size: 11.5px; white-space: nowrap; color: var(--accent); }
+table.parts td:nth-child(2) { overflow-wrap: anywhere; }
+table.parts td.pn { font-family: var(--mono); font-size: 11.5px; color: var(--accent); }
+table.parts td.pn > span { white-space: nowrap; }
 table.parts td.q { width: 34px; text-align: right; color: var(--muted); }
 table.parts td .d { display: block; color: var(--muted); font-size: 11.5px; }
 table.parts tr.detail td { background: rgba(255, 179, 64, 0.05); padding: 8px 10px 12px; }
