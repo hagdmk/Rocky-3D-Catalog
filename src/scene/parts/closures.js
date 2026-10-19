@@ -353,9 +353,9 @@ export function buildClosures(reg) {
     id: 'labels-underhood', ko: '라벨 - 후드 아래(배출가스·냉매·구조대원)', en: 'Labels - under hood (emissions, refrigerant, first responder)', tags: 'F',
     groups: ['labels'], match: /EMISSION|REFRIGERANT|FIRST RESPONDER|FRONT INFO|VEHICLE|LBL/,
     object: group(
-      // on the hood underside, above the frunk
-      box([0.1, 0.002, 0.07], [1.95, 0.7985, 0.35], 'paper'),
-      box([0.08, 0.002, 0.05], [1.95, 0.801, -0.35], 'paper'),
+      // on the hood underside, above the frunk, tilted to its slope (-0.149 rad at x 1.90-2.00), 0.2-0.9 mm under the skin
+      box([0.1, 0.002, 0.07], [1.95, 0.8064, 0.35], 'paper', [0, 0, -0.149]),
+      box([0.08, 0.002, 0.05], [1.95, 0.8064, -0.35], 'paper', [0, 0, -0.149]),
     ),
   });
   reg.add({
