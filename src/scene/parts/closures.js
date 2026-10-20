@@ -111,14 +111,18 @@ export function buildClosures(reg) {
         // skin at the outboard end of the rear header, a web down in front of the rear roof drain tube's crossing,
         // and a base plate back over the headliner's rear corner (3 mm above it, under the drain tube, outboard of the
         // liftgate harness, inboard of the curtain airbag's thin rear end, forward of the opening seal)
-        named('studBracket', plates([
-          bkt([[3.178, 4.05], [3.178, 4.08], [3.198, 4.08], [3.198, 4.05]], -0.0025),
-          bkt([[3.198, 4.05, -0.0025], [3.198, 4.08, -0.0025], [3.198, 4.08, -0.032], [3.198, 4.05, -0.032]]),
-          bkt([[3.198, 4.05], [3.198, 4.08], [3.287, 4.052], [3.287, 3.99]], -0.0305),
-        ], 'steel')),
-        // body BALL STUD (#17): screwed up into the base plate, its ball hanging below the hole in the headliner's
-        // rear corner
-        named('bodyStud', beam([strutB.x, 1.312, strutB.z], strutB, 0.005, 'steel')),
+        named('studBracket', group(
+          plates([
+            bkt([[3.178, 4.05], [3.178, 4.08], [3.198, 4.08], [3.198, 4.05]], -0.0025),
+            bkt([[3.198, 4.05, -0.0025], [3.198, 4.08, -0.0025], [3.198, 4.08, -0.032], [3.198, 4.05, -0.032]]),
+            bkt([[3.198, 4.05], [3.198, 4.08], [3.287, 4.052], [3.287, 3.955]], -0.0305), // out over the post
+          ], 'steel'),
+          // post down from the base plate, outboard of the ball, through the hole in the headliner's rear corner
+          beam([strutB.x, 1.3155, sg * 0.598], [strutB.x, 1.259, sg * 0.598], 0.006, 'steel'),
+        )),
+        // body BALL STUD (#17): screwed into the post across, along the hinge axis, so the strut turns about the stud
+        // as the gate opens (its socket does not tilt)
+        named('bodyStud', beam([strutB.x, strutB.y, sg * 0.598], strutB, 0.005, 'steel')),
         // the strut: cylinder from the body ball, piston rod to the liftgate ball, a ball socket end fitting on each
         // ball (closing the ends)
         named('strut', group(

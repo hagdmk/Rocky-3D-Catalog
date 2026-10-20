@@ -421,7 +421,7 @@ export const JOINTS = [
   ...each((s) => [J(`liftgate-hinge-${s}#hinge`, 'roof-panel', 'liftgate hinge bolted to the roof rear header')]),
   ...each((s) => [
     J(`liftgate-hinge-${s}#studBracket`, 'roof-panel', 'bracket of the body BALL STUD - LIFTGATE (#17) (body structure) under the outboard end of the roof rear header, behind the headliner rear corner'),
-    J(`liftgate-hinge-${s}#bodyStud`, `liftgate-hinge-${s}#studBracket`, 'BALL STUD - LIFTGATE (#17), body side, screwed into its bracket through the hole in the headliner rear corner'),
+    J(`liftgate-hinge-${s}#bodyStud`, `liftgate-hinge-${s}#studBracket`, 'BALL STUD - LIFTGATE (#17), body side, screwed along the hinge axis into the post of its bracket, which comes down through the hole in the headliner rear corner'),
     J(`liftgate-hinge-${s}#gateStud`, 'liftgate', 'BALL STUD - LIFTGATE (#17) on the liftgate side band, through the hole in the liftgate side trim (#13/#14)'),
     J(`liftgate-hinge-${s}#strut`, `liftgate-hinge-${s}#bodyStud`, 'LIFTGATE GAS STRUT LH (#15) / GAS or POWER STRUT RH (#16): its upper ball socket clipped on the body ball stud (#17)'),
     J(`liftgate-hinge-${s}#strut`, `liftgate-hinge-${s}#gateStud`, 'LIFTGATE GAS STRUT LH (#15) / GAS or POWER STRUT RH (#16): its lower ball socket clipped on the liftgate ball stud (#17)'),
