@@ -6,7 +6,7 @@ import { skinAt, skinNormal, skinPath, findOnFace } from '../body.js';
 import { region, SV, skinRibbon } from './exterior.js';
 import { xOf } from '../profile.js';
 import {
-  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, faceTo, mesh, quadPlate,
+  V, group, named, rbox, box, cyl, beam, bar, tube, pipe, faceTo, mesh, quadPlate, plates, sphere,
 } from '../geom.js';
 
 const SIDES = [
@@ -89,18 +89,47 @@ export function buildClosures(reg) {
         )),
       ),
     });
+    // LIFTGATE GAS STRUT LH (#15) / GAS or POWER STRUT RH (#16), catalog strut 696 mm ball to ball extended with a
+    // 163 mm stroke (533 mm compressed), on two BALL STUDs (#17). On a hatch one ball must sit close to the hinge
+    // axis: the body ball is 0.13 m from it, under the outboard end of the roof rear header, and the liftgate ball
+    // 0.64 m from it, on the liftgate side band. Closed, the strut is 566 mm ball to ball and lies along the
+    // opening edge, between the edge of the C-pillar trims / headliner and the liftgate trim. Turning the gate
+    // about the hinge axis lengthens it steadily, every degree, to 673 mm at the 50 deg full opening (107 mm of
+    // the stroke). Its lever arm about the axis stays 109-127 mm, opening the gate. The strut swings up through
+    // the opening at a constant z: inboard of the C-pillar trims and the headliner's C-pillar strip, whose edges
+    // are cut back to the seal line for it, and under the opening seal's front run.
+    const strutB = V(-0.788, 1.265, sg * 0.575); // body ball centre
+    const strutG = skinAt(3.84, 4.03, sd, -0.06); // liftgate ball centre
+    const strutC = strutB.clone().lerp(strutG, 0.498 / strutB.distanceTo(strutG)); // cylinder end (rod out to the liftgate ball)
+    const bkt = (pts, o, t = 0.003) => quadPlate(pts.map(([s, v, oo]) => skinAt(s, v, sd, oo ?? o)), t, 'steel');
     reg.add({
       id: `liftgate-hinge-${sd}`, ko: `리프트게이트 힌지·스트럿 (${ko})`, en: `Liftgate hinge & strut ${en}`, tags: sd,
       groups: ['liftgate-hinges-and-fittings'], match: /HINGE|STRUT|BALL STUD|WEDGE|BUMPER|ANTI PINCH|push clip|SEALER|BLT|NUT/,
       object: group(
         named('hinge', rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 })), // hinge on the roof rear header
-        // LIFTGATE GAS / POWER STRUT (#15/#16) on its two BALL STUDs (#17): the body stud forward, on the C-pillar
-        // reinforcement top (through a hole in the upper C-pillar trim), and the liftgate stud rearward, on the liftgate
-        // side band (through a hole in the liftgate side trim); closed, the strut lies along the opening edge just
-        // inboard of the trims
-        named('bodyStud', beam(skinAt(3.715, 3.70, sd, -0.024), skinAt(3.715, 3.70, sd, -0.06), 0.005, 'steel')),
-        named('strut', tube([skinAt(3.715, 3.70, sd, -0.06), skinAt(4.0, 3.975, sd, -0.061), skinAt(4.3, 4.036, sd, -0.054)], 0.012, 'steel')),
-        named('gateStud', beam(skinAt(4.3, 4.036, sd, -0.001), skinAt(4.3, 4.036, sd, -0.054), 0.005, 'steel')), // (the liftgate is drawn as its outer skin only: the stud reaches to 1 mm under it)
+        // body ball-stud bracket (body structure, not a service part), a small stamped hat: a flange under the roof
+        // skin at the outboard end of the rear header, a web down in front of the rear roof drain tube's crossing,
+        // and a base plate back over the headliner's rear corner (3 mm above it, under the drain tube and the
+        // liftgate harness, inboard of the curtain airbag's thin rear end, forward of the opening seal)
+        named('studBracket', plates([
+          bkt([[3.178, 4.05], [3.178, 4.08], [3.198, 4.08], [3.198, 4.05]], -0.0025),
+          bkt([[3.198, 4.05, -0.0025], [3.198, 4.08, -0.0025], [3.198, 4.08, -0.032], [3.198, 4.05, -0.032]]),
+          bkt([[3.198, 4.05], [3.198, 4.08], [3.287, 4.052], [3.287, 4.008]], -0.0305),
+        ], 'steel')),
+        // body BALL STUD (#17): screwed up into the base plate, its ball hanging below the notch in the headliner's
+        // rear corner
+        named('bodyStud', beam([strutB.x, 1.312, strutB.z], strutB, 0.005, 'steel')),
+        // the strut: cylinder from the body ball, piston rod to the liftgate ball, a ball socket end fitting on each
+        // ball (closing the ends)
+        named('strut', group(
+          beam(strutB, strutC, 0.011, 'steel'),
+          beam(strutC, strutG, 0.005, 'chrome'),
+          sphere(0.012, strutB.toArray(), 'steel'),
+          sphere(0.012, strutG.toArray(), 'steel'),
+        )),
+        // liftgate BALL STUD (#17), through the hole in the liftgate side trim (the liftgate is drawn as its outer skin
+        // only: the stud reaches to 1 mm under it)
+        named('gateStud', beam(skinAt(3.84, 4.03, sd, -0.001), strutG, 0.005, 'steel')),
         // ANTI PINCH SENSOR (#12/#13) clipped (push clips #14) along the liftgate side band: it follows the skin, its
         // surface 1.5 mm under it (the liftgate is drawn as its outer skin only), so it no longer cuts through the skin
         named('pinchSensor', tube(skinPath([[3.35, 4.06], [4.0, 4.06], [4.3, 4.06], [4.5, 4.03]], sd, -0.0065, 4), 0.005, 'rubber')),
@@ -271,8 +300,10 @@ export function buildClosures(reg) {
     groups: ['hood-seals'], match: /HOOD TO COWL/,
     object: tube([[1.0, 0.89, -0.54], [1.0, 0.89, 0.54]], 0.008, 'rubber'),
   });
-  // on the body opening flange, just inside the liftgate edge and above the rear door seals
-  const lgOutline = [[3.3, 5], [3.3, 3.97], [4.61, 3.97], [4.61, 2.76], [4.95, 2.76], [4.95, 5]];
+  // on the body opening flange, just inside the liftgate edge and above the rear door seals (the two extra points
+  // at the front corner keep the spline on the flange round it, instead of bulging 19 mm forward onto the
+  // headliner where the liftgate strut's body ball stud stands)
+  const lgOutline = [[3.3, 5], [3.3, 3.99], [3.3, 3.97], [3.32, 3.97], [4.61, 3.97], [4.61, 2.76], [4.95, 2.76], [4.95, 5]];
   reg.add({
     id: 'liftgate-seal', ko: '리프트게이트(트렁크) 실', en: 'Liftgate (trunk lid) seal', tags: 'B',
     groups: ['trunk-lid-seal'],
