@@ -109,14 +109,14 @@ export function buildClosures(reg) {
         named('hinge', rbox([0.08, 0.04, 0.05], skinAt(3.24, 4.55, sd, -0.02).toArray(), 'steel', { r: 0.008 })), // hinge on the roof rear header
         // body ball-stud bracket (body structure, not a service part), a small stamped hat: a flange under the roof
         // skin at the outboard end of the rear header, a web down in front of the rear roof drain tube's crossing,
-        // and a base plate back over the headliner's rear corner (3 mm above it, under the drain tube and the
+        // and a base plate back over the headliner's rear corner (3 mm above it, under the drain tube, outboard of the
         // liftgate harness, inboard of the curtain airbag's thin rear end, forward of the opening seal)
         named('studBracket', plates([
           bkt([[3.178, 4.05], [3.178, 4.08], [3.198, 4.08], [3.198, 4.05]], -0.0025),
           bkt([[3.198, 4.05, -0.0025], [3.198, 4.08, -0.0025], [3.198, 4.08, -0.032], [3.198, 4.05, -0.032]]),
-          bkt([[3.198, 4.05], [3.198, 4.08], [3.287, 4.052], [3.287, 4.008]], -0.0305),
+          bkt([[3.198, 4.05], [3.198, 4.08], [3.287, 4.052], [3.287, 3.99]], -0.0305),
         ], 'steel')),
-        // body BALL STUD (#17): screwed up into the base plate, its ball hanging below the notch in the headliner's
+        // body BALL STUD (#17): screwed up into the base plate, its ball hanging below the hole in the headliner's
         // rear corner
         named('bodyStud', beam([strutB.x, 1.312, strutB.z], strutB, 0.005, 'steel')),
         // the strut: cylinder from the body ball, piston rod to the liftgate ball, a ball socket end fitting on each
