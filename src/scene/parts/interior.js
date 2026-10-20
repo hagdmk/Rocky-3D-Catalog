@@ -518,9 +518,10 @@ export function buildInterior(reg) {
         // C-pillar trim behind the rear door glass, and behind it the ASY C-PILLAR TRIM MID (#22) on to the
         // trunk C-pillar trim, over the C-pillar reinforcement (which lies against the body side outer)
         // (their lower edges come down over the top of the lower C-pillar trim)
-        named('cPillar', region([[SV.rearGlass[1], 3.67, 2.7, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
-        // (with the hole for the liftgate strut's body ball stud, liftgate-hinge-*#bodyStud)
-        named('cPillarMid', region([[3.67, 3.78, 2.7, 4.05]], { side: sd, offset: -0.045, mat: 'fabric', edges: false, exclude: [[3.702, 3.728, 3.68, 3.72]] })),
+        // (their top edges end at the liftgate opening seal, v 3.972 / 3.985, outboard of the liftgate strut, which
+        // swings up past them through the opening, liftgate-hinge-*#strut)
+        named('cPillar', region([[SV.rearGlass[1], 3.67, 2.7, 3.972]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
+        named('cPillarMid', region([[3.67, 3.78, 2.7, 3.985]], { side: sd, offset: -0.045, mat: 'fabric', edges: false })),
         // trim clips (TRIM CLIP #11) on towers from their back faces to the C-pillar reinforcement: two under the mid
         // trim, and a bracket from the rear edge of the upper trim
         named('cPillarClips', group(
@@ -693,8 +694,10 @@ export function buildInterior(reg) {
       // down behind the inner lips of the door seals over the door openings (closing the roof rails, with the curtain
       // airbags on them, from the cabin and the door openings);
       // over the roof it ends at the rear header, at the liftgate opening seal, and behind that it covers only the
-      // C-pillar tops up over the liftgate seal
-      region([[SV.roof[0] - 0.02, 3.3, 3.888, 5], [3.3, 3.72, 3.888, 3.995]], { offset: -0.035, exclude: [panoMotors], mat: 'fabric', edges: false }),
+      // C-pillar tops up over the liftgate seal (to v 3.985, outboard of the liftgate strut's swing); each rear corner
+      // has the hole for the liftgate strut's body ball stud (liftgate-hinge-*#bodyStud, 2 mm clear all round), the
+      // stud's bracket above it
+      region([[SV.roof[0] - 0.02, 3.3, 3.888, 5], [3.3, 3.72, 3.888, 3.985]], { offset: -0.035, exclude: [panoMotors, [3.272, 3.29, 4.011, 4.045]], mat: 'fabric', edges: false }),
       region([panoMotors], { offset: -0.055, mat: 'fabric', edges: false }),
       ...pocketWalls,
       // (the rail between its edge and the body side skin is closed by the door opening pinch flange under the door
@@ -709,7 +712,7 @@ export function buildInterior(reg) {
     // liftgate harness runs behind it)
     object: group(
       // (the side band has the holes for the liftgate struts' ball studs, liftgate-hinge-*#gateStud)
-      region([[4.42, 4.93, 3.1, 5], [3.3, 4.42, 3.995, 4.12]], { offset: -0.035, exclude: [[4.865, 4.93, 4.76, 5], [4.287, 4.313, 4.018, 4.054]], mat: 'greyPlastic', edges: false }),
+      region([[4.42, 4.93, 3.1, 5], [3.3, 4.42, 3.995, 4.12]], { offset: -0.035, exclude: [[4.865, 4.93, 4.76, 5], [3.8334, 3.8466, 4.016, 4.044]], mat: 'greyPlastic', edges: false }),
       named('lip', group(...SIDES.map(({ sd }) => skinStrip(sd, 3.305, 4.42, [4.118, -0.035], [4.118, -0.006], 'greyPlastic')))),
     ),
   });
